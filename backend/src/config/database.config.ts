@@ -14,7 +14,11 @@ export const dataSourceOptions: DataSourceOptions = {
   migrations: ['dist/migrations/*.js'],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
+  ssl: process.env.NODE_ENV === 'production' || process.env.DB_HOST?.includes('neon.tech')
+    ? { rejectUnauthorized: false }
+    : false,
 };
 
 const dataSource = new DataSource(dataSourceOptions);
 export default dataSource;
+
