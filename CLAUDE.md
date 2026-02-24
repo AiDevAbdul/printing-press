@@ -47,6 +47,17 @@ npm run test:cov           # With coverage
 npm run test:e2e           # End-to-end tests
 ```
 
+### Linting & Formatting
+
+```bash
+# Backend (from backend/)
+npm run lint               # ESLint with auto-fix
+npm run format             # Prettier formatting
+
+# Frontend (from frontend/)
+npm run lint               # ESLint
+```
+
 ## Architecture
 
 ### Backend (NestJS + TypeORM + PostgreSQL)
@@ -104,6 +115,7 @@ npm run test:e2e           # End-to-end tests
    - Layout component wraps all authenticated routes
 
 5. **Form Handling**:
+   - React Hook Form with Zod validation
    - Modal-based forms for create operations
    - All numeric fields must be explicitly converted: `Number(value)`
    - Date fields must be converted to ISO strings: `new Date(dateString).toISOString()`
@@ -122,10 +134,18 @@ When creating/updating entities, pay attention to:
 2. **Required vs Optional Fields**:
    - Check DTO decorators: `@IsOptional()` means field is optional
    - UUIDs must be valid: use `@IsUUID()` validation
+   - Orders: Only `customer_id`, `order_date`, `delivery_date`, `product_name`, `quantity`, and `unit` are required
+   - All 30+ specification fields (colors, varnish, lamination, etc.) are optional
 
 3. **Nested Objects**:
    - Invoices require `items` array with `InvoiceItemDto[]`
    - Each item needs: `description`, `quantity`, `unit_price`
+
+4. **Enum Values**:
+   - Order status: `pending`, `approved`, `in_production`, `completed`, `delivered`, `cancelled`
+   - Product types: `cpp_carton`, `silvo_blister`, `bent_foil`, `alu_alu`
+   - Varnish types: `water_base`, `duck`, `plain_uv`, `spot_uv`, `drip_off_uv`, `matt_uv`, `rough_uv`, `none`
+   - Lamination types: `shine`, `matt`, `metalize`, `rainbow`, `none`
 
 ### Frontend Form Submissions
 
@@ -162,6 +182,32 @@ When creating/updating entities, pay attention to:
 - Tokens stored in localStorage: `access_token`, `refresh_token`, `user`
 - Auto-redirect to `/login` on auth failure
 - User role displayed in sidebar
+
+## Enhanced Order Management (Phase 1)
+
+The order system supports 30+ specification fields with conditional rendering based on product type:
+
+**Product Types**:
+- `cpp_carton` - CPP Carton boxes
+- `silvo_blister` - Silvo/Blister Foil (includes cylinder tracking)
+- `bent_foil` - Bent Foil (includes thickness/tablet size)
+- `alu_alu` - Alu-Alu (includes thickness/punch size)
+
+**Key Features**:
+- Multi-step order form (5 steps)
+- Color management: CMYK + 4 Pantone colors (P1-P4)
+- Varnish options: 8 types including UV variants
+- Lamination: 5 types (shine, matt, metalize, rainbow, none)
+- Pre-press tracking: CTP info, die types, plate references
+- Design approval workflow with timestamps
+- Repeat order functionality (links to previous orders)
+- Conditional fields based on product type
+
+**Order Entity Structure**:
+- 60+ fields total (30+ are optional specifications)
+- All dates use `@Type(() => Date)` transformation
+- Enums for status, priority, product type, varnish, lamination
+- Relations: `customer` (ManyToOne), `created_by` (ManyToOne)
 
 ## Module Relationships
 
@@ -208,6 +254,29 @@ NODE_ENV=development
 VITE_API_BASE_URL=http://localhost:3000/api
 ```
 
+**Production Notes**:
+- SSL is automatically enabled when `NODE_ENV=production` or when connecting to Neon (detected by hostname)
+- Database config uses `ssl: { rejectUnauthorized: false }` for production
+- Entities are loaded from `dist/**/*.entity.js` (compiled output)
+- Migrations are loaded from `dist/migrations/*.js`
+
+## Deployment
+
+**Production Stack**:
+- Database: Neon PostgreSQL (free tier)
+- Backend: Render (free tier) - configured via `render.yaml`
+- Frontend: Vercel (free tier) - configured via `vercel.json`
+
+**Deployment Files**:
+- `render.yaml`: Backend deployment config with auto-generated JWT secrets
+- `vercel.json`: Frontend deployment config with build commands
+
+**Important Deployment Notes**:
+- Backend must be built before deployment: `npm run build` (creates `dist/` folder)
+- Migrations must be run manually after first deployment
+- SSL is auto-enabled for production environments
+- CORS is enabled globally in `main.ts`
+
 ## Common Issues & Solutions
 
 1. **PostgreSQL Port Conflict**: If local PostgreSQL conflicts with Docker, kill local process:
@@ -222,3 +291,7 @@ VITE_API_BASE_URL=http://localhost:3000/api
 4. **401 Errors**: Clear localStorage and re-login to get fresh tokens.
 
 5. **Form Validation Errors**: Check browser console for exact validation messages from backend.
+
+6. **Production SSL Errors**: Verify `NODE_ENV=production` is set and database host is correct.
+
+7. **Build Failures**: Ensure TypeScript compiles without errors before deployment.
