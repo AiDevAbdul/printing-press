@@ -1,5 +1,5 @@
-import { IsString, IsEnum, IsNumber, IsOptional, IsBoolean } from 'class-validator';
-import { InventoryCategory } from '../entities/inventory-item.entity';
+import { IsString, IsEnum, IsNumber, IsOptional, IsBoolean, IsInt } from 'class-validator';
+import { InventoryCategory, MainCategory } from '../entities/inventory-item.entity';
 
 export class CreateInventoryItemDto {
   @IsString()
@@ -7,6 +7,10 @@ export class CreateInventoryItemDto {
 
   @IsString()
   item_name: string;
+
+  @IsOptional()
+  @IsEnum(MainCategory)
+  main_category?: MainCategory;
 
   @IsEnum(InventoryCategory)
   category: InventoryCategory;
@@ -19,8 +23,12 @@ export class CreateInventoryItemDto {
   unit: string;
 
   @IsOptional()
+  @IsInt()
+  gsm?: number;
+
+  @IsOptional()
   @IsString()
-  gsm?: string;
+  size?: string;
 
   @IsOptional()
   @IsNumber()
@@ -29,6 +37,10 @@ export class CreateInventoryItemDto {
   @IsOptional()
   @IsNumber()
   size_width?: number;
+
+  @IsOptional()
+  @IsString()
+  material_type?: string;
 
   @IsOptional()
   @IsString()
@@ -69,6 +81,10 @@ export class UpdateInventoryItemDto {
   item_name?: string;
 
   @IsOptional()
+  @IsEnum(MainCategory)
+  main_category?: MainCategory;
+
+  @IsOptional()
   @IsEnum(InventoryCategory)
   category?: InventoryCategory;
 
@@ -81,8 +97,12 @@ export class UpdateInventoryItemDto {
   unit?: string;
 
   @IsOptional()
+  @IsInt()
+  gsm?: number;
+
+  @IsOptional()
   @IsString()
-  gsm?: string;
+  size?: string;
 
   @IsOptional()
   @IsNumber()
@@ -91,6 +111,10 @@ export class UpdateInventoryItemDto {
   @IsOptional()
   @IsNumber()
   size_width?: number;
+
+  @IsOptional()
+  @IsString()
+  material_type?: string;
 
   @IsOptional()
   @IsString()

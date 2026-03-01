@@ -18,6 +18,12 @@ interface Order {
   quantity: number;
   unit: string;
   final_price: number;
+  group_name?: string;
+  product_type?: string;
+  strength?: string;
+  batch_number?: string;
+  specifications?: string;
+  production_status?: string;
 }
 
 interface OrderFormData {
@@ -36,9 +42,16 @@ interface OrderFormData {
   is_repeat_order?: boolean;
   previous_order_id?: string;
 
+  // Enhanced Order Tracking (Part 4)
+  group_name?: string;
+  strength?: string;
+  batch_number?: string;
+  specifications?: string;
+  production_status?: string;
+  auto_sync_enabled?: boolean;
+
   // Detailed Specifications
   card_size?: string;
-  strength?: string;
   type?: string;
 
   // Color Details
@@ -60,7 +73,6 @@ interface OrderFormData {
   uv_emboss_details?: string;
   has_back_printing?: boolean;
   has_barcode?: boolean;
-  batch_number?: string;
 
   // Pre-Press
   ctp_info?: string;
@@ -102,16 +114,23 @@ const priorityColors: Record<string, string> = {
 
 export default function Orders() {
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [productTypeFilter, setProductTypeFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
   const { data: response, isLoading, error } = useQuery({
-    queryKey: ['orders', statusFilter],
+    queryKey: ['orders', statusFilter, searchTerm, productTypeFilter, priorityFilter],
     queryFn: async () => {
-      const response = await api.get('/orders', {
-        params: statusFilter ? { status: statusFilter } : {},
-      });
+      const params: any = {};
+      if (statusFilter) params.status = statusFilter;
+      if (searchTerm) params.search = searchTerm;
+      if (productTypeFilter) params.productType = productTypeFilter;
+      if (priorityFilter) params.priority = priorityFilter;
+
+      const response = await api.get('/orders', { params });
       return response.data;
     },
   });
@@ -194,19 +213,65 @@ export default function Orders() {
       </div>
 
       <div className="mb-6">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="in_production">In Production</option>
-          <option value="completed">Completed</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="grid grid-cols-4 gap-4 mb-4">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="in_production">In Production</option>
+            <option value="completed">Completed</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          <select
+            value={productTypeFilter}
+            onChange={(e) => setProductTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Product Types</option>
+            <option value="cpp_carton">CPP Carton</option>
+            <option value="silvo_blister">Silvo/Blister</option>
+            <option value="bent_foil">Bent Foil</option>
+            <option value="alu_alu">Alu-Alu</option>
+          </select>
+
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Priorities</option>
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+
+          <button
+            onClick={() => {
+              setStatusFilter('');
+              setProductTypeFilter('');
+              setPriorityFilter('');
+              setSearchTerm('');
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search by order #, customer, product, group, batch #..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -217,8 +282,8 @@ export default function Orders() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type/Strength</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -237,19 +302,39 @@ export default function Orders() {
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {order.order_number}
+                      {order.batch_number && (
+                        <div className="text-xs text-gray-500">Batch: {order.batch_number}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>{order.customer.name}</div>
                       {order.customer.company_name && (
                         <div className="text-xs text-gray-500">{order.customer.company_name}</div>
                       )}
+                      {order.group_name && (
+                        <div className="text-xs text-gray-500">Group: {order.group_name}</div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{order.product_name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <div>{order.product_name}</div>
+                      {order.specifications && (
+                        <div className="text-xs text-gray-500 truncate max-w-xs" title={order.specifications}>
+                          {order.specifications}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.product_type && (
+                        <div className="text-xs font-medium text-gray-700">
+                          {order.product_type.replace('_', ' ').toUpperCase()}
+                        </div>
+                      )}
+                      {order.strength && (
+                        <div className="text-xs text-gray-500">{order.strength}</div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.quantity} {order.unit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.order_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(order.delivery_date).toLocaleDateString()}
@@ -263,6 +348,9 @@ export default function Orders() {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[order.status]}`}>
                         {order.status.replace('_', ' ')}
                       </span>
+                      {order.production_status && (
+                        <div className="text-xs text-gray-500 mt-1">{order.production_status}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.final_price ? `₹${order.final_price.toLocaleString()}` : '-'}

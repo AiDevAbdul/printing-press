@@ -10,6 +10,7 @@ import { ProductionModule } from './production/production.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { CostingModule } from './costing/costing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { QuotationsModule } from './quotations/quotations.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     UsersModule,
     CustomersModule,
     OrdersModule,
+    QuotationsModule,
     ProductionModule,
     InventoryModule,
     CostingModule,

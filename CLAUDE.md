@@ -209,12 +209,88 @@ The order system supports 30+ specification fields with conditional rendering ba
 - Enums for status, priority, product type, varnish, lamination
 - Relations: `customer` (ManyToOne), `created_by` (ManyToOne)
 
+## Enhanced Production Management (Phase 5)
+
+The production system has been enhanced with queue management, inline status tracking, and stage history capabilities for real-time production monitoring.
+
+**Key Features**:
+- Queue management with automatic position tracking
+- Inline status display showing current stage, process, and machine
+- Stage history tracking with timeline and duration
+- Advanced search and filtering (by stage, machine, operator, customer, product)
+- Searchable text field for fast full-text search
+- Progress percentage tracking
+
+**ProductionJob Entity Structure**:
+- 9 new tracking fields: `queue_position`, `current_stage`, `current_process`, `inline_status`, `searchable_text`, `estimated_start`, `estimated_completion`, `actual_completion`, `progress_percent`
+- Searchable text combines: job number, order number, product name, customer name, stage, process, machine, operator name
+- Inline status auto-generated in format: `[Stage] - [Process] on [Machine]`
+
+**ProductionStageHistory Entity**:
+- Tracks each production stage with start/end times and duration
+- Fields: `job_id`, `stage`, `process`, `machine`, `operator_id`, `started_at`, `completed_at`, `duration_minutes`, `notes`
+- Cascade delete with ProductionJob (ON DELETE CASCADE)
+- Duration auto-calculated in minutes when stage completes
+
+**Machine Naming Conventions**:
+- Printing: HB1, HB2 (Heidelberg)
+- Die Cutting: Dye 1, Dye 2
+- UV Coating: UV#1, UV#2
+- Lamination: LM-1, LM-2
+- Embossing: Emboss-1
+
+**Production Stages**:
+- Pre-Press
+- Printing (processes: Cyan, Magenta, Yellow, Black)
+- Sorting
+- UV Application (Spot UV, Full UV)
+- Lamination (Shine, Matt, Metalize)
+- Embossing
+- Die-Cutting
+- Pasting
+- Final QA
+
+**Queue Management**:
+- Jobs created with status `queued` get automatic position assignment
+- Queue positions recalculate when jobs start or are cancelled
+- Position based on creation time (FIFO)
+- Inline status shows: `"Queued (Position #1 of 5)"`
+
+**Stage Tracking Workflow**:
+1. Create job → status: `queued`, inline_status: `"Queued (Position #X)"`
+2. Start job → status: `in_progress`, queue positions recalculate
+3. Start stage → creates stage history entry, updates `current_stage`, `current_process`, inline_status: `"Printing - Cyan on HB1"`
+4. Complete stage → marks stage as completed, calculates duration, clears current stage
+5. Start next stage → auto-completes previous stage if still active
+6. Complete job → status: `completed`, progress: 100%, inline_status: `"Completed - Ready for Delivery"`
+
+**Key API Endpoints**:
+- `GET /api/production/jobs` - Enhanced with filters: `?search=`, `?status=`, `?stage=`, `?machine=`, `?operator_id=`, `?customer=`, `?product=`
+- `GET /api/production/queue` - Get all queued jobs with positions
+- `POST /api/production/jobs/:id/start-stage` - Start new stage (body: `stage`, `process`, `machine`, `operator_id`)
+- `POST /api/production/jobs/:id/complete-stage` - Complete current stage (body: `notes`, `waste_quantity`)
+- `GET /api/production/jobs/:id/timeline` - Get full stage history
+
+**Frontend Form Fields**:
+- Required: `order_id`
+- Optional: `scheduled_start_date`, `scheduled_end_date`, `assigned_machine`, `assigned_operator_id`, `estimated_hours`, `notes`
+- Display fields: `inline_status`, `progress_percent`, `queue_position`, `current_stage`, `current_process`
+
+**Important Notes**:
+- Inline status is auto-generated, don't manually set it
+- Starting a new stage auto-completes the previous stage if still active
+- Queue positions auto-recalculate on status changes
+- Searchable text is auto-updated when job details change
+- Duration is calculated in minutes when stage completes
+
 ## Module Relationships
 
 ```
 Orders → Production Jobs → Job Costs
-  ↓           ↓
-Customers   Invoices
+  ↓           ↓              ↓
+Customers   Invoices   ProductionStageHistory
+                            ↓
+                         Users (operators)
 
 Inventory Items ← Job Costs (material type)
 ```
@@ -223,7 +299,9 @@ Inventory Items ← Job Costs (material type)
 - Production jobs require approved orders
 - Invoices require orders (typically completed)
 - Job costs link to production jobs and optionally inventory items
+- ProductionStageHistory tracks each stage with operator and machine details
 - All entities link to customers through orders
+- Stage history has cascade delete relationship with production jobs
 
 ## Database Schema Notes
 
@@ -295,3 +373,9 @@ VITE_API_BASE_URL=http://localhost:3000/api
 6. **Production SSL Errors**: Verify `NODE_ENV=production` is set and database host is correct.
 
 7. **Build Failures**: Ensure TypeScript compiles without errors before deployment.
+
+8. **Production Stage Tracking**: When starting a new stage, the previous stage is automatically completed. Don't manually complete stages before starting the next one unless you need to add specific notes or waste quantity.
+
+9. **Queue Position Updates**: Queue positions are auto-calculated and should not be manually set. They recalculate when jobs change from QUEUED to IN_PROGRESS status.
+
+10. **Inline Status Generation**: The `inline_status` field is auto-generated based on job state. Never manually set this field - it updates automatically when stage, process, or machine changes.

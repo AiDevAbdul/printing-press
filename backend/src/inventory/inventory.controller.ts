@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } f
 import { InventoryService } from './inventory.service';
 import { CreateInventoryItemDto, UpdateInventoryItemDto } from './dto/inventory-item.dto';
 import { CreateStockTransactionDto } from './dto/stock-transaction.dto';
+import { QueryInventoryDto } from './dto/query-inventory.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -20,13 +21,33 @@ export class InventoryController {
   }
 
   @Get('items')
-  findAllItems(
-    @Query('category') category?: string,
-    @Query('search') search?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.inventoryService.findAllItems(category, search, page, limit);
+  findAllItems(@Query() queryDto: QueryInventoryDto) {
+    return this.inventoryService.findAllItems(queryDto);
+  }
+
+  @Get('filters/brands')
+  getBrands(@Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctBrands(mainCategory);
+  }
+
+  @Get('filters/colors')
+  getColors(@Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctColors(mainCategory);
+  }
+
+  @Get('filters/sizes')
+  getSizes() {
+    return this.inventoryService.getDistinctSizes();
+  }
+
+  @Get('filters/gsm-values')
+  getGSMValues() {
+    return this.inventoryService.getDistinctGSMValues();
+  }
+
+  @Get('filters/material-types')
+  getMaterialTypes(@Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctMaterialTypes(mainCategory);
   }
 
   @Get('items/low-stock')

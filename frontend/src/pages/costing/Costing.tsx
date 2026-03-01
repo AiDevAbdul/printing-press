@@ -54,6 +54,8 @@ const costTypeColors: Record<string, string> = {
 export default function Costing() {
   const [selectedJobId, setSelectedJobId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCalculation, setShowCalculation] = useState(false);
+  const [prePressCost, setPrePressCost] = useState<number | undefined>(undefined);
   const [formData, setFormData] = useState<JobCostFormData>({
     job_id: '',
     cost_type: 'material',
@@ -100,6 +102,37 @@ export default function Costing() {
       return response.data;
     },
     enabled: isModalOpen && formData.cost_type === 'material',
+  });
+
+  const { data: calculationResponse, isLoading: isCalculating } = useQuery({
+    queryKey: ['cost-calculation', selectedJobId, prePressCost],
+    queryFn: async () => {
+      if (!selectedJobId) return null;
+      const payload: any = { job_id: selectedJobId };
+      if (prePressCost !== undefined) {
+        payload.pre_press_charges = prePressCost;
+      }
+      const response = await api.post('/costing/calculate', payload);
+      return response.data;
+    },
+    enabled: !!selectedJobId && showCalculation,
+  });
+
+  const saveCalculationMutation = useMutation({
+    mutationFn: async () => {
+      const payload: any = { job_id: selectedJobId };
+      if (prePressCost !== undefined) {
+        payload.pre_press_charges = prePressCost;
+      }
+      const response = await api.post('/costing/calculate/save', payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job-costs'] });
+      queryClient.invalidateQueries({ queryKey: ['job-cost-summary'] });
+      setShowCalculation(false);
+      setPrePressCost(undefined);
+    },
   });
 
   const createMutation = useMutation({
@@ -191,7 +224,170 @@ export default function Costing() {
             </option>
           ))}
         </select>
+        {selectedJobId && (
+          <button
+            onClick={() => setShowCalculation(!showCalculation)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500"
+          >
+            {showCalculation ? 'Hide Calculation' : 'Auto-Calculate Cost'}
+          </button>
+        )}
       </div>
+
+      {selectedJobId && showCalculation && (
+        <div className="mb-6 bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold mb-4">Auto-Calculated Cost Breakdown</h2>
+
+          {isCalculating ? (
+            <div className="text-center py-8">Calculating costs...</div>
+          ) : calculationResponse ? (
+            <>
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Product Specifications (Auto-Loaded)</h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Card Size:</span>{' '}
+                    <span className="font-medium">
+                      {calculationResponse.specifications.card_length}cm × {calculationResponse.specifications.card_width}cm
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">GSM:</span>{' '}
+                    <span className="font-medium">{calculationResponse.specifications.card_gsm}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Quantity:</span>{' '}
+                    <span className="font-medium">{calculationResponse.specifications.quantity} pieces</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Type:</span>{' '}
+                    <span className="font-medium">{calculationResponse.specifications.card_type || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Colors:</span>{' '}
+                    <span className="font-medium">
+                      {calculationResponse.specifications.colors_cmyk ? 'CMYK' : ''}
+                      {calculationResponse.specifications.special_colors_count > 0 &&
+                        ` + ${calculationResponse.specifications.special_colors_count} Special`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Finishing:</span>{' '}
+                    <span className="font-medium">
+                      {calculationResponse.specifications.uv_type !== 'none' && calculationResponse.specifications.uv_type}
+                      {calculationResponse.specifications.lamination_required && ', Lamination'}
+                      {calculationResponse.specifications.embossing_required && ', Embossing'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Cost Breakdown</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-700">Material Cost</span>
+                    <span className="font-medium">₹{calculationResponse.cost_breakdown.material_cost.toLocaleString()}</span>
+                  </div>
+
+                  <div className="pl-4">
+                    <div className="flex justify-between py-1 text-sm">
+                      <span className="text-gray-600">CMYK (4 colors)</span>
+                      <span>₹{calculationResponse.cost_breakdown.printing_cost_cmyk.toLocaleString()}</span>
+                    </div>
+                    {calculationResponse.cost_breakdown.printing_cost_special > 0 && (
+                      <div className="flex justify-between py-1 text-sm">
+                        <span className="text-gray-600">Special Colors ({calculationResponse.specifications.special_colors_count})</span>
+                        <span>₹{calculationResponse.cost_breakdown.printing_cost_special.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {calculationResponse.cost_breakdown.uv_cost > 0 && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-700">UV Cost</span>
+                      <span className="font-medium">₹{calculationResponse.cost_breakdown.uv_cost.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {calculationResponse.cost_breakdown.lamination_cost > 0 && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-700">Lamination</span>
+                      <span className="font-medium">₹{calculationResponse.cost_breakdown.lamination_cost.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {calculationResponse.cost_breakdown.embossing_cost > 0 && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-700">Embossing</span>
+                      <span className="font-medium">₹{calculationResponse.cost_breakdown.embossing_cost.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-700">Die Cutting</span>
+                    <span className="font-medium">₹{calculationResponse.cost_breakdown.die_cutting_cost.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex justify-between py-2 border-b items-center">
+                    <span className="text-gray-700">Pre-Press Charges</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={prePressCost !== undefined ? prePressCost : calculationResponse.cost_breakdown.pre_press_charges}
+                        onChange={(e) => setPrePressCost(Number(e.target.value))}
+                        className="w-32 px-2 py-1 border border-gray-300 rounded text-right"
+                      />
+                      <button
+                        onClick={() => setPrePressCost(undefined)}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between py-3 border-t-2 border-gray-300 font-bold text-lg">
+                    <span>TOTAL COST</span>
+                    <span className="text-green-600">₹{calculationResponse.cost_breakdown.total_cost.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex justify-between py-2 text-sm text-gray-600">
+                    <span>Cost per Unit</span>
+                    <span>₹{calculationResponse.cost_breakdown.cost_per_unit.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => saveCalculationMutation.mutate()}
+                  disabled={saveCalculationMutation.isPending}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saveCalculationMutation.isPending ? 'Saving...' : 'Save Costing'}
+                </button>
+                <button
+                  onClick={() => setShowCalculation(false)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {saveCalculationMutation.isError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                  Error saving cost calculation
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-red-600">
+              Unable to calculate costs. Please ensure the order has complete specifications (card size, GSM, quantity).
+            </div>
+          )}
+        </div>
+      )}
 
       {selectedJobId && summaryResponse && (
         <div className="mb-6 grid grid-cols-4 gap-4">

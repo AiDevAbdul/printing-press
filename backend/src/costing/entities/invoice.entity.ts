@@ -64,6 +64,27 @@ export class Invoice {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ nullable: true })
+  company_name: string;
+
+  @Column({ nullable: true })
+  group_name: string;
+
+  @Column({ nullable: true })
+  product_type: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  final_quantity: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  unit_rate: number;
+
+  @Column({ nullable: true })
+  strength: string;
+
+  @Column({ type: 'boolean', default: false })
+  sales_tax_applicable: boolean;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   created_by: User;

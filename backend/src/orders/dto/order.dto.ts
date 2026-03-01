@@ -224,6 +224,23 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   punch_size?: string;
+
+  // Enhanced Order Tracking (Part 4)
+  @IsOptional()
+  @IsString()
+  group_name?: string;
+
+  @IsOptional()
+  @IsString()
+  specifications?: string;
+
+  @IsOptional()
+  @IsString()
+  production_status?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  auto_sync_enabled?: boolean;
 }
 
 export class UpdateOrderDto {
@@ -454,6 +471,23 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   punch_size?: string;
+
+  // Enhanced Order Tracking (Part 4)
+  @IsOptional()
+  @IsString()
+  group_name?: string;
+
+  @IsOptional()
+  @IsString()
+  specifications?: string;
+
+  @IsOptional()
+  @IsString()
+  production_status?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  auto_sync_enabled?: boolean;
 }
 
 export class UpdateOrderStatusDto {

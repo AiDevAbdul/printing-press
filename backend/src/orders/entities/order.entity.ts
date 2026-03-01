@@ -262,6 +262,19 @@ export class Order {
   @Column({ nullable: true })
   punch_size: string;
 
+  // Enhanced Order Tracking (Part 4)
+  @Column({ nullable: true })
+  group_name: string;
+
+  @Column({ type: 'text', nullable: true })
+  specifications: string;
+
+  @Column({ nullable: true })
+  production_status: string;
+
+  @Column({ type: 'boolean', default: true })
+  auto_sync_enabled: boolean;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   created_by: User;

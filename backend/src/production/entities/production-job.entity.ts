@@ -57,6 +57,33 @@ export class ProductionJob {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ type: 'int', nullable: true })
+  queue_position: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  current_stage: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  current_process: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  inline_status: string;
+
+  @Column({ type: 'text', nullable: true })
+  searchable_text: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  estimated_start: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  estimated_completion: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  actual_completion: Date;
+
+  @Column({ type: 'int', default: 0 })
+  progress_percent: number;
+
   @CreateDateColumn()
   created_at: Date;
 

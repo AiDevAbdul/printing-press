@@ -57,6 +57,13 @@ export interface Order {
   special_instructions?: string;
   quoted_price?: number;
   final_price?: number;
+  group_name?: string;
+  product_type?: string;
+  strength?: string;
+  batch_number?: string;
+  specifications?: string;
+  production_status?: string;
+  auto_sync_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -97,8 +104,44 @@ export interface ProductionJob {
   estimated_hours?: number;
   actual_hours?: number;
   notes?: string;
+  queue_position?: number;
+  current_stage?: string;
+  current_process?: string;
+  inline_status?: string;
+  searchable_text?: string;
+  estimated_start?: string;
+  estimated_completion?: string;
+  actual_completion?: string;
+  progress_percent?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductionStageHistory {
+  id: string;
+  job: ProductionJob;
+  stage: string;
+  process?: string;
+  machine?: string;
+  operator?: User;
+  started_at: string;
+  completed_at?: string;
+  duration_minutes?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductionFilters {
+  search?: string;
+  status?: ProductionJobStatus;
+  stage?: string;
+  machine?: string;
+  operator_id?: string;
+  customer?: string;
+  product?: string;
+  page?: number;
+  limit?: number;
 }
 
 export enum ProductionJobStatus {
@@ -113,12 +156,15 @@ export interface InventoryItem {
   id: string;
   item_code: string;
   item_name: string;
+  main_category?: 'block' | 'paper' | 'other_material';
   category: InventoryCategory;
   subcategory?: string;
   unit: string;
-  gsm?: string;
+  gsm?: number;
+  size?: string;
   size_length?: number;
   size_width?: number;
+  material_type?: string;
   brand?: string;
   color?: string;
   current_stock: number;
@@ -136,6 +182,19 @@ export enum InventoryCategory {
   PLATES = 'plates',
   FINISHING_MATERIALS = 'finishing_materials',
   PACKAGING = 'packaging',
+}
+
+export interface InventoryFilters {
+  main_category?: string;
+  category?: string;
+  size?: string;
+  gsm?: number;
+  material_type?: string;
+  brand?: string;
+  color?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface StockTransaction {
@@ -179,6 +238,13 @@ export interface Invoice {
   status: InvoiceStatus;
   payment_terms?: string;
   notes?: string;
+  company_name?: string;
+  group_name?: string;
+  product_type?: string;
+  final_quantity?: number;
+  unit_rate?: number;
+  strength?: string;
+  sales_tax_applicable?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -209,6 +275,82 @@ export interface JobCost {
   unit_cost: number;
   total_cost: number;
   created_at: string;
+  // Auto-calculated fields
+  card_length?: number;
+  card_width?: number;
+  card_gsm?: number;
+  card_type?: string;
+  colors_cmyk?: boolean;
+  special_colors_count?: number;
+  special_colors?: string;
+  uv_type?: string;
+  lamination_required?: boolean;
+  embossing_required?: boolean;
+  material_cost?: number;
+  printing_cost_cmyk?: number;
+  printing_cost_special?: number;
+  uv_cost?: number;
+  lamination_cost?: number;
+  die_cutting_cost?: number;
+  embossing_cost?: number;
+  pre_press_charges?: number;
+  total_processing_cost?: number;
+  cost_per_unit?: number;
+}
+
+export interface CostCalculation {
+  job_id: string;
+  order_id: string;
+  product_name: string;
+  specifications: {
+    card_length: number;
+    card_width: number;
+    card_gsm: number;
+    card_type: string;
+    quantity: number;
+    colors_cmyk: boolean;
+    special_colors_count: number;
+    special_colors: string;
+    uv_type: string;
+    lamination_required: boolean;
+    embossing_required: boolean;
+  };
+  cost_breakdown: {
+    material_cost: number;
+    printing_cost_cmyk: number;
+    printing_cost_special: number;
+    uv_cost: number;
+    lamination_cost: number;
+    embossing_cost: number;
+    die_cutting_cost: number;
+    pre_press_charges: number;
+    total_processing_cost: number;
+    total_cost: number;
+    cost_per_unit: number;
+  };
+  formulas_used: {
+    material: string;
+    printing_cmyk: string;
+    printing_special: string;
+  };
+}
+
+export interface CostingConfig {
+  id: string;
+  paper_rate_per_kg: number;
+  gsm_rate_factor: number;
+  cmyk_base_rate: number;
+  special_color_rate: number;
+  spot_uv_rate_per_sqm: number;
+  lamination_rate_per_sqm: number;
+  embossing_rate_per_job: number;
+  die_cutting_rate_per_1000: number;
+  pre_press_simple: number;
+  pre_press_medium: number;
+  pre_press_complex: number;
+  pre_press_rush: number;
+  is_active: boolean;
+  updated_at: string;
 }
 
 export enum CostType {

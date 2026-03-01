@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { ProductionService } from './production.service';
-import { CreateProductionJobDto, UpdateProductionJobDto, UpdateProductionJobStatusDto } from './dto/production-job.dto';
+import { CreateProductionJobDto, UpdateProductionJobDto, UpdateProductionJobStatusDto, StartStageDto, CompleteStageDto, QueryProductionJobsDto } from './dto/production-job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -19,17 +19,13 @@ export class ProductionController {
   }
 
   @Get('jobs')
-  findAll(
-    @Query('status') status?: ProductionJobStatus,
-    @Query('machine') machine?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const start = startDate ? new Date(startDate) : undefined;
-    const end = endDate ? new Date(endDate) : undefined;
-    return this.productionService.findAll(status, machine, start, end, page, limit);
+  findAll(@Query() queryDto: QueryProductionJobsDto) {
+    return this.productionService.findAllWithFilters(queryDto);
+  }
+
+  @Get('queue')
+  getQueuedJobs() {
+    return this.productionService.getQueuedJobs();
   }
 
   @Get('jobs/:id')
@@ -59,6 +55,23 @@ export class ProductionController {
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
   completeJob(@Param('id') id: string) {
     return this.productionService.completeJob(id);
+  }
+
+  @Post('jobs/:id/start-stage')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER)
+  startStage(@Param('id') id: string, @Body() startStageDto: StartStageDto) {
+    return this.productionService.startStage(id, startStageDto);
+  }
+
+  @Post('jobs/:id/complete-stage')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER)
+  completeStage(@Param('id') id: string, @Body() completeStageDto: CompleteStageDto) {
+    return this.productionService.completeStage(id, completeStageDto);
+  }
+
+  @Get('jobs/:id/timeline')
+  getTimeline(@Param('id') id: string) {
+    return this.productionService.getStageTimeline(id);
   }
 
   @Get('schedule')

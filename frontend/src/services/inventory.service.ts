@@ -1,20 +1,45 @@
 import api from './api';
-import { InventoryItem, StockTransaction, PaginatedResponse } from '../types';
+import { InventoryItem, StockTransaction, PaginatedResponse, InventoryFilters } from '../types';
 
 export const inventoryService = {
-  async getAllItems(
-    category?: string,
-    search?: string,
-    page = 1,
-    limit = 10
-  ): Promise<PaginatedResponse<InventoryItem>> {
+  async getAllItems(filters: InventoryFilters = {}): Promise<PaginatedResponse<InventoryItem>> {
     const params = new URLSearchParams();
-    if (category) params.append('category', category);
-    if (search) params.append('search', search);
-    params.append('page', page.toString());
-    params.append('limit', limit.toString());
 
-    const response = await api.get<PaginatedResponse<InventoryItem>>(`/inventory/items?${params}`);
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+
+    const response = await api.get<PaginatedResponse<InventoryItem>>(`/inventory/items?${params.toString()}`);
+    return response.data;
+  },
+
+  async getBrands(mainCategory?: string): Promise<string[]> {
+    const params = mainCategory ? `?main_category=${mainCategory}` : '';
+    const response = await api.get<string[]>(`/inventory/filters/brands${params}`);
+    return response.data;
+  },
+
+  async getColors(mainCategory?: string): Promise<string[]> {
+    const params = mainCategory ? `?main_category=${mainCategory}` : '';
+    const response = await api.get<string[]>(`/inventory/filters/colors${params}`);
+    return response.data;
+  },
+
+  async getSizes(): Promise<string[]> {
+    const response = await api.get<string[]>('/inventory/filters/sizes');
+    return response.data;
+  },
+
+  async getGSMValues(): Promise<number[]> {
+    const response = await api.get<number[]>('/inventory/filters/gsm-values');
+    return response.data;
+  },
+
+  async getMaterialTypes(mainCategory?: string): Promise<string[]> {
+    const params = mainCategory ? `?main_category=${mainCategory}` : '';
+    const response = await api.get<string[]>(`/inventory/filters/material-types${params}`);
     return response.data;
   },
 

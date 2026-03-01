@@ -27,10 +27,13 @@ export class OrdersController {
     @Query('endDate') endDate?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('productType') productType?: string,
+    @Query('priority') priority?: string,
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.ordersService.findAll(status, customerId, start, end, page, limit);
+    return this.ordersService.findAll(status, customerId, start, end, page, limit, search, productType, priority);
   }
 
   @Get(':id')

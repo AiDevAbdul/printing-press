@@ -73,3 +73,70 @@ export class UpdateProductionJobStatusDto {
   @IsEnum(ProductionJobStatus)
   status: ProductionJobStatus;
 }
+
+export class StartStageDto {
+  @IsString()
+  stage: string;
+
+  @IsOptional()
+  @IsString()
+  process?: string;
+
+  @IsOptional()
+  @IsString()
+  machine?: string;
+
+  @IsOptional()
+  @IsUUID()
+  operator_id?: string;
+}
+
+export class CompleteStageDto {
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  waste_quantity?: number;
+}
+
+export class QueryProductionJobsDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(ProductionJobStatus)
+  status?: ProductionJobStatus;
+
+  @IsOptional()
+  @IsString()
+  stage?: string;
+
+  @IsOptional()
+  @IsString()
+  machine?: string;
+
+  @IsOptional()
+  @IsUUID()
+  operator_id?: string;
+
+  @IsOptional()
+  @IsString()
+  customer?: string;
+
+  @IsOptional()
+  @IsString()
+  product?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  limit?: number;
+}

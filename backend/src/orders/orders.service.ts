@@ -37,29 +37,59 @@ export class OrdersService {
     endDate?: Date,
     page = 1,
     limit = 10,
+    search?: string,
+    productType?: string,
+    priority?: string,
   ): Promise<{ data: Order[]; total: number }> {
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const queryBuilder = this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.customer', 'customer')
+      .leftJoinAndSelect('order.created_by', 'created_by');
 
     if (status) {
-      where.status = status;
+      queryBuilder.andWhere('order.status = :status', { status });
     }
 
     if (customerId) {
-      where.customer = { id: customerId };
+      queryBuilder.andWhere('order.customer.id = :customerId', { customerId });
+    }
+
+    if (productType) {
+      queryBuilder.andWhere('order.product_type = :productType', { productType });
+    }
+
+    if (priority) {
+      queryBuilder.andWhere('order.priority = :priority', { priority });
     }
 
     if (startDate && endDate) {
-      where.order_date = Between(startDate, endDate);
+      queryBuilder.andWhere('order.order_date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
     }
 
-    const [data, total] = await this.ordersRepository.findAndCount({
-      where,
-      skip,
-      take: limit,
-      order: { created_at: 'DESC' },
-      relations: ['customer', 'created_by'],
-    });
+    // Multi-field search
+    if (search) {
+      queryBuilder.andWhere(
+        '(order.order_number ILIKE :search OR ' +
+        'order.product_name ILIKE :search OR ' +
+        'order.group_name ILIKE :search OR ' +
+        'order.batch_number ILIKE :search OR ' +
+        'order.specifications ILIKE :search OR ' +
+        'customer.name ILIKE :search OR ' +
+        'customer.company_name ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    queryBuilder
+      .orderBy('order.created_at', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     return { data, total };
   }

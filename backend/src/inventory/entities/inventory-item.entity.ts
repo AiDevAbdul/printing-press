@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum InventoryCategory {
   PAPER = 'paper',
@@ -6,6 +6,12 @@ export enum InventoryCategory {
   PLATES = 'plates',
   FINISHING_MATERIALS = 'finishing_materials',
   PACKAGING = 'packaging',
+}
+
+export enum MainCategory {
+  BLOCK = 'block',
+  PAPER = 'paper',
+  OTHER_MATERIAL = 'other_material',
 }
 
 @Entity('inventory_items')
@@ -19,6 +25,14 @@ export class InventoryItem {
   @Column()
   item_name: string;
 
+  @Index()
+  @Column({
+    type: 'enum',
+    enum: MainCategory,
+    nullable: true,
+  })
+  main_category: MainCategory;
+
   @Column({
     type: 'enum',
     enum: InventoryCategory,
@@ -31,8 +45,12 @@ export class InventoryItem {
   @Column()
   unit: string;
 
+  @Column({ type: 'int', nullable: true })
+  gsm: number;
+
+  @Index()
   @Column({ nullable: true })
-  gsm: string;
+  size: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   size_length: number;
@@ -41,8 +59,13 @@ export class InventoryItem {
   size_width: number;
 
   @Column({ nullable: true })
+  material_type: string;
+
+  @Index()
+  @Column({ nullable: true })
   brand: string;
 
+  @Index()
   @Column({ nullable: true })
   color: string;
 

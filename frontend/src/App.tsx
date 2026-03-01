@@ -6,6 +6,7 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
 import Customers from './pages/customers/Customers';
 import Orders from './pages/orders/Orders';
+import Quotations from './pages/quotations/Quotations';
 import Production from './pages/production/Production';
 import Inventory from './pages/inventory/Inventory';
 import Invoices from './pages/invoices/Invoices';
@@ -62,6 +63,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Orders />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/quotations"
+            element={
+              <PrivateRoute>
+                <Quotations />
               </PrivateRoute>
             }
           />

@@ -18,6 +18,13 @@ interface Invoice {
   paid_amount: number;
   balance_amount: number;
   status: string;
+  company_name?: string;
+  group_name?: string;
+  product_type?: string;
+  final_quantity?: number;
+  unit_rate?: number;
+  strength?: string;
+  sales_tax_applicable?: boolean;
 }
 
 interface Order {
@@ -29,8 +36,11 @@ interface Order {
   customer: {
     id: string;
     name: string;
+    company_name?: string;
   };
   quantity: number;
+  product_type?: string;
+  strength?: string;
 }
 
 interface InvoiceFormData {
@@ -41,6 +51,13 @@ interface InvoiceFormData {
   subtotal: number;
   tax_rate: number;
   notes: string;
+  company_name: string;
+  group_name: string;
+  product_type: string;
+  final_quantity: number;
+  unit_rate: number;
+  strength: string;
+  sales_tax_applicable: boolean;
   items: Array<{
     description: string;
     quantity: number;
@@ -67,6 +84,13 @@ export default function Invoices() {
     subtotal: 0,
     tax_rate: 0,
     notes: '',
+    company_name: '',
+    group_name: '',
+    product_type: '',
+    final_quantity: 0,
+    unit_rate: 0,
+    strength: '',
+    sales_tax_applicable: false,
     items: [],
   });
 
@@ -114,6 +138,13 @@ export default function Invoices() {
         subtotal: 0,
         tax_rate: 0,
         notes: '',
+        company_name: '',
+        group_name: '',
+        product_type: '',
+        final_quantity: 0,
+        unit_rate: 0,
+        strength: '',
+        sales_tax_applicable: false,
         items: [],
       });
     },
@@ -159,6 +190,7 @@ export default function Invoices() {
       const customerId = selectedOrder.customer_id || selectedOrder.customer?.id;
       const finalPrice = Number(selectedOrder.final_price) || 0;
       const quantity = Number(selectedOrder.quantity) || 1;
+      const unitRate = quantity > 0 ? finalPrice / quantity : finalPrice;
 
       console.log('Selected order:', selectedOrder);
       console.log('Customer ID:', customerId);
@@ -168,10 +200,16 @@ export default function Invoices() {
         order_id: orderId,
         customer_id: customerId,
         subtotal: finalPrice,
+        company_name: selectedOrder.customer?.company_name || '',
+        group_name: '',
+        product_type: selectedOrder.product_type || '',
+        final_quantity: quantity,
+        unit_rate: unitRate,
+        strength: selectedOrder.strength || '',
         items: [{
           description: selectedOrder.product_name,
           quantity: quantity,
-          unit_price: finalPrice,
+          unit_price: unitRate,
         }]
       }));
     }
@@ -235,18 +273,19 @@ export default function Invoices() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                     No invoices found
                   </td>
                 </tr>
@@ -259,11 +298,25 @@ export default function Invoices() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {invoice.order.order_number}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{invoice.customer.name}</div>
-                      {invoice.customer.company_name && (
-                        <div className="text-xs text-gray-500">{invoice.customer.company_name}</div>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <div className="font-medium">{invoice.customer.name}</div>
+                      {invoice.company_name && (
+                        <div className="text-xs text-gray-500">{invoice.company_name}</div>
                       )}
+                      {invoice.group_name && (
+                        <div className="text-xs text-gray-400">{invoice.group_name}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {invoice.product_type && (
+                        <div className="font-medium">{invoice.product_type}</div>
+                      )}
+                      {invoice.strength && (
+                        <div className="text-xs text-gray-500">{invoice.strength}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {invoice.final_quantity ? invoice.final_quantity.toLocaleString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(invoice.invoice_date).toLocaleDateString()}
@@ -272,13 +325,17 @@ export default function Invoices() {
                       {new Date(invoice.due_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₹{invoice.total_amount.toLocaleString()}
+                      ₨{invoice.total_amount.toLocaleString()}
+                      {invoice.unit_rate && (
+                        <div className="text-xs text-gray-500">@₨{invoice.unit_rate.toLocaleString()}</div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                      ₹{invoice.paid_amount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₹{invoice.balance_amount.toLocaleString()}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {invoice.sales_tax_applicable ? (
+                        <span className="text-green-600">Yes</span>
+                      ) : (
+                        <span className="text-gray-400">No</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
@@ -315,6 +372,86 @@ export default function Invoices() {
                     ))}
                   </select>
                 </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Full legal company name"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
+                  <input
+                    type="text"
+                    value={formData.group_name}
+                    onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Parent organization or group"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
+                  <input
+                    type="text"
+                    value={formData.product_type}
+                    onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Carton, Label, Leaflet"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Strength</label>
+                  <input
+                    type="text"
+                    value={formData.strength}
+                    onChange={(e) => setFormData({ ...formData, strength: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 500mg, 10ml"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Final Quantity</label>
+                  <input
+                    type="number"
+                    value={formData.final_quantity}
+                    onChange={(e) => setFormData({ ...formData, final_quantity: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Delivered quantity"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Rate</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.unit_rate}
+                    onChange={(e) => setFormData({ ...formData, unit_rate: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Price per unit"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.sales_tax_applicable}
+                      onChange={(e) => setFormData({ ...formData, sales_tax_applicable: e.target.checked })}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Sales Tax Applicable</span>
+                  </label>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Date *</label>
                   <input

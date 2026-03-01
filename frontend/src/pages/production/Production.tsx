@@ -17,10 +17,17 @@ interface ProductionJob {
   status: string;
   assigned_machine: string;
   assigned_operator: {
+    id: string;
     full_name: string;
   };
   estimated_hours: number;
   actual_hours: number;
+  queue_position?: number;
+  current_stage?: string;
+  current_process?: string;
+  inline_status?: string;
+  progress_percent?: number;
+  notes?: string;
 }
 
 interface Order {
@@ -29,12 +36,20 @@ interface Order {
   product_name: string;
 }
 
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 interface ProductionFormData {
   order_id: string;
   scheduled_start_date: string;
   scheduled_end_date: string;
   assigned_machine: string;
+  assigned_operator_id: string;
   estimated_hours: number;
+  notes: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -53,7 +68,9 @@ export default function Production() {
     scheduled_start_date: '',
     scheduled_end_date: '',
     assigned_machine: '',
+    assigned_operator_id: '',
     estimated_hours: 0,
+    notes: '',
   });
 
   const queryClient = useQueryClient();
@@ -72,6 +89,15 @@ export default function Production() {
     queryKey: ['orders-for-production'],
     queryFn: async () => {
       const response = await api.get('/orders');
+      return response.data;
+    },
+    enabled: isModalOpen,
+  });
+
+  const { data: usersResponse } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/users');
       return response.data;
     },
     enabled: isModalOpen,
@@ -96,7 +122,9 @@ export default function Production() {
         scheduled_start_date: '',
         scheduled_end_date: '',
         assigned_machine: '',
+        assigned_operator_id: '',
         estimated_hours: 0,
+        notes: '',
       });
     },
   });
@@ -165,17 +193,18 @@ export default function Production() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inline Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operator</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schedule</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                     No production jobs found
                   </td>
                 </tr>
@@ -191,6 +220,14 @@ export default function Production() {
                     <td className="px-6 py-4 text-sm text-gray-900">{job.order.product_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {job.order.customer.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[job.status]}`}>
+                        {job.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {job.inline_status || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {job.assigned_machine || '-'}
@@ -211,21 +248,19 @@ export default function Production() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.actual_hours || job.estimated_hours ? (
-                        <div>
-                          <div>{job.actual_hours || 0}h</div>
-                          {job.estimated_hours && (
-                            <div className="text-xs text-gray-400">of {job.estimated_hours}h</div>
-                          )}
+                      {job.progress_percent !== undefined ? (
+                        <div className="flex items-center">
+                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${job.progress_percent}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs">{job.progress_percent}%</span>
                         </div>
                       ) : (
                         '-'
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[job.status]}`}>
-                        {job.status.replace('_', ' ')}
-                      </span>
                     </td>
                   </tr>
                 ))
@@ -258,20 +293,18 @@ export default function Production() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                   <input
                     type="date"
-                    required
                     value={formData.scheduled_start_date}
                     onChange={(e) => setFormData({ ...formData, scheduled_start_date: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                   <input
                     type="date"
-                    required
                     value={formData.scheduled_end_date}
                     onChange={(e) => setFormData({ ...formData, scheduled_end_date: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -281,10 +314,26 @@ export default function Production() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Machine</label>
                   <input
                     type="text"
+                    placeholder="e.g., HB1, HB2, UV#1, Dye 1"
                     value={formData.assigned_machine}
                     onChange={(e) => setFormData({ ...formData, assigned_machine: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Operator</label>
+                  <select
+                    value={formData.assigned_operator_id}
+                    onChange={(e) => setFormData({ ...formData, assigned_operator_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Operator</option>
+                    {usersResponse?.map((user: User) => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
@@ -293,6 +342,16 @@ export default function Production() {
                     value={formData.estimated_hours}
                     onChange={(e) => setFormData({ ...formData, estimated_hours: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Additional notes or instructions..."
                   />
                 </div>
               </div>
