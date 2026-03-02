@@ -19,7 +19,7 @@ const ShopFloor = () => {
     };
   }, []);
 
-  const { data: jobs, isLoading, refetch } = useQuery({
+  const { data: jobs, isLoading } = useQuery({
     queryKey: ['my-active-jobs'],
     queryFn: shopFloorService.getMyActiveJobs,
     refetchInterval: 10000, // Poll every 10 seconds

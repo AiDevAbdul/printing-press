@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { shopFloorService } from '../../services/shop-floor.service';
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('details');
-  const [showStartStage, setShowStartStage] = useState(false);
-  const [showCompleteStage, setShowCompleteStage] = useState(false);
 
   const { data: job, isLoading } = useQuery({
     queryKey: ['job', id],
@@ -121,7 +118,7 @@ const JobDetails = () => {
             <div className="space-y-3">
               {!job.current_stage && (
                 <button
-                  onClick={() => setShowStartStage(true)}
+                  onClick={() => navigate(`/shop-floor/job/${id}/start-stage`)}
                   className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium text-lg"
                 >
                   Start Stage
@@ -129,7 +126,7 @@ const JobDetails = () => {
               )}
               {job.current_stage && (
                 <button
-                  onClick={() => setShowCompleteStage(true)}
+                  onClick={() => navigate(`/shop-floor/job/${id}/complete-stage/current`)}
                   className="w-full py-3 bg-green-600 text-white rounded-lg font-medium text-lg"
                 >
                   Complete Stage

@@ -1,20 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { shopFloorService } from '../../services/shop-floor.service';
 
 const WastageAnalytics = () => {
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
-  });
-
-  const { data: wastageRecords, isLoading } = useQuery({
-    queryKey: ['wastage-analytics', dateRange],
-    queryFn: async () => {
-      // This would need a dedicated analytics endpoint in production
-      // For now, we'll use the existing wastage records endpoint
-      return { records: [], summary: {} };
-    },
   });
 
   // Mock data for demonstration
