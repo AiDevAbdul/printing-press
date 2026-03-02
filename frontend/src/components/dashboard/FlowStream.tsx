@@ -56,7 +56,7 @@ export default function FlowStream() {
           Production Flow Stream
         </h2>
         <a
-          href="/production-jobs"
+          href="/production"
           className="text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-colors"
         >
           View All →

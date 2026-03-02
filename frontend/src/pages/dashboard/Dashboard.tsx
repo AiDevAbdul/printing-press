@@ -107,7 +107,7 @@ export default function Dashboard() {
 
         {/* Production Jobs */}
         <div
-          onClick={() => navigate('/production-jobs')}
+          onClick={() => navigate('/production')}
           className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-green-500"
         >
           <div className="flex items-center justify-between mb-2">

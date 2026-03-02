@@ -18,7 +18,7 @@ export const dashboardService = {
   },
 
   async getProductionFlow(): Promise<ProductionJob[]> {
-    const response = await api.get<{ data: ProductionJob[] }>('/production-jobs', {
+    const response = await api.get<{ data: ProductionJob[] }>('/production/jobs', {
       params: { limit: 20, status: 'in_progress,queued' }
     });
     return response.data?.data || [];
