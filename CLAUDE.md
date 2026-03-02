@@ -38,7 +38,20 @@ const items = response?.data || [];  // Backend returns { data: [], total: 0 }
 
 ## Documentation
 
+### Core Documentation
+- **Implementation Status**: `docs/implementation-status.md` - 100% completion status, all 5 modules, system statistics
+- **Deployment Guide**: `docs/deployment-guide.md` - Complete deployment guide with troubleshooting
+- **Feature Enhancements**: `docs/feature-enhancements.md` - All module enhancements and improvements
+- **Implementation Plan**: `docs/PLAN.md` - Original implementation plan for all modules
+- **Client Requirements**: `docs/CLIENT_REQ.md` - Client requirements and specifications
+
+### Technical Documentation
+- **Architecture**: `docs/ARCHITECTURE.md` - System architecture and design
+- **API Conventions**: `docs/api-conventions.md` - DTO validation, type coercion, response structures
 - **Domain Knowledge**: `docs/domain-knowledge.md` - Product types, machines, printing terminology
 - **Production Workflow**: `docs/production-workflow.md` - Queue management, stage tracking, auto-generation rules
-- **API Conventions**: `docs/api-conventions.md` - DTO validation, type coercion, response structures
 - **Troubleshooting**: `docs/troubleshooting.md` - Common errors and solutions
+
+### Module-Specific Documentation
+- **Quality Module**: `docs/quality-implementation.md` - Quality control implementation details
+- **Shop Floor Module**: `docs/shop-floor-implementation.md` - Shop floor management implementation details
