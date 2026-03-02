@@ -11,6 +11,8 @@ import { InventoryModule } from './inventory/inventory.module';
 import { CostingModule } from './costing/costing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { QuotationsModule } from './quotations/quotations.module';
+import { QualityModule } from './quality/quality.module';
+import { DispatchModule } from './dispatch/dispatch.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { QuotationsModule } from './quotations/quotations.module';
     InventoryModule,
     CostingModule,
     DashboardModule,
+    QualityModule,
+    DispatchModule,
   ],
 })
 export class AppModule {}

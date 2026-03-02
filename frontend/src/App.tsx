@@ -12,6 +12,14 @@ import Inventory from './pages/inventory/Inventory';
 import Invoices from './pages/invoices/Invoices';
 import Users from './pages/users/Users';
 import Costing from './pages/costing/Costing';
+import ShopFloor from './pages/shop-floor/ShopFloor';
+import JobDetails from './pages/shop-floor/JobDetails';
+import StartStage from './pages/shop-floor/StartStage';
+import CompleteStage from './pages/shop-floor/CompleteStage';
+import IssueMaterial from './pages/shop-floor/IssueMaterial';
+import Quality from './pages/quality/Quality';
+import Dispatch from './pages/dispatch/Dispatch';
+import WastageAnalytics from './pages/wastage/WastageAnalytics';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +119,70 @@ function App() {
             element={
               <PrivateRoute>
                 <Costing />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shop-floor"
+            element={
+              <PrivateRoute>
+                <ShopFloor />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shop-floor/job/:id"
+            element={
+              <PrivateRoute>
+                <JobDetails />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shop-floor/job/:id/start-stage"
+            element={
+              <PrivateRoute>
+                <StartStage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shop-floor/job/:id/complete-stage/:stageHistoryId"
+            element={
+              <PrivateRoute>
+                <CompleteStage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shop-floor/job/:id/issue-material"
+            element={
+              <PrivateRoute>
+                <IssueMaterial />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/quality"
+            element={
+              <PrivateRoute>
+                <Quality />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dispatch"
+            element={
+              <PrivateRoute>
+                <Dispatch />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/wastage-analytics"
+            element={
+              <PrivateRoute>
+                <WastageAnalytics />
               </PrivateRoute>
             }
           />

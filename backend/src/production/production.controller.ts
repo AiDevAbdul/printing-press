@@ -1,6 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
 import { ProductionService } from './production.service';
 import { CreateProductionJobDto, UpdateProductionJobDto, UpdateProductionJobStatusDto, StartStageDto, CompleteStageDto, QueryProductionJobsDto } from './dto/production-job.dto';
+import { IssueMaterialDto, ReturnMaterialDto } from './dto/material-consumption.dto';
+import { RecordMachineCounterDto } from './dto/machine-counter.dto';
+import { RecordWastageDto } from './dto/wastage.dto';
+import { StartStageEnhancedDto, CompleteStageEnhancedDto, OfflineSyncDto } from './dto/shop-floor.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -79,5 +83,72 @@ export class ProductionController {
     const start = new Date(startDate);
     const end = new Date(endDate);
     return this.productionService.getSchedule(start, end);
+  }
+
+  // Shop Floor Management Endpoints
+
+  @Get('shop-floor/my-jobs')
+  getMyActiveJobs(@Req() req: any) {
+    return this.productionService.getMyActiveJobs(req.user.userId);
+  }
+
+  @Get('shop-floor/job-by-qr/:qrCode')
+  getJobByQRCode(@Param('qrCode') qrCode: string) {
+    return this.productionService.getJobByQRCode(qrCode);
+  }
+
+  @Get('shop-floor/job/:id/qr-code')
+  generateJobQRCode(@Param('id') id: string) {
+    return this.productionService.generateJobQRCode(id);
+  }
+
+  @Post('materials/issue')
+  issueMaterial(@Body() dto: IssueMaterialDto, @Req() req: any) {
+    return this.productionService.issueMaterial(dto, req.user.userId);
+  }
+
+  @Post('materials/return')
+  returnMaterial(@Body() dto: ReturnMaterialDto, @Req() req: any) {
+    return this.productionService.returnMaterial(dto, req.user.userId);
+  }
+
+  @Get('materials/:jobId')
+  getMaterialConsumption(@Param('jobId') jobId: string) {
+    return this.productionService.getMaterialConsumption(jobId);
+  }
+
+  @Post('counters/record')
+  recordMachineCounter(@Body() dto: RecordMachineCounterDto, @Req() req: any) {
+    return this.productionService.recordMachineCounter(dto, req.user.userId);
+  }
+
+  @Get('counters/:jobId')
+  getMachineCounters(@Param('jobId') jobId: string) {
+    return this.productionService.getMachineCounters(jobId);
+  }
+
+  @Post('wastage/record')
+  recordWastage(@Body() dto: RecordWastageDto, @Req() req: any) {
+    return this.productionService.recordWastage(dto, req.user.userId);
+  }
+
+  @Get('wastage/:jobId')
+  getWastageRecords(@Param('jobId') jobId: string) {
+    return this.productionService.getWastageRecords(jobId);
+  }
+
+  @Post('shop-floor/start-stage')
+  startStageEnhanced(@Body() dto: StartStageEnhancedDto, @Req() req: any) {
+    return this.productionService.startStageEnhanced(dto, req.user.userId);
+  }
+
+  @Post('shop-floor/complete-stage')
+  completeStageEnhanced(@Body() dto: CompleteStageEnhancedDto, @Req() req: any) {
+    return this.productionService.completeStageEnhanced(dto, req.user.userId);
+  }
+
+  @Post('shop-floor/sync')
+  syncOfflineActions(@Body() dto: OfflineSyncDto, @Req() req: any) {
+    return this.productionService.syncOfflineActions(dto, req.user.userId);
   }
 }

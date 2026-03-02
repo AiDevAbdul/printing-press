@@ -3,7 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { ProductionJob, ProductionJobStatus } from './entities/production-job.entity';
 import { ProductionStageHistory } from './entities/production-stage-history.entity';
+import { MaterialConsumption, MaterialTransactionType } from './entities/material-consumption.entity';
+import { MachineCounter } from './entities/machine-counter.entity';
+import { WastageRecord } from './entities/wastage-record.entity';
+import { OfflineSyncQueue, SyncStatus } from './entities/offline-sync-queue.entity';
 import { CreateProductionJobDto, UpdateProductionJobDto, UpdateProductionJobStatusDto, StartStageDto, CompleteStageDto, QueryProductionJobsDto } from './dto/production-job.dto';
+import { IssueMaterialDto, ReturnMaterialDto } from './dto/material-consumption.dto';
+import { RecordMachineCounterDto } from './dto/machine-counter.dto';
+import { RecordWastageDto } from './dto/wastage.dto';
+import { StartStageEnhancedDto, CompleteStageEnhancedDto, OfflineSyncDto } from './dto/shop-floor.dto';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class ProductionService {
@@ -12,6 +21,14 @@ export class ProductionService {
     private productionJobsRepository: Repository<ProductionJob>,
     @InjectRepository(ProductionStageHistory)
     private stageHistoryRepository: Repository<ProductionStageHistory>,
+    @InjectRepository(MaterialConsumption)
+    private materialConsumptionRepository: Repository<MaterialConsumption>,
+    @InjectRepository(MachineCounter)
+    private machineCounterRepository: Repository<MachineCounter>,
+    @InjectRepository(WastageRecord)
+    private wastageRecordRepository: Repository<WastageRecord>,
+    @InjectRepository(OfflineSyncQueue)
+    private offlineSyncQueueRepository: Repository<OfflineSyncQueue>,
   ) {}
 
   private generateJobNumber(): string {
@@ -377,5 +394,290 @@ export class ProductionService {
       order: { scheduled_start_date: 'ASC' },
       relations: ['order', 'order.customer', 'assigned_operator'],
     });
+  }
+
+  // Shop Floor Management Methods
+
+  async getMyActiveJobs(operatorId: string): Promise<ProductionJob[]> {
+    return this.productionJobsRepository.find({
+      where: [
+        { assigned_operator: { id: operatorId }, status: ProductionJobStatus.IN_PROGRESS },
+        { assigned_operator: { id: operatorId }, status: ProductionJobStatus.QUEUED },
+      ],
+      relations: ['order', 'order.customer'],
+      order: { queue_position: 'ASC' },
+    });
+  }
+
+  async getJobByQRCode(qrCode: string): Promise<ProductionJob> {
+    // QR code format: JOB-{job_number}
+    const jobNumber = qrCode.replace('JOB-', '');
+    const job = await this.productionJobsRepository.findOne({
+      where: { job_number: jobNumber },
+      relations: ['order', 'order.customer', 'assigned_operator'],
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return job;
+  }
+
+  async generateJobQRCode(id: string): Promise<string> {
+    const job = await this.findOne(id);
+    const qrData = `JOB-${job.job_number}`;
+
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+      return qrCodeDataUrl;
+    } catch (error) {
+      throw new Error('Failed to generate QR code');
+    }
+  }
+
+  async issueMaterial(dto: IssueMaterialDto, userId: string): Promise<MaterialConsumption> {
+    const material = this.materialConsumptionRepository.create({
+      ...dto,
+      transaction_type: MaterialTransactionType.ISSUE,
+      issued_by_id: userId,
+    });
+
+    return this.materialConsumptionRepository.save(material);
+  }
+
+  async returnMaterial(dto: ReturnMaterialDto, userId: string): Promise<MaterialConsumption> {
+    const material = this.materialConsumptionRepository.create({
+      ...dto,
+      transaction_type: MaterialTransactionType.RETURN,
+      issued_by_id: userId,
+    });
+
+    return this.materialConsumptionRepository.save(material);
+  }
+
+  async getMaterialConsumption(jobId: string): Promise<MaterialConsumption[]> {
+    return this.materialConsumptionRepository.find({
+      where: { job_id: jobId },
+      relations: ['issued_by'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async recordMachineCounter(dto: RecordMachineCounterDto, userId: string): Promise<MachineCounter> {
+    const counter = this.machineCounterRepository.create({
+      ...dto,
+      recorded_by_id: userId,
+    });
+
+    return this.machineCounterRepository.save(counter);
+  }
+
+  async getMachineCounters(jobId: string): Promise<MachineCounter[]> {
+    return this.machineCounterRepository.find({
+      where: { job_id: jobId },
+      relations: ['recorded_by'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async recordWastage(dto: RecordWastageDto, userId: string): Promise<WastageRecord> {
+    const wastage = this.wastageRecordRepository.create({
+      ...dto,
+      recorded_by_id: userId,
+    });
+
+    return this.wastageRecordRepository.save(wastage);
+  }
+
+  async getWastageRecords(jobId: string): Promise<WastageRecord[]> {
+    return this.wastageRecordRepository.find({
+      where: { job_id: jobId },
+      relations: ['recorded_by'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async startStageEnhanced(dto: StartStageEnhancedDto, userId: string): Promise<ProductionJob> {
+    const job = await this.findOne(dto.job_id);
+
+    // Complete previous stage if exists
+    if (job.current_stage) {
+      const previousStage = await this.stageHistoryRepository.findOne({
+        where: {
+          job: { id: dto.job_id },
+          stage: job.current_stage,
+          completed_at: null as any,
+        },
+      });
+
+      if (previousStage) {
+        previousStage.completed_at = new Date();
+        const duration = (previousStage.completed_at.getTime() - previousStage.started_at.getTime()) / (1000 * 60);
+        previousStage.duration_minutes = Math.round(duration);
+        await this.stageHistoryRepository.save(previousStage);
+      }
+    }
+
+    // Create new stage history
+    const stageHistory = this.stageHistoryRepository.create({
+      job: { id: dto.job_id } as any,
+      stage: dto.stage,
+      process: dto.process,
+      machine: dto.machine || job.assigned_machine,
+      operator: { id: userId } as any,
+      started_at: new Date(),
+      notes: dto.notes,
+    });
+
+    const savedStageHistory = await this.stageHistoryRepository.save(stageHistory);
+
+    // Record machine counter if provided
+    if (dto.counter_start !== undefined && dto.machine) {
+      await this.recordMachineCounter(
+        {
+          job_id: dto.job_id,
+          stage_history_id: savedStageHistory.id,
+          machine_name: dto.machine,
+          counter_start: dto.counter_start,
+        },
+        userId,
+      );
+    }
+
+    // Update job
+    job.current_stage = dto.stage;
+    job.current_process = dto.process || null;
+    if (dto.machine) {
+      job.assigned_machine = dto.machine;
+    }
+    job.assigned_operator = { id: userId } as any;
+    job.status = ProductionJobStatus.IN_PROGRESS;
+    job.inline_status = this.generateInlineStatus(job);
+
+    const savedJob = await this.productionJobsRepository.save(job);
+    await this.updateSearchableText(savedJob.id);
+
+    return this.findOne(savedJob.id);
+  }
+
+  async completeStageEnhanced(dto: CompleteStageEnhancedDto, userId: string): Promise<ProductionStageHistory> {
+    const stageHistory = await this.stageHistoryRepository.findOne({
+      where: { id: dto.stage_history_id },
+      relations: ['job'],
+    });
+
+    if (!stageHistory) {
+      throw new NotFoundException('Stage history not found');
+    }
+
+    // Complete stage
+    stageHistory.completed_at = new Date();
+    const duration = (stageHistory.completed_at.getTime() - stageHistory.started_at.getTime()) / (1000 * 60);
+    stageHistory.duration_minutes = Math.round(duration);
+    if (dto.notes) {
+      stageHistory.notes = dto.notes;
+    }
+
+    await this.stageHistoryRepository.save(stageHistory);
+
+    // Update machine counter if provided
+    if (dto.counter_end !== undefined) {
+      const counter = await this.machineCounterRepository.findOne({
+        where: { stage_history_id: dto.stage_history_id },
+        order: { created_at: 'DESC' },
+      });
+
+      if (counter) {
+        counter.counter_end = dto.counter_end;
+        counter.good_quantity = dto.good_quantity;
+        counter.waste_quantity = dto.waste_quantity;
+        await this.machineCounterRepository.save(counter);
+      }
+    }
+
+    // Record wastage if provided
+    if (dto.wastage_records && dto.wastage_records.length > 0) {
+      for (const wastageDto of dto.wastage_records) {
+        await this.recordWastage(
+          {
+            ...wastageDto,
+            stage_history_id: dto.stage_history_id,
+          },
+          userId,
+        );
+      }
+    }
+
+    // Update job
+    const job = await this.findOne(stageHistory.job.id);
+    job.current_stage = null;
+    job.current_process = null;
+    job.inline_status = 'In Production - Between Stages';
+
+    await this.productionJobsRepository.save(job);
+    await this.updateSearchableText(job.id);
+
+    return stageHistory;
+  }
+
+  async syncOfflineActions(dto: OfflineSyncDto, userId: string): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    for (const action of dto.actions) {
+      try {
+        // Queue the action
+        const queueItem = this.offlineSyncQueueRepository.create({
+          user_id: userId,
+          action_type: action.action_type,
+          payload: action.payload,
+          status: SyncStatus.PENDING,
+        });
+
+        await this.offlineSyncQueueRepository.save(queueItem);
+
+        // Process the action immediately
+        await this.processOfflineAction(queueItem);
+
+        queueItem.status = SyncStatus.SYNCED;
+        await this.offlineSyncQueueRepository.save(queueItem);
+
+        success++;
+      } catch (error) {
+        failed++;
+        // Log error but continue processing other actions
+        console.error('Failed to sync action:', error);
+      }
+    }
+
+    return { success, failed };
+  }
+
+  private async processOfflineAction(queueItem: OfflineSyncQueue): Promise<void> {
+    const { action_type, payload, user_id } = queueItem;
+
+    switch (action_type) {
+      case 'start_stage':
+        await this.startStageEnhanced(payload, user_id);
+        break;
+      case 'complete_stage':
+        await this.completeStageEnhanced(payload, user_id);
+        break;
+      case 'issue_material':
+        await this.issueMaterial(payload, user_id);
+        break;
+      case 'return_material':
+        await this.returnMaterial(payload, user_id);
+        break;
+      case 'record_wastage':
+        await this.recordWastage(payload, user_id);
+        break;
+      case 'record_counter':
+        await this.recordMachineCounter(payload, user_id);
+        break;
+      default:
+        throw new Error(`Unknown action type: ${action_type}`);
+    }
   }
 }
