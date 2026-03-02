@@ -62,7 +62,7 @@ export class QuotationsService {
       ...pricing,
     });
 
-    const savedQuotation = await this.quotationRepository.save(quotation);
+    const savedQuotation = await this.quotationRepository.save(quotation) as unknown as Quotation;
 
     // Create additional items if provided
     if (createQuotationDto.items && createQuotationDto.items.length > 0) {
@@ -392,8 +392,8 @@ export class QuotationsService {
     // Create order from quotation
     const orderData = {
       customer_id: quotation.customer_id,
-      order_date: dto?.order_date || new Date().toISOString(),
-      delivery_date: dto?.delivery_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      order_date: dto?.order_date ? new Date(dto.order_date) : new Date(),
+      delivery_date: dto?.delivery_date ? new Date(dto.delivery_date) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       product_name: quotation.product_name,
       product_type: quotation.product_type,
       quantity: quotation.quantity,
@@ -403,7 +403,7 @@ export class QuotationsService {
       height: quotation.height,
       dimension_unit: quotation.dimension_unit,
       paper_type: quotation.paper_type,
-      gsm: quotation.gsm,
+      gsm: quotation.gsm?.toString(),
       board_quality: quotation.board_quality,
       color_front: quotation.color_front,
       color_back: quotation.color_back,
@@ -427,7 +427,7 @@ export class QuotationsService {
       pasting_details: quotation.pasting_details,
       ctp_required: quotation.ctp_required,
       ctp_details: quotation.ctp_details,
-      die_type: quotation.die_type,
+      die_type: quotation.die_type as any,
       plate_reference: quotation.plate_reference,
       cylinder_size: quotation.cylinder_size,
       foil_thickness: quotation.foil_thickness,
