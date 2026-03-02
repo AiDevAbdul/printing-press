@@ -4,7 +4,9 @@
       "Bash(cd:*)",
       "Bash(head:*)",
       "Bash(npm run:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)"
     ]
   }
 }
