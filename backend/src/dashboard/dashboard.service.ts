@@ -87,14 +87,6 @@ export class DashboardService {
     };
   }
 
-  async getRecentOrders(limit = 10): Promise<Order[]> {
-    return this.ordersRepository.find({
-      take: limit,
-      order: { created_at: 'DESC' },
-      relations: ['customer', 'created_by'],
-    });
-  }
-
   async getProductionStatus(): Promise<any> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -137,5 +129,39 @@ export class DashboardService {
       .take(10)
       .leftJoinAndSelect('order.customer', 'customer')
       .getMany();
+  }
+
+  async getRevenueTrend(): Promise<{ date: string; revenue: number }[]> {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Get daily revenue from invoices for the last 7 days
+    const dailyRevenue = await this.invoicesRepository
+      .createQueryBuilder('invoice')
+      .select('DATE(invoice.invoice_date)', 'date')
+      .addSelect('SUM(invoice.total_amount)', 'revenue')
+      .where('invoice.invoice_date >= :startDate', { startDate: sevenDaysAgo })
+      .andWhere('invoice.status != :status', { status: InvoiceStatus.CANCELLED })
+      .groupBy('DATE(invoice.invoice_date)')
+      .orderBy('DATE(invoice.invoice_date)', 'ASC')
+      .getRawMany();
+
+    // Create array with all 7 days (fill missing days with 0)
+    const result = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(sevenDaysAgo);
+      date.setDate(sevenDaysAgo.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayData = dailyRevenue.find(d => d.date === dateStr);
+      result.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: dayData ? parseFloat(dayData.revenue) : 0,
+      });
+    }
+
+    return result;
   }
 }

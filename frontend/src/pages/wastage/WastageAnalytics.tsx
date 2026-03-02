@@ -1,31 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { wastageService } from '../../services/wastage.service';
 
 const WastageAnalytics = () => {
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
+  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
 
-  // Mock data for demonstration
-  const wastageByType = [
-    { type: 'Setup Waste', count: 45, cost: 12500 },
-    { type: 'Production Waste', count: 78, cost: 23400 },
-    { type: 'Quality Rejection', count: 32, cost: 18900 },
-    { type: 'Machine Error', count: 23, cost: 15600 },
-    { type: 'Material Defect', count: 15, cost: 8700 },
-    { type: 'Other', count: 12, cost: 4200 },
-  ];
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange]);
 
-  const wastageByStage = [
-    { stage: 'Printing', quantity: 1250, cost: 35000 },
-    { stage: 'Die Cutting', quantity: 890, cost: 22000 },
-    { stage: 'Lamination', quantity: 650, cost: 18000 },
-    { stage: 'UV Coating', quantity: 420, cost: 12000 },
-    { stage: 'Pasting', quantity: 280, cost: 8000 },
-  ];
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const data = await wastageService.getAnalytics(dateRange.startDate, dateRange.endDate);
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Failed to fetch wastage analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const totalWastage = wastageByType.reduce((sum, item) => sum + item.count, 0);
-  const totalCost = wastageByType.reduce((sum, item) => sum + item.cost, 0);
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-gray-500">Loading analytics...</div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-gray-500">No data available</div>
+      </div>
+    );
+  }
+
+  const wastageByType = analytics.wastageByType || [];
+  const wastageByStage = analytics.wastageByStage || [];
+  const totalWastage = analytics.summary?.totalWastage || 0;
+  const totalCost = analytics.summary?.totalCost || 0;
 
   return (
     <div className="p-6">
@@ -45,6 +64,18 @@ const WastageAnalytics = () => {
             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
             className="px-3 py-2 border rounded"
           />
+          <button
+            onClick={() => {
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+              window.open(
+                `${apiUrl}/export/wastage-analytics?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
+                '_blank'
+              );
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Export Excel
+          </button>
         </div>
       </div>
 
@@ -78,55 +109,63 @@ const WastageAnalytics = () => {
       {/* Wastage by Type */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4">Wastage by Type</h3>
-        <div className="space-y-3">
-          {wastageByType.map((item) => (
-            <div key={item.type}>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">{item.type}</span>
-                <span className="text-sm text-gray-600">
-                  {item.count} incidents | ₹{item.cost.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-6 relative">
-                <div
-                  className="bg-red-600 h-6 rounded-full flex items-center justify-end pr-2"
-                  style={{
-                    width: `${(item.count / Math.max(...wastageByType.map((w) => w.count))) * 100}%`,
-                  }}
-                >
-                  <span className="text-xs font-medium text-white">{item.count}</span>
+        {wastageByType.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No wastage data available for this period</p>
+        ) : (
+          <div className="space-y-3">
+            {wastageByType.map((item: any) => (
+              <div key={item.type}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm font-medium">{item.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                  <span className="text-sm text-gray-600">
+                    {item.count} incidents | ₹{item.cost.toLocaleString()}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-6 relative">
+                  <div
+                    className="bg-red-600 h-6 rounded-full flex items-center justify-end pr-2"
+                    style={{
+                      width: `${(item.count / Math.max(...wastageByType.map((w: any) => w.count))) * 100}%`,
+                    }}
+                  >
+                    <span className="text-xs font-medium text-white">{item.count}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Wastage by Stage */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="text-lg font-semibold mb-4">Wastage by Production Stage</h3>
-        <div className="space-y-3">
-          {wastageByStage.map((item) => (
-            <div key={item.stage}>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium">{item.stage}</span>
-                <span className="text-sm text-gray-600">
-                  {item.quantity} units | ₹{item.cost.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-6 relative">
-                <div
-                  className="bg-orange-600 h-6 rounded-full flex items-center justify-end pr-2"
-                  style={{
-                    width: `${(item.quantity / Math.max(...wastageByStage.map((w) => w.quantity))) * 100}%`,
-                  }}
-                >
-                  <span className="text-xs font-medium text-white">{item.quantity}</span>
+        {wastageByStage.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No stage data available for this period</p>
+        ) : (
+          <div className="space-y-3">
+            {wastageByStage.map((item: any) => (
+              <div key={item.stage}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm font-medium">{item.stage}</span>
+                  <span className="text-sm text-gray-600">
+                    {item.quantity} units | ₹{item.cost.toLocaleString()}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-6 relative">
+                  <div
+                    className="bg-orange-600 h-6 rounded-full flex items-center justify-end pr-2"
+                    style={{
+                      width: `${(item.quantity / Math.max(...wastageByStage.map((w: any) => w.quantity))) * 100}%`,
+                    }}
+                  >
+                    <span className="text-xs font-medium text-white">{item.quantity}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cost Analysis */}
@@ -134,9 +173,9 @@ const WastageAnalytics = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Cost Breakdown</h3>
           <div className="space-y-3">
-            {wastageByType.map((item) => (
+            {wastageByType.map((item: any) => (
               <div key={item.type} className="flex justify-between items-center">
-                <span className="text-sm">{item.type}</span>
+                <span className="text-sm">{item.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
                 <div className="flex items-center gap-2">
                   <div className="w-32 bg-gray-200 rounded-full h-4">
                     <div

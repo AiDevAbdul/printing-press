@@ -12,11 +12,6 @@ export class DashboardController {
     return this.dashboardService.getStats();
   }
 
-  @Get('recent-orders')
-  getRecentOrders() {
-    return this.dashboardService.getRecentOrders();
-  }
-
   @Get('production-status')
   getProductionStatus() {
     return this.dashboardService.getProductionStatus();
@@ -25,5 +20,10 @@ export class DashboardController {
   @Get('pending-deliveries')
   getPendingDeliveries() {
     return this.dashboardService.getPendingDeliveries();
+  }
+
+  @Get('revenue-trend')
+  getRevenueTrend() {
+    return this.dashboardService.getRevenueTrend();
   }
 }

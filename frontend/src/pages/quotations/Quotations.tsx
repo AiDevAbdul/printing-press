@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationService, Quotation } from '../../services/quotation.service';
 import QuotationForm from './QuotationForm';
 import QuotationDetails from './QuotationDetails';
+import toast from 'react-hot-toast';
 
 const Quotations = () => {
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -25,6 +26,10 @@ const Quotations = () => {
     mutationFn: quotationService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success('Quotation deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete quotation');
     },
   });
 
@@ -32,6 +37,10 @@ const Quotations = () => {
     mutationFn: quotationService.send,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success('Quotation sent to customer');
+    },
+    onError: () => {
+      toast.error('Failed to send quotation');
     },
   });
 
@@ -39,6 +48,10 @@ const Quotations = () => {
     mutationFn: quotationService.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success('Quotation approved');
+    },
+    onError: () => {
+      toast.error('Failed to approve quotation');
     },
   });
 
@@ -55,19 +68,22 @@ const Quotations = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this quotation?')) {
+    const confirmed = window.confirm('Are you sure you want to delete this quotation?');
+    if (confirmed) {
       await deleteMutation.mutateAsync(id);
     }
   };
 
   const handleSend = async (id: string) => {
-    if (window.confirm('Send this quotation to the customer?')) {
+    const confirmed = window.confirm('Send this quotation to the customer?');
+    if (confirmed) {
       await sendMutation.mutateAsync(id);
     }
   };
 
   const handleApprove = async (id: string) => {
-    if (window.confirm('Approve this quotation?')) {
+    const confirmed = window.confirm('Approve this quotation?');
+    if (confirmed) {
       await approveMutation.mutateAsync(id);
     }
   };

@@ -137,6 +137,16 @@ export class ProductionController {
     return this.productionService.getWastageRecords(jobId);
   }
 
+  @Get('wastage-analytics')
+  getWastageAnalytics(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.productionService.getWastageAnalytics(start, end);
+  }
+
   @Post('shop-floor/start-stage')
   startStageEnhanced(@Body() dto: StartStageEnhancedDto, @Req() req: any) {
     return this.productionService.startStageEnhanced(dto, req.user.userId);

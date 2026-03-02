@@ -13,6 +13,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { QualityModule } from './quality/quality.module';
 import { DispatchModule } from './dispatch/dispatch.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DispatchModule } from './dispatch/dispatch.module';
     DashboardModule,
     QualityModule,
     DispatchModule,
+    ExportModule,
   ],
 })
 export class AppModule {}

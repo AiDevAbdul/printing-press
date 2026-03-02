@@ -498,6 +498,51 @@ export class ProductionService {
     });
   }
 
+  async getWastageAnalytics(startDate: Date, endDate: Date): Promise<any> {
+    // Wastage by type
+    const wastageByType = await this.wastageRecordRepository
+      .createQueryBuilder('wastage')
+      .select('wastage.wastage_type', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(wastage.estimated_cost)', 'cost')
+      .where('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy('wastage.wastage_type')
+      .getRawMany();
+
+    // Wastage by stage
+    const wastageByStage = await this.wastageRecordRepository
+      .createQueryBuilder('wastage')
+      .leftJoin('wastage.stage_history', 'stage_history')
+      .select('stage_history.stage', 'stage')
+      .addSelect('SUM(wastage.quantity)', 'quantity')
+      .addSelect('SUM(wastage.estimated_cost)', 'cost')
+      .where('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy('stage_history.stage')
+      .getRawMany();
+
+    // Calculate totals
+    const totalWastage = wastageByType.reduce((sum, item) => sum + parseInt(item.count), 0);
+    const totalCost = wastageByType.reduce((sum, item) => sum + parseFloat(item.cost || 0), 0);
+
+    return {
+      wastageByType: wastageByType.map(item => ({
+        type: item.type,
+        count: parseInt(item.count),
+        cost: parseFloat(item.cost || 0),
+      })),
+      wastageByStage: wastageByStage.map(item => ({
+        stage: item.stage,
+        quantity: parseInt(item.quantity || 0),
+        cost: parseFloat(item.cost || 0),
+      })),
+      summary: {
+        totalWastage,
+        totalCost,
+        avgCostPerIncident: totalWastage > 0 ? totalCost / totalWastage : 0,
+      },
+    };
+  }
+
   async startStageEnhanced(dto: StartStageEnhancedDto, userId: string): Promise<ProductionJob> {
     const job = await this.findOne(dto.job_id);
 

@@ -466,7 +466,8 @@ export default function Costing() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button
                           onClick={() => {
-                            if (confirm('Are you sure you want to delete this cost?')) {
+                            const confirmed = window.confirm('Are you sure you want to delete this cost?');
+                            if (confirmed) {
                               deleteMutation.mutate(cost.id);
                             }
                           }}

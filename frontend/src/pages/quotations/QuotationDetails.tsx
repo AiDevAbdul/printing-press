@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quotationService, Quotation } from '../../services/quotation.service';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface QuotationDetailsProps {
   quotation: Quotation;
@@ -27,9 +28,12 @@ const QuotationDetails = ({ quotation, onClose }: QuotationDetailsProps) => {
     mutationFn: () => quotationService.convertToOrder(quotation.id, convertData),
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
-      alert(`Successfully converted to order ${order.order_number}`);
+      toast.success(`Successfully converted to order ${order.order_number}`);
       navigate('/orders');
       onClose();
+    },
+    onError: () => {
+      toast.error('Failed to convert quotation to order');
     },
   });
 
@@ -37,7 +41,11 @@ const QuotationDetails = ({ quotation, onClose }: QuotationDetailsProps) => {
     mutationFn: () => quotationService.createRevision(quotation.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success('Revision created successfully');
       onClose();
+    },
+    onError: () => {
+      toast.error('Failed to create revision');
     },
   });
 
@@ -45,7 +53,11 @@ const QuotationDetails = ({ quotation, onClose }: QuotationDetailsProps) => {
     mutationFn: (reason: string) => quotationService.reject(quotation.id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success('Quotation rejected');
       onClose();
+    },
+    onError: () => {
+      toast.error('Failed to reject quotation');
     },
   });
 
@@ -54,7 +66,8 @@ const QuotationDetails = ({ quotation, onClose }: QuotationDetailsProps) => {
   };
 
   const handleRevision = async () => {
-    if (window.confirm('Create a new revision of this quotation?')) {
+    const confirmed = window.confirm('Create a new revision of this quotation?');
+    if (confirmed) {
       await revisionMutation.mutateAsync();
     }
   };

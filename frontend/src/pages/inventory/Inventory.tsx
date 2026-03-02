@@ -128,7 +128,8 @@ export default function Inventory() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this item?')) {
+    const confirmed = window.confirm('Are you sure you want to delete this item?');
+    if (confirmed) {
       deleteMutation.mutate(id);
     }
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 interface Invoice {
@@ -159,13 +160,13 @@ export default function Invoices() {
 
     // Ensure items array is not empty
     if (formData.items.length === 0) {
-      alert('Please select an order first to generate invoice items');
+      toast.error('Please select an order first to generate invoice items');
       return;
     }
 
     // Ensure customer_id is present
     if (!formData.customer_id) {
-      alert('Customer ID is missing. Please select an order with a valid customer.');
+      toast.error('Customer ID is missing. Please select an order with a valid customer.');
       return;
     }
 
