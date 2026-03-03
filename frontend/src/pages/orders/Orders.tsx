@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import OrderFormModal from './OrderFormModal';
 
@@ -170,11 +171,35 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setIsModalOpen(false);
+      toast.success('Order created successfully');
+    },
+    onError: () => {
+      toast.error('Failed to create order');
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const response = await api.patch(`/orders/${orderId}/status`, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order status updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update order status');
     },
   });
 
   const handleFormSubmit = (data: OrderFormData) => {
     createMutation.mutate(data);
+  };
+
+  const handleStatusUpdate = (orderId: string, status: string) => {
+    if (confirm(`Are you sure you want to change the order status to ${status}?`)) {
+      updateStatusMutation.mutate({ orderId, status });
+    }
   };
 
   if (isLoading) {
@@ -288,12 +313,13 @@ export default function Orders() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                     No orders found
                   </td>
                 </tr>
@@ -354,6 +380,40 @@ export default function Orders() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.final_price ? `₹${order.final_price.toLocaleString()}` : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex gap-2">
+                        {order.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleStatusUpdate(order.id, 'approved')}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {order.status === 'approved' && (
+                          <button
+                            onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {(order.status === 'cancelled' || order.status === 'completed' || order.status === 'delivered') && (
+                          <span className="text-xs text-gray-400">No actions</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

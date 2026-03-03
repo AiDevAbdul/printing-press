@@ -18,6 +18,7 @@ const menuGroups = [
     title: 'Production & Operations',
     icon: '🏭',
     cards: [
+      { icon: '📋', title: 'Planning', description: 'Production planning and scheduling', path: '/planning', color: 'bg-blue-500' },
       { icon: '🏭', title: 'Production', description: 'Production job management', path: '/production', color: 'bg-orange-500' },
       { icon: '⚙️', title: 'Shop Floor', description: 'Real-time shop floor monitoring', path: '/shop-floor', color: 'bg-gray-500' },
       { icon: '✓', title: 'Quality', description: 'Quality control and inspections', path: '/quality', color: 'bg-teal-500' },

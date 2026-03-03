@@ -107,8 +107,8 @@ export class QueryProductionJobsDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(ProductionJobStatus)
-  status?: ProductionJobStatus;
+  @IsString()
+  status?: string;  // Changed from ProductionJobStatus enum to string to support comma-separated values
 
   @IsOptional()
   @IsString()

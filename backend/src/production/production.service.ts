@@ -175,9 +175,14 @@ export class ProductionService {
       .leftJoinAndSelect('order.customer', 'customer')
       .leftJoinAndSelect('job.assigned_operator', 'operator');
 
-    // Status filter
+    // Status filter - support multiple statuses separated by comma
     if (queryDto.status) {
-      queryBuilder.andWhere('job.status = :status', { status: queryDto.status });
+      const statuses = queryDto.status.toString().split(',').map(s => s.trim());
+      if (statuses.length > 1) {
+        queryBuilder.andWhere('job.status IN (:...statuses)', { statuses });
+      } else {
+        queryBuilder.andWhere('job.status = :status', { status: queryDto.status });
+      }
     }
 
     // Stage filter

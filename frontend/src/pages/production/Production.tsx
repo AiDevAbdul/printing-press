@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 interface ProductionJob {
@@ -126,6 +127,52 @@ export default function Production() {
         estimated_hours: 0,
         notes: '',
       });
+      toast.success('Production job created successfully');
+    },
+    onError: () => {
+      toast.error('Failed to create production job');
+    },
+  });
+
+  const startJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const response = await api.post(`/production/jobs/${jobId}/start`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      toast.success('Job started successfully');
+    },
+    onError: () => {
+      toast.error('Failed to start job');
+    },
+  });
+
+  const completeJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const response = await api.post(`/production/jobs/${jobId}/complete`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      toast.success('Job completed successfully');
+    },
+    onError: () => {
+      toast.error('Failed to complete job');
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ jobId, status }: { jobId: string; status: string }) => {
+      const response = await api.patch(`/production/jobs/${jobId}/status`, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production'] });
+      toast.success('Job status updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update job status');
     },
   });
 
@@ -199,12 +246,13 @@ export default function Production() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operator</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schedule</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
                     No production jobs found
                   </td>
                 </tr>
@@ -261,6 +309,58 @@ export default function Production() {
                       ) : (
                         '-'
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex gap-2">
+                        {job.status === 'queued' && (
+                          <button
+                            onClick={() => startJobMutation.mutate(job.id)}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            disabled={startJobMutation.isPending}
+                          >
+                            Start
+                          </button>
+                        )}
+                        {job.status === 'in_progress' && (
+                          <>
+                            <button
+                              onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'paused' })}
+                              className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              Pause
+                            </button>
+                            <button
+                              onClick={() => completeJobMutation.mutate(job.id)}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                              disabled={completeJobMutation.isPending}
+                            >
+                              Complete
+                            </button>
+                          </>
+                        )}
+                        {job.status === 'paused' && (
+                          <button
+                            onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'in_progress' })}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            Resume
+                          </button>
+                        )}
+                        {(job.status === 'queued' || job.status === 'in_progress' || job.status === 'paused') && (
+                          <button
+                            onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'cancelled' })}
+                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {(job.status === 'completed' || job.status === 'cancelled') && (
+                          <span className="text-xs text-gray-400">No actions</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

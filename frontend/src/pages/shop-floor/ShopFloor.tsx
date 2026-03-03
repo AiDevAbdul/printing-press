@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { shopFloorService, ProductionJob } from '../../services/shop-floor.service';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
 
 const ShopFloor = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showAllJobs, setShowAllJobs] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -19,10 +21,37 @@ const ShopFloor = () => {
     };
   }, []);
 
-  const { data: jobs, isLoading } = useQuery({
+  const { data: myJobs, isLoading: myJobsLoading, error: myJobsError } = useQuery({
     queryKey: ['my-active-jobs'],
     queryFn: shopFloorService.getMyActiveJobs,
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 10000,
+    enabled: !showAllJobs,
+  });
+
+  const { data: allJobsResponse, isLoading: allJobsLoading, error: allJobsError } = useQuery({
+    queryKey: ['all-active-jobs'],
+    queryFn: async () => {
+      const response = await api.get('/production/jobs', {
+        params: { status: 'in_progress,queued,paused' }
+      });
+      return response.data;
+    },
+    refetchInterval: 10000,
+    enabled: showAllJobs,
+  });
+
+  const jobs = showAllJobs ? (allJobsResponse?.data || []) : (myJobs || []);
+  const isLoading = showAllJobs ? allJobsLoading : myJobsLoading;
+  const error = showAllJobs ? allJobsError : myJobsError;
+
+  // Debug logging
+  console.log('Shop Floor Debug:', {
+    showAllJobs,
+    isLoading,
+    error,
+    jobs,
+    myJobs,
+    allJobsResponse
   });
 
   const getStatusColor = (status: string) => {
@@ -46,15 +75,47 @@ const ShopFloor = () => {
             <span className="text-sm">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
         </div>
-        <p className="text-gray-600">My Active Jobs</p>
+        <div className="flex justify-between items-center">
+          <p className="text-gray-600">{showAllJobs ? 'All Active Jobs' : 'My Active Jobs'}</p>
+          <button
+            onClick={() => setShowAllJobs(!showAllJobs)}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            {showAllJobs ? 'Show My Jobs' : 'Show All Jobs'}
+          </button>
+        </div>
       </div>
 
       {/* Jobs List */}
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+          <p className="font-semibold">Error loading jobs</p>
+          <p className="text-sm mt-1">{error instanceof Error ? error.message : 'Unknown error'}</p>
+          <button
+            onClick={() => setShowAllJobs(!showAllJobs)}
+            className="mt-3 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Try {showAllJobs ? 'My Jobs' : 'All Jobs'}
+          </button>
+        </div>
       ) : !jobs || jobs.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
-          <p className="text-gray-500">No active jobs assigned to you</p>
+          <p className="text-gray-500">
+            {showAllJobs ? 'No active jobs found' : 'No active jobs assigned to you'}
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            {showAllJobs
+              ? 'Create production jobs from the Planning page to see them here.'
+              : 'Jobs must be assigned to you and have status "queued" or "in progress".'}
+          </p>
+          <button
+            onClick={() => setShowAllJobs(!showAllJobs)}
+            className="mt-4 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            {showAllJobs ? 'Show My Jobs' : 'Show All Jobs'}
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -78,7 +139,7 @@ const ShopFloor = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Customer:</span>
-                    <span className="font-medium">{job.order.customer.company_name}</span>
+                    <span className="font-medium">{job.order.customer.company_name || job.order.customer.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Order:</span>
@@ -96,8 +157,14 @@ const ShopFloor = () => {
                       <span className="font-medium">{job.assigned_machine}</span>
                     </div>
                   )}
+                  {job.assigned_operator && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Operator:</span>
+                      <span className="font-medium">{job.assigned_operator.full_name}</span>
+                    </div>
+                  )}
                   <div className="mt-3 pt-3 border-t">
-                    <p className="text-blue-600 font-medium">{job.inline_status}</p>
+                    <p className="text-blue-600 font-medium">{job.inline_status || 'Ready to start'}</p>
                   </div>
                 </div>
               </div>

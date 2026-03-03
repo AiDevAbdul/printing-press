@@ -11,6 +11,7 @@ export interface ProductionJob {
     product_name: string;
     customer: {
       id: string;
+      name: string;
       company_name: string;
     };
   };
@@ -18,6 +19,10 @@ export interface ProductionJob {
   current_stage: string;
   current_process: string;
   assigned_machine: string;
+  assigned_operator?: {
+    id: string;
+    full_name: string;
+  };
   inline_status: string;
   scheduled_start_date: string;
   quantity: number;

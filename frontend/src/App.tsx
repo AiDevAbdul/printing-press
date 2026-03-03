@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Customers from './pages/customers/Customers';
 import Orders from './pages/orders/Orders';
 import Quotations from './pages/quotations/Quotations';
+import Planning from './pages/planning/Planning';
 import Production from './pages/production/Production';
 import Inventory from './pages/inventory/Inventory';
 import Invoices from './pages/invoices/Invoices';
@@ -79,6 +80,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Quotations />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/planning"
+            element={
+              <PrivateRoute>
+                <Planning />
               </PrivateRoute>
             }
           />
