@@ -13,6 +13,10 @@ export interface WorkflowStage {
   pause_duration_minutes: number;
   total_duration_minutes?: number;
   operator_name?: string;
+  operator?: {
+    id: string;
+    full_name: string;
+  };
   machine?: string;
   waste_quantity?: number;
   notes?: string;

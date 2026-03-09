@@ -31,16 +31,16 @@ export function WorkflowStageActions({
   const buttonText = touchOptimized ? 'text-base' : 'text-sm';
 
   const handleStart = async () => {
-    if (!operatorId || !machine) {
-      toast.error('Job must have an assigned operator and machine');
-      return;
-    }
+    // Use stage's operator/machine if job doesn't have them assigned
+    // If neither are available, send undefined and let backend use previous stage's values
+    const effectiveOperatorId = operatorId || stage.operator?.id;
+    const effectiveMachine = machine || stage.machine;
 
     setIsSubmitting(true);
     try {
       await workflowService.startStage(jobId, stage.id, {
-        operator_id: operatorId,
-        machine: machine,
+        operator_id: effectiveOperatorId || '', // Backend will handle if empty
+        machine: effectiveMachine,
       });
       toast.success(`${stage.stage_name} started`);
       onSuccess();
@@ -102,14 +102,19 @@ export function WorkflowStageActions({
 
   // Pending stage - Start button
   if (stage.status === 'pending') {
+    // Use stage's operator/machine if job doesn't have them assigned
+    const effectiveOperatorId = operatorId || stage.operator?.id;
+    const effectiveMachine = machine || stage.machine;
+    const canStartStage = stage.can_start && (effectiveOperatorId || effectiveMachine);
+
     return (
       <button
         onClick={handleStart}
-        disabled={!stage.can_start || !operatorId || !machine || isSubmitting}
+        disabled={!canStartStage || isSubmitting}
         className={`
           w-full ${buttonHeight} px-4 rounded-lg font-medium transition ${buttonText}
           ${
-            stage.can_start && operatorId && machine && !isSubmitting
+            canStartStage && !isSubmitting
               ? 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }
@@ -230,19 +235,72 @@ export function WorkflowStageActions({
     );
   }
 
-  // Paused stage - Resume button
+  // Paused stage - Resume and Complete buttons
   if (stage.status === 'paused') {
+    if (showCompleteForm) {
+      return (
+        <div className="space-y-2">
+          <input
+            type="number"
+            placeholder="Waste Quantity (optional)"
+            value={wasteQuantity}
+            onChange={(e) => setWasteQuantity(e.target.value)}
+            className={`w-full px-3 py-2 border rounded-lg text-sm ${touchOptimized ? 'h-12' : 'h-10'}`}
+          />
+          <textarea
+            placeholder="Notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={`w-full px-3 py-2 border rounded-lg text-sm ${touchOptimized ? 'min-h-[80px]' : 'min-h-[60px]'}`}
+            rows={touchOptimized ? 3 : 2}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowCompleteForm(false);
+                setWasteQuantity('');
+                setNotes('');
+              }}
+              disabled={isSubmitting}
+              className={`flex-1 ${buttonHeight} px-4 rounded-lg font-medium bg-gray-300 text-gray-800 hover:bg-gray-400 transition ${buttonText}`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleComplete}
+              disabled={isSubmitting}
+              className={`flex-1 ${buttonHeight} px-4 rounded-lg font-medium bg-blue-500 text-white hover:bg-blue-600 transition ${buttonText}`}
+            >
+              {isSubmitting ? 'Completing...' : 'Complete'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <button
-        onClick={handleResume}
-        disabled={isSubmitting}
-        className={`
-          w-full ${buttonHeight} px-4 rounded-lg font-medium transition ${buttonText}
-          bg-green-500 text-white hover:bg-green-600 active:bg-green-700
-        `}
-      >
-        {isSubmitting ? 'Resuming...' : '▶ Resume'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleResume}
+          disabled={isSubmitting}
+          className={`
+            flex-1 ${buttonHeight} px-4 rounded-lg font-medium transition ${buttonText}
+            bg-green-500 text-white hover:bg-green-600 active:bg-green-700
+          `}
+        >
+          {isSubmitting ? 'Resuming...' : '▶ Resume'}
+        </button>
+        <button
+          onClick={() => setShowCompleteForm(true)}
+          disabled={isSubmitting}
+          className={`
+            flex-1 ${buttonHeight} px-4 rounded-lg font-medium transition ${buttonText}
+            bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700
+          `}
+        >
+          ✓ Complete
+        </button>
+      </div>
     );
   }
 

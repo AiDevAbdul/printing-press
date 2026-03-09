@@ -50,8 +50,10 @@ export default function WorkflowPage() {
     queryKey: ['workflow', jobId],
     queryFn: () => workflowService.getWorkflowStages(jobId!),
     enabled: !!jobId,
-    staleTime: 30000,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    staleTime: 0, // Always consider data stale so refetch works immediately
+    refetchInterval: 2000, // Auto-refresh every 2 seconds for faster updates
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const handleBack = () => {
@@ -60,7 +62,6 @@ export default function WorkflowPage() {
 
   const handleRefresh = () => {
     refetch();
-    toast.success('Workflow refreshed');
   };
 
   if (isLoading || !jobDetails) {
@@ -195,7 +196,7 @@ export default function WorkflowPage() {
 
         {/* Auto-refresh indicator */}
         <div className="mt-4 text-center text-sm text-gray-500">
-          Auto-refreshing every 5 seconds
+          Auto-refreshing every 2 seconds
         </div>
       </div>
     </div>

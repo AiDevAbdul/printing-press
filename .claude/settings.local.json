@@ -17,7 +17,11 @@
       "Bash(taskkill:*)",
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_fill_form",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_run_code",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_wait_for"
     ]
   }
 }

@@ -771,6 +771,13 @@ export class ProductionService {
       order: { stage_order: 'ASC' },
     });
 
+    console.log('=== getWorkflowStages DEBUG ===');
+    console.log('Job ID:', jobId);
+    console.log('Stages found:', stages.length);
+    stages.forEach((s, i) => {
+      console.log(`Stage ${i + 1}: ${s.stage_name} - Status: ${s.status} - Order: ${s.stage_order}`);
+    });
+
     // Auto-initialize workflow if no stages exist
     if (stages.length === 0) {
       await this.initializeWorkflow(jobId);
@@ -785,15 +792,20 @@ export class ProductionService {
 
     const stagesWithButtons = stages.map((stage, index) => {
       const previousStage = index > 0 ? stages[index - 1] : null;
+      const canStart = stage.status === 'pending' &&
+                   (index === 0 || previousStage?.status === 'completed');
+
+      console.log(`Stage ${index + 1} (${stage.stage_name}): status=${stage.status}, prevStatus=${previousStage?.status}, can_start=${canStart}`);
 
       return {
         ...stage,
-        can_start: stage.status === 'pending' &&
-                   (index === 0 || previousStage?.status === 'completed'),
+        can_start: canStart,
         can_pause: stage.status === 'in_progress',
-        can_complete: stage.status === 'in_progress',
+        can_complete: stage.status === 'in_progress' || stage.status === 'paused',
       };
     });
+
+    console.log('=== END DEBUG ===');
 
     return {
       job_id: jobId,
@@ -812,23 +824,44 @@ export class ProductionService {
       throw new NotFoundException('Stage not found');
     }
 
-    // Validate previous stage is complete
-    if (stage.stage_order > 1) {
-      const prevStage = await this.workflowStagesRepository.findOne({
-        where: {
-          job: { id: jobId },
-          stage_order: stage.stage_order - 1,
-        },
-      });
+    // Validate previous stage is complete (handle non-sequential stage orders)
+    const allStages = await this.workflowStagesRepository.find({
+      where: { job: { id: jobId } },
+      order: { stage_order: 'ASC' },
+      relations: ['operator'],
+    });
 
+    const currentIndex = allStages.findIndex(s => s.id === stageId);
+    if (currentIndex > 0) {
+      const prevStage = allStages[currentIndex - 1];
       if (prevStage && prevStage.status !== 'completed') {
         throw new Error(`Cannot start ${stage.stage_name} until ${prevStage.stage_name} is completed`);
       }
+
+      // If no operator provided or empty, use the previous stage's operator
+      if ((!operatorId || operatorId === '') && prevStage.operator) {
+        operatorId = prevStage.operator.id;
+        console.log(`Using operator from previous stage: ${prevStage.operator_name}`);
+      }
+
+      // If no machine provided, use the previous stage's machine
+      if (!machine && prevStage.machine) {
+        machine = prevStage.machine;
+        console.log(`Using machine from previous stage: ${machine}`);
+      }
+    }
+
+    if (!operatorId || operatorId === '') {
+      throw new Error('Operator is required to start a stage');
     }
 
     const operator = await this.productionJobsRepository.manager.getRepository('User').findOne({
       where: { id: operatorId },
     });
+
+    if (!operator) {
+      throw new Error('Operator not found');
+    }
 
     stage.status = 'in_progress' as any;
     stage.started_at = new Date();
@@ -918,6 +951,9 @@ export class ProductionService {
   }
 
   async completeWorkflowStage(jobId: string, stageId: number, wasteQuantity?: number, notes?: string, qualityApproved?: boolean): Promise<any> {
+    console.log('=== completeWorkflowStage DEBUG ===');
+    console.log('Job ID:', jobId, 'Stage ID:', stageId);
+
     const stage = await this.workflowStagesRepository.findOne({
       where: { id: stageId },
       relations: ['job'],
@@ -927,17 +963,21 @@ export class ProductionService {
       throw new NotFoundException('Stage not found');
     }
 
-    if (stage.status !== 'in_progress') {
-      throw new Error('Can only complete stages that are in progress');
+    console.log('Stage before update:', stage.stage_name, 'Status:', stage.status, 'Order:', stage.stage_order);
+
+    if (stage.status !== 'in_progress' && stage.status !== 'paused') {
+      throw new Error('Can only complete stages that are in progress or paused');
     }
 
     const now = new Date();
-    const elapsed = Math.floor((now.getTime() - stage.started_at.getTime()) / 60000);
-    const totalActive = stage.active_duration_minutes + elapsed;
+    let elapsed = 0;
 
-    if (totalActive < 1) {
-      throw new Error('Stage must run for at least 1 minute before completion');
+    // Calculate elapsed time based on current status
+    if (stage.status === 'in_progress') {
+      elapsed = Math.floor((now.getTime() - stage.started_at.getTime()) / 60000);
     }
+
+    const totalActive = stage.active_duration_minutes + elapsed;
 
     stage.completed_at = now;
     stage.active_duration_minutes = totalActive;
@@ -948,15 +988,37 @@ export class ProductionService {
       stage.notes = notes;
     }
 
-    await this.workflowStagesRepository.save(stage);
+    console.log('Saving stage with status:', stage.status);
+    const savedStage = await this.workflowStagesRepository.save(stage);
+    console.log('Stage saved. Status:', savedStage.status);
 
-    // Find next stage
-    const nextStage = await this.workflowStagesRepository.findOne({
-      where: {
-        job: { id: jobId },
-        stage_order: stage.stage_order + 1,
-      },
+    // Find next stage (with the next higher stage_order, not necessarily +1)
+    const allStages = await this.workflowStagesRepository.find({
+      where: { job: { id: jobId } },
+      order: { stage_order: 'ASC' },
     });
+
+    const nextStage = allStages.find(s => s.stage_order > savedStage.stage_order);
+
+    console.log('Next stage:', nextStage ? `${nextStage.stage_name} (Order: ${nextStage.stage_order})` : 'None');
+
+    // Update job's current_stage
+    const job = await this.findOne(jobId);
+    if (nextStage) {
+      job.current_stage = nextStage.stage_name;
+      console.log('Updated job current_stage to:', nextStage.stage_name);
+    } else {
+      // All stages completed
+      job.current_stage = null;
+      job.status = ProductionJobStatus.COMPLETED;
+      job.actual_completion = now;
+      job.inline_status = 'Completed - Ready for Delivery';
+      console.log('All stages completed');
+    }
+    await this.productionJobsRepository.save(job);
+    await this.updateSearchableText(jobId);
+
+    console.log('=== END completeWorkflowStage DEBUG ===');
 
     return {
       success: true,
