@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import ProductionWorkflow from '../../components/ProductionWorkflow';
+import { ExpandableJobRow } from '../../components/workflow/ExpandableJobRow';
+import { MobileWorkflowModal } from '../../components/workflow/MobileWorkflowModal';
+import { useIsDesktop, useIsMobile } from '../../hooks/useMediaQuery';
 
 interface ProductionJob {
   id: string;
@@ -9,6 +14,7 @@ interface ProductionJob {
   order: {
     order_number: string;
     product_name: string;
+    quantity?: number;
     customer: {
       name: string;
     };
@@ -64,6 +70,8 @@ const statusColors: Record<string, string> = {
 export default function Production() {
   const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
   const [formData, setFormData] = useState<ProductionFormData>({
     order_id: '',
     scheduled_start_date: '',
@@ -75,6 +83,9 @@ export default function Production() {
   });
 
   const queryClient = useQueryClient();
+  const isDesktop = useIsDesktop();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['production', statusFilter],
@@ -134,6 +145,9 @@ export default function Production() {
     },
   });
 
+  // Note: Job-level mutations commented out as workflow is now managed at stage level
+  // Uncomment if needed for mobile fallback or additional job actions
+  /*
   const startJobMutation = useMutation({
     mutationFn: async (jobId: string) => {
       const response = await api.post(`/production/jobs/${jobId}/start`);
@@ -175,6 +189,7 @@ export default function Production() {
       toast.error('Failed to update job status');
     },
   });
+  */
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,131 +251,62 @@ export default function Production() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inline Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operator</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schedule</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                {isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>}
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operator</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
+                {isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Workflow</th>}
+                {!isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={isDesktop ? 9 : 8} className="px-6 py-4 text-center text-gray-500">
                     No production jobs found
                   </td>
                 </tr>
+              ) : isDesktop ? (
+                jobs.map((job) => (
+                  <ExpandableJobRow
+                    key={job.id}
+                    job={{
+                      ...job,
+                      product_name: job.order.product_name,
+                      quantity: job.order.quantity || 0,
+                      operator_name: job.assigned_operator?.full_name,
+                      operator_id: job.assigned_operator?.id,
+                      machine: job.assigned_machine,
+                    }}
+                    isExpanded={false}
+                    onToggle={() => {}}
+                  />
+                ))
               ) : (
                 jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {job.job_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {job.order.order_number}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{job.order.product_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.order.customer.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[job.status]}`}>
+                    <td className="px-4 py-3 text-sm font-medium">{job.job_number}</td>
+                    <td className="px-4 py-3 text-sm">{job.order.order_number}</td>
+                    <td className="px-4 py-3 text-sm">{job.order.product_name}</td>
+                    <td className="px-4 py-3 text-sm">{job.order.quantity || 0}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[job.status]}`}>
                         {job.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {job.inline_status || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.assigned_machine || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.assigned_operator?.full_name || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.scheduled_start_date && job.scheduled_end_date ? (
-                        <div>
-                          <div>{new Date(job.scheduled_start_date).toLocaleDateString()}</div>
-                          <div className="text-xs text-gray-400">
-                            to {new Date(job.scheduled_end_date).toLocaleDateString()}
-                          </div>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.progress_percent !== undefined ? (
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${job.progress_percent}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs">{job.progress_percent}%</span>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex gap-2">
-                        {job.status === 'queued' && (
-                          <button
-                            onClick={() => startJobMutation.mutate(job.id)}
-                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                            disabled={startJobMutation.isPending}
-                          >
-                            Start
-                          </button>
-                        )}
-                        {job.status === 'in_progress' && (
-                          <>
-                            <button
-                              onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'paused' })}
-                              className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-                              disabled={updateStatusMutation.isPending}
-                            >
-                              Pause
-                            </button>
-                            <button
-                              onClick={() => completeJobMutation.mutate(job.id)}
-                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                              disabled={completeJobMutation.isPending}
-                            >
-                              Complete
-                            </button>
-                          </>
-                        )}
-                        {job.status === 'paused' && (
-                          <button
-                            onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'in_progress' })}
-                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            Resume
-                          </button>
-                        )}
-                        {(job.status === 'queued' || job.status === 'in_progress' || job.status === 'paused') && (
-                          <button
-                            onClick={() => updateStatusMutation.mutate({ jobId: job.id, status: 'cancelled' })}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        {(job.status === 'completed' || job.status === 'cancelled') && (
-                          <span className="text-xs text-gray-400">No actions</span>
-                        )}
-                      </div>
+                    <td className="px-4 py-3 text-sm">{job.assigned_operator?.full_name || '-'}</td>
+                    <td className="px-4 py-3 text-sm">{job.assigned_machine || '-'}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => navigate(`/workflow/${job.id}`)}
+                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                      >
+                        Workflow
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -480,6 +426,53 @@ export default function Production() {
           </div>
         </div>
       )}
+
+      {showWorkflowModal && selectedJobId && (() => {
+        const selectedJob = jobs?.find((job: ProductionJob) => job.id === selectedJobId);
+        const currentIndex = jobs.findIndex((job: ProductionJob) => job.id === selectedJobId);
+        const allJobIds = jobs.map((job: ProductionJob) => job.id);
+
+        return isMobile ? (
+          <MobileWorkflowModal
+            jobId={selectedJobId}
+            operatorId={selectedJob?.assigned_operator?.id}
+            operatorName={selectedJob?.assigned_operator?.full_name}
+            machine={selectedJob?.assigned_machine}
+            onClose={() => {
+              setShowWorkflowModal(false);
+              setSelectedJobId(null);
+            }}
+            allJobIds={allJobIds}
+            currentIndex={currentIndex}
+            onNavigate={(index) => {
+              setSelectedJobId(allJobIds[index]);
+            }}
+          />
+        ) : (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Job #{selectedJob?.job_number}</h2>
+                <button
+                  onClick={() => {
+                    setShowWorkflowModal(false);
+                    setSelectedJobId(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <ProductionWorkflow
+                jobId={selectedJobId}
+                operatorName={selectedJob?.assigned_operator?.full_name}
+                machine={selectedJob?.assigned_machine}
+                operatorId={selectedJob?.assigned_operator?.id}
+              />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

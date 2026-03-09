@@ -4,6 +4,7 @@ import { ProductionService } from './production.service';
 import { ProductionController } from './production.controller';
 import { ProductionJob } from './entities/production-job.entity';
 import { ProductionStageHistory } from './entities/production-stage-history.entity';
+import { ProductionWorkflowStage } from './entities/production-workflow-stage.entity';
 import { MaterialConsumption } from './entities/material-consumption.entity';
 import { MachineCounter } from './entities/machine-counter.entity';
 import { WastageRecord } from './entities/wastage-record.entity';
@@ -14,6 +15,7 @@ import { OfflineSyncQueue } from './entities/offline-sync-queue.entity';
     TypeOrmModule.forFeature([
       ProductionJob,
       ProductionStageHistory,
+      ProductionWorkflowStage,
       MaterialConsumption,
       MachineCounter,
       WastageRecord,

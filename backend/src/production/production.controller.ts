@@ -5,6 +5,7 @@ import { IssueMaterialDto, ReturnMaterialDto } from './dto/material-consumption.
 import { RecordMachineCounterDto } from './dto/machine-counter.dto';
 import { RecordWastageDto } from './dto/wastage.dto';
 import { StartStageEnhancedDto, CompleteStageEnhancedDto, OfflineSyncDto } from './dto/shop-floor.dto';
+import { StartWorkflowStageDto, PauseWorkflowStageDto, CompleteWorkflowStageDto, InitializeWorkflowDto } from './dto/workflow.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -30,6 +31,90 @@ export class ProductionController {
   @Get('queue')
   getQueuedJobs() {
     return this.productionService.getQueuedJobs();
+  }
+
+  // Production Workflow Endpoints
+  @Post('workflow/:id/initialize')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER)
+  initializeWorkflow(@Param('id') jobId: string, @Body() dto: InitializeWorkflowDto) {
+    return this.productionService.initializeWorkflow(jobId, dto);
+  }
+
+  @Get('workflow/:id')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  getWorkflowStages(@Param('id') jobId: string) {
+    return this.productionService.getWorkflowStages(jobId);
+  }
+
+  @Get('workflow/batch')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  async getWorkflowBatch(@Query('jobIds') jobIds: string) {
+    const jobIdArray = jobIds.split(',').filter(id => id.trim());
+    const workflows = await Promise.all(
+      jobIdArray.map(async (jobId) => {
+        try {
+          const workflow = await this.productionService.getWorkflowStages(jobId);
+          return { jobId, workflow };
+        } catch (error) {
+          return { jobId, workflow: null };
+        }
+      })
+    );
+
+    const result: Record<string, any> = {};
+    workflows.forEach(({ jobId, workflow }) => {
+      result[jobId] = workflow;
+    });
+
+    return result;
+  }
+
+  @Post('workflow/:id/stages/:stageId/start')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  startWorkflowStage(
+    @Param('id') jobId: string,
+    @Param('stageId') stageId: string,
+    @Body() dto: StartWorkflowStageDto,
+  ) {
+    return this.productionService.startWorkflowStage(
+      jobId,
+      Number(stageId),
+      dto.operator_id,
+      dto.machine,
+      dto.notes,
+    );
+  }
+
+  @Post('workflow/:id/stages/:stageId/pause')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  pauseWorkflowStage(
+    @Param('id') jobId: string,
+    @Param('stageId') stageId: string,
+    @Body() dto: PauseWorkflowStageDto,
+  ) {
+    return this.productionService.pauseWorkflowStage(jobId, Number(stageId), dto.reason);
+  }
+
+  @Post('workflow/:id/stages/:stageId/resume')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  resumeWorkflowStage(@Param('id') jobId: string, @Param('stageId') stageId: string) {
+    return this.productionService.resumeWorkflowStage(jobId, Number(stageId));
+  }
+
+  @Post('workflow/:id/stages/:stageId/complete')
+  @Roles(UserRole.ADMIN, UserRole.PLANNER, UserRole.SALES)
+  completeWorkflowStage(
+    @Param('id') jobId: string,
+    @Param('stageId') stageId: string,
+    @Body() dto: CompleteWorkflowStageDto,
+  ) {
+    return this.productionService.completeWorkflowStage(
+      jobId,
+      Number(stageId),
+      dto.waste_quantity,
+      dto.notes,
+      dto.quality_approved,
+    );
   }
 
   @Get('jobs/:id')

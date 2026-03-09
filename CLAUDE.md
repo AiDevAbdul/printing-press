@@ -31,6 +31,12 @@ quantity: Number(formData.quantity)
 order_date: new Date(formData.order_date).toISOString()
 ```
 
+**ID Types**:
+- User IDs: UUID strings (e.g., "abc-123-def") - NEVER convert to numbers
+- Production Job IDs: UUID strings
+- Order IDs: UUID strings
+- Stage IDs, Workflow Stage IDs: integers
+
 **Response Structure**:
 ```typescript
 const items = response?.data || [];  // Backend returns { data: [], total: 0 }
@@ -44,6 +50,12 @@ const items = response?.data || [];  // Backend returns { data: [], total: 0 }
 **Routing**:
 - Production page route: `/production` (NOT `/production-jobs`)
 - Production API endpoint: `/api/production/jobs` (NOT `/api/production-jobs`)
+
+**Production Workflow**:
+- Workflow stages automatically use operator and machine from job card
+- `operator_id` is a UUID string (NOT a number) - User IDs are UUIDs
+- Workflow component receives: `operatorId: string`, `operatorName: string`, `machine: string`
+- No manual input required per stage - data comes from job assignment
 
 ## Key Features
 

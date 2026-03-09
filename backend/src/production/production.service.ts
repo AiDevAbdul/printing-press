@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { ProductionJob, ProductionJobStatus } from './entities/production-job.entity';
 import { ProductionStageHistory } from './entities/production-stage-history.entity';
+import { ProductionWorkflowStage } from './entities/production-workflow-stage.entity';
 import { MaterialConsumption, MaterialTransactionType } from './entities/material-consumption.entity';
 import { MachineCounter } from './entities/machine-counter.entity';
 import { WastageRecord } from './entities/wastage-record.entity';
@@ -21,6 +22,8 @@ export class ProductionService {
     private productionJobsRepository: Repository<ProductionJob>,
     @InjectRepository(ProductionStageHistory)
     private stageHistoryRepository: Repository<ProductionStageHistory>,
+    @InjectRepository(ProductionWorkflowStage)
+    private workflowStagesRepository: Repository<ProductionWorkflowStage>,
     @InjectRepository(MaterialConsumption)
     private materialConsumptionRepository: Repository<MaterialConsumption>,
     @InjectRepository(MachineCounter)
@@ -729,5 +732,238 @@ export class ProductionService {
       default:
         throw new Error(`Unknown action type: ${action_type}`);
     }
+  }
+
+  // Production Workflow Methods
+
+  async initializeWorkflow(jobId: string, specs?: any): Promise<void> {
+    const allStages = [
+      { name: 'Printing - Cyan', order: 1, required: true },
+      { name: 'Printing - Magenta', order: 2, required: true },
+      { name: 'Printing - Yellow', order: 3, required: true },
+      { name: 'Printing - Black', order: 4, required: true },
+      { name: 'Printing - Pantone', order: 5, required: specs?.has_pantone || false },
+      { name: 'UV/Varnish', order: 6, required: specs?.has_uv_varnish || false },
+      { name: 'Lamination', order: 7, required: specs?.has_lamination || false },
+      { name: 'Sorting', order: 8, required: true },
+      { name: 'Emboss', order: 9, required: specs?.has_emboss || false },
+      { name: 'Dye Cutting', order: 10, required: true },
+      { name: 'Breaking', order: 11, required: true },
+      { name: 'Pasting', order: 12, required: specs?.needs_pasting || false },
+    ];
+
+    const requiredStages = allStages.filter(s => s.required);
+
+    for (const stage of requiredStages) {
+      await this.workflowStagesRepository.save({
+        job: { id: jobId } as any,
+        stage_name: stage.name,
+        stage_order: stage.order,
+        status: 'pending' as any,
+      });
+    }
+  }
+
+  async getWorkflowStages(jobId: string): Promise<any> {
+    let stages = await this.workflowStagesRepository.find({
+      where: { job: { id: jobId } },
+      relations: ['operator'],
+      order: { stage_order: 'ASC' },
+    });
+
+    // Auto-initialize workflow if no stages exist
+    if (stages.length === 0) {
+      await this.initializeWorkflow(jobId);
+      stages = await this.workflowStagesRepository.find({
+        where: { job: { id: jobId } },
+        relations: ['operator'],
+        order: { stage_order: 'ASC' },
+      });
+    }
+
+    const job = await this.findOne(jobId);
+
+    const stagesWithButtons = stages.map((stage, index) => {
+      const previousStage = index > 0 ? stages[index - 1] : null;
+
+      return {
+        ...stage,
+        can_start: stage.status === 'pending' &&
+                   (index === 0 || previousStage?.status === 'completed'),
+        can_pause: stage.status === 'in_progress',
+        can_complete: stage.status === 'in_progress',
+      };
+    });
+
+    return {
+      job_id: jobId,
+      current_stage: job.current_stage,
+      stages: stagesWithButtons,
+    };
+  }
+
+  async startWorkflowStage(jobId: string, stageId: number, operatorId: string, machine?: string, notes?: string): Promise<any> {
+    const stage = await this.workflowStagesRepository.findOne({
+      where: { id: stageId },
+      relations: ['job', 'operator'],
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Stage not found');
+    }
+
+    // Validate previous stage is complete
+    if (stage.stage_order > 1) {
+      const prevStage = await this.workflowStagesRepository.findOne({
+        where: {
+          job: { id: jobId },
+          stage_order: stage.stage_order - 1,
+        },
+      });
+
+      if (prevStage && prevStage.status !== 'completed') {
+        throw new Error(`Cannot start ${stage.stage_name} until ${prevStage.stage_name} is completed`);
+      }
+    }
+
+    const operator = await this.productionJobsRepository.manager.getRepository('User').findOne({
+      where: { id: operatorId },
+    });
+
+    stage.status = 'in_progress' as any;
+    stage.started_at = new Date();
+    stage.operator = operator as any;
+    stage.operator_name = operator?.full_name || '';
+    stage.machine = machine || stage.machine;
+    stage.notes = notes || stage.notes;
+
+    await this.workflowStagesRepository.save(stage);
+
+    // Update job
+    const job = await this.findOne(jobId);
+    job.current_stage = stage.stage_name;
+    job.assigned_machine = machine || job.assigned_machine;
+    job.status = ProductionJobStatus.IN_PROGRESS;
+    await this.productionJobsRepository.save(job);
+
+    return {
+      success: true,
+      stage_id: stage.id,
+      started_at: stage.started_at,
+      status: stage.status,
+    };
+  }
+
+  async pauseWorkflowStage(jobId: string, stageId: number, reason?: string): Promise<any> {
+    const stage = await this.workflowStagesRepository.findOne({
+      where: { id: stageId },
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Stage not found');
+    }
+
+    if (stage.status !== 'in_progress') {
+      throw new Error('Can only pause stages that are in progress');
+    }
+
+    const now = new Date();
+    const elapsed = Math.floor((now.getTime() - stage.started_at.getTime()) / 60000);
+
+    stage.paused_at = now;
+    stage.active_duration_minutes += elapsed;
+    stage.status = 'paused' as any;
+    stage.pause_reason = reason;
+
+    await this.workflowStagesRepository.save(stage);
+
+    return {
+      success: true,
+      paused_at: stage.paused_at,
+      active_duration_minutes: stage.active_duration_minutes,
+      status: stage.status,
+    };
+  }
+
+  async resumeWorkflowStage(jobId: string, stageId: number): Promise<any> {
+    const stage = await this.workflowStagesRepository.findOne({
+      where: { id: stageId },
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Stage not found');
+    }
+
+    if (stage.status !== 'paused') {
+      throw new Error('Can only resume paused stages');
+    }
+
+    const now = new Date();
+    if (stage.paused_at) {
+      const pauseDuration = Math.floor((now.getTime() - stage.paused_at.getTime()) / 60000);
+      stage.pause_duration_minutes += pauseDuration;
+    }
+
+    stage.resumed_at = now;
+    stage.status = 'in_progress' as any;
+    stage.started_at = now; // Reset start time for duration calculation
+
+    await this.workflowStagesRepository.save(stage);
+
+    return {
+      success: true,
+      resumed_at: stage.resumed_at,
+      status: stage.status,
+    };
+  }
+
+  async completeWorkflowStage(jobId: string, stageId: number, wasteQuantity?: number, notes?: string, qualityApproved?: boolean): Promise<any> {
+    const stage = await this.workflowStagesRepository.findOne({
+      where: { id: stageId },
+      relations: ['job'],
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Stage not found');
+    }
+
+    if (stage.status !== 'in_progress') {
+      throw new Error('Can only complete stages that are in progress');
+    }
+
+    const now = new Date();
+    const elapsed = Math.floor((now.getTime() - stage.started_at.getTime()) / 60000);
+    const totalActive = stage.active_duration_minutes + elapsed;
+
+    if (totalActive < 1) {
+      throw new Error('Stage must run for at least 1 minute before completion');
+    }
+
+    stage.completed_at = now;
+    stage.active_duration_minutes = totalActive;
+    stage.total_duration_minutes = totalActive + stage.pause_duration_minutes;
+    stage.status = 'completed' as any;
+    stage.waste_quantity = wasteQuantity;
+    if (notes) {
+      stage.notes = notes;
+    }
+
+    await this.workflowStagesRepository.save(stage);
+
+    // Find next stage
+    const nextStage = await this.workflowStagesRepository.findOne({
+      where: {
+        job: { id: jobId },
+        stage_order: stage.stage_order + 1,
+      },
+    });
+
+    return {
+      success: true,
+      completed_at: stage.completed_at,
+      total_duration_minutes: stage.total_duration_minutes,
+      next_stage: nextStage?.stage_name,
+      status: stage.status,
+    };
   }
 }

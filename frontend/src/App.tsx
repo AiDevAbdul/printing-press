@@ -21,6 +21,7 @@ import IssueMaterial from './pages/shop-floor/IssueMaterial';
 import Quality from './pages/quality/Quality';
 import Dispatch from './pages/dispatch/Dispatch';
 import WastageAnalytics from './pages/wastage/WastageAnalytics';
+import WorkflowPage from './pages/workflow/WorkflowPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,6 +97,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Production />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/workflow/:jobId"
+            element={
+              <PrivateRoute>
+                <WorkflowPage />
               </PrivateRoute>
             }
           />

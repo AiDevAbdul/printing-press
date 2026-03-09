@@ -9,9 +9,8 @@ interface QuotationFormProps {
 }
 
 const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreateQuotationDto>>({
-    quotation_date: new Date().toISOString().split('T')[0],
+    quotation_date: new Date().toISOString().split('T')[0], // Keep as YYYY-MM-DD for date input
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     product_type: 'cpp_carton',
     unit: 'pcs',
@@ -22,6 +21,15 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
     profit_margin_percent: 20,
     discount_percent: 0,
     tax_percent: 18,
+    pantone_p1: false,
+    pantone_p2: false,
+    pantone_p3: false,
+    pantone_p4: false,
+    embossing: false,
+    foiling: false,
+    die_cutting: false,
+    pasting: false,
+    ctp_required: false,
     ...quotation,
   });
   const [pricing, setPricing] = useState<PricingBreakdown | null>(null);
@@ -89,13 +97,51 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Properly format data with type coercion
+    const submitData: any = {
+      ...formData,
+      // Convert dates to ISO strings
+      quotation_date: formData.quotation_date ? new Date(formData.quotation_date).toISOString() : undefined,
+      valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : undefined,
+      // Ensure numbers are numbers, not strings
+      quantity: formData.quantity ? Number(formData.quantity) : undefined,
+      length: formData.length ? Number(formData.length) : undefined,
+      width: formData.width ? Number(formData.width) : undefined,
+      height: formData.height ? Number(formData.height) : undefined,
+      gsm: formData.gsm ? Number(formData.gsm) : undefined,
+      color_front: formData.color_front !== undefined ? Number(formData.color_front) : 0,
+      color_back: formData.color_back !== undefined ? Number(formData.color_back) : 0,
+      cylinder_size: formData.cylinder_size ? Number(formData.cylinder_size) : undefined,
+      foil_thickness: formData.foil_thickness ? Number(formData.foil_thickness) : undefined,
+      profit_margin_percent: formData.profit_margin_percent !== undefined ? Number(formData.profit_margin_percent) : 20,
+      discount_percent: formData.discount_percent !== undefined ? Number(formData.discount_percent) : 0,
+      tax_percent: formData.tax_percent !== undefined ? Number(formData.tax_percent) : 18,
+      // Ensure booleans are booleans
+      pantone_p1: Boolean(formData.pantone_p1),
+      pantone_p2: Boolean(formData.pantone_p2),
+      pantone_p3: Boolean(formData.pantone_p3),
+      pantone_p4: Boolean(formData.pantone_p4),
+      embossing: Boolean(formData.embossing),
+      foiling: Boolean(formData.foiling),
+      die_cutting: Boolean(formData.die_cutting),
+      pasting: Boolean(formData.pasting),
+      ctp_required: Boolean(formData.ctp_required),
+    };
+
+    // Remove undefined values
+    Object.keys(submitData).forEach(key => {
+      if (submitData[key] === undefined) {
+        delete submitData[key];
+      }
+    });
+
     if (quotation?.id) {
       await updateMutation.mutateAsync({
         id: quotation.id,
-        data: formData as CreateQuotationDto,
+        data: submitData,
       });
     } else {
-      await createMutation.mutateAsync(formData as CreateQuotationDto);
+      await createMutation.mutateAsync(submitData);
     }
   };
 
@@ -105,17 +151,9 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
 
   const customers = customersData?.data || [];
 
-  const steps = [
-    { id: 1, name: 'Basic Info' },
-    { id: 2, name: 'Product Details' },
-    { id: 3, name: 'Specifications' },
-    { id: 4, name: 'Finishing' },
-    { id: 5, name: 'Pricing & Review' },
-  ];
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl m-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">
@@ -128,35 +166,13 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
               ✕
             </button>
           </div>
-
-          {/* Step Indicator */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                      currentStep >= step.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {step.id}
-                  </div>
-                  <span className="ml-2 text-sm font-medium">{step.name}</span>
-                  {index < steps.length - 1 && (
-                    <div className="w-12 h-1 mx-4 bg-gray-200"></div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            {/* Step 1: Basic Info */}
-            {currentStep === 1 && (
+          <div className="p-6 space-y-6">
+            {/* Basic Info Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Basic Information</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -205,10 +221,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Step 2: Product Details */}
-            {currentStep === 2 && (
+            {/* Product Details Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Product Details</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -309,10 +326,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Step 3: Specifications */}
-            {currentStep === 3 && (
+            {/* Specifications Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Specifications</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -410,10 +428,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   </label>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Step 4: Finishing */}
-            {currentStep === 4 && (
+            {/* Finishing Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Finishing Options</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -506,10 +525,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   </label>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Step 5: Pricing & Review */}
-            {currentStep === 5 && (
+            {/* Pricing Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Pricing & Review</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -618,51 +638,30 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   />
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200 flex justify-between">
+          <div className="p-6 border-t border-gray-200 flex justify-end space-x-2">
             <button
               type="button"
-              onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-              disabled={currentStep === 1}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
             >
-              Previous
+              Cancel
             </button>
 
-            <div className="space-x-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-
-              {currentStep < 5 ? (
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(Math.min(5, currentStep + 1))}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : quotation
-                    ? 'Update Quotation'
-                    : 'Create Quotation'}
-                </button>
-              )}
-            </div>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : quotation
+                ? 'Update Quotation'
+                : 'Create Quotation'}
+            </button>
           </div>
         </form>
       </div>

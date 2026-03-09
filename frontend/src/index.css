@@ -21,3 +21,17 @@ code {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+/* Custom animations for workflow */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
