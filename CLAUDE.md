@@ -52,10 +52,12 @@ const items = response?.data || [];  // Backend returns { data: [], total: 0 }
 - Production API endpoint: `/api/production/jobs` (NOT `/api/production-jobs`)
 
 **Production Workflow**:
-- Workflow stages automatically use operator and machine from job card
+- Workflow stages have **non-sequential orders** (1,2,3,4,8,10,11) due to optional stages
+- Backend automatically **inherits operator and machine** from previous completed stage if not assigned
 - `operator_id` is a UUID string (NOT a number) - User IDs are UUIDs
 - Workflow component receives: `operatorId: string`, `operatorName: string`, `machine: string`
-- No manual input required per stage - data comes from job assignment
+- Stage progression uses `stage_order` comparison, NOT `stage_order + 1` (handles gaps)
+- Frontend sends empty string for operator_id if not available - backend handles inheritance
 
 ## Key Features
 
@@ -84,7 +86,7 @@ const items = response?.data || [];  // Backend returns { data: [], total: 0 }
 - **Architecture**: `docs/ARCHITECTURE.md` - System architecture and design
 - **API Conventions**: `docs/api-conventions.md` - DTO validation, type coercion, response structures
 - **Domain Knowledge**: `docs/domain-knowledge.md` - Product types, machines, printing terminology
-- **Production Workflow**: `docs/production-workflow.md` - Queue management, stage tracking, auto-generation rules
+- **Workflow Guide**: `docs/workflow-guide.md` - Complete workflow guide with stage progression, operator inheritance, troubleshooting
 - **Troubleshooting**: `docs/troubleshooting.md` - Common errors and solutions
 
 ### Module-Specific Documentation
