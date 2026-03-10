@@ -211,15 +211,15 @@ export class CostingService {
     if (order.color_p3) specialColors.push(order.color_p3);
     if (order.color_p4) specialColors.push(order.color_p4);
 
-    const hasCMYK = order.color_cmyk ? true : false;
+    const hasCMYK = (order.color_cyan || order.color_magenta || order.color_yellow || order.color_black) ? true : false;
     const specialColorsCount = specialColors.length;
 
     // Calculate costs
     const materialCost = this.calculateMaterialCost(length, width, gsm, quantity, config);
     const printingCosts = this.calculatePrintingCost(hasCMYK, specialColorsCount, quantity, config);
 
-    const uvType = order.varnish_type || 'none';
-    const hasLamination = order.lamination_type && order.lamination_type !== 'none';
+    const uvType = (order.varnish_type && order.varnish_type.length > 0) ? order.varnish_type[0] : 'none';
+    const hasLamination = order.lamination_type && order.lamination_type.length > 0;
     const hasEmbossing = order.uv_emboss_details ? true : false;
 
     const finishingCosts = this.calculateFinishingCosts(
@@ -465,6 +465,16 @@ export class CostingService {
     if (invoice.balance_amount <= 0) {
       invoice.status = InvoiceStatus.PAID;
     }
+
+    return this.invoicesRepository.save(invoice);
+  }
+
+  async markInvoiceAsPaid(id: string): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(id);
+
+    invoice.paid_amount = invoice.total_amount;
+    invoice.balance_amount = 0;
+    invoice.status = InvoiceStatus.PAID;
 
     return this.invoicesRepository.save(invoice);
   }

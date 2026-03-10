@@ -153,6 +153,12 @@ export class Order {
   card_size: string;
 
   @Column({ nullable: true })
+  card_width: string;
+
+  @Column({ nullable: true })
+  card_length: string;
+
+  @Column({ nullable: true })
   strength: string;
 
   @Column({ nullable: true })
@@ -160,7 +166,16 @@ export class Order {
 
   // Color Details
   @Column({ nullable: true })
-  color_cmyk: string;
+  color_cyan: string;
+
+  @Column({ nullable: true })
+  color_magenta: string;
+
+  @Column({ nullable: true })
+  color_yellow: string;
+
+  @Column({ nullable: true })
+  color_black: string;
 
   @Column({ nullable: true })
   color_p1: string;
@@ -175,23 +190,15 @@ export class Order {
   color_p4: string;
 
   // Varnish Details
-  @Column({
-    type: 'enum',
-    enum: VarnishType,
-    nullable: true,
-  })
-  varnish_type: VarnishType;
+  @Column({ type: 'simple-array', nullable: true })
+  varnish_type: string[];
 
   @Column({ type: 'text', nullable: true })
   varnish_details: string;
 
   // Lamination
-  @Column({
-    type: 'enum',
-    enum: LaminationType,
-    nullable: true,
-  })
-  lamination_type: LaminationType;
+  @Column({ type: 'simple-array', nullable: true })
+  lamination_type: string[];
 
   @Column({ nullable: true })
   lamination_size: string;

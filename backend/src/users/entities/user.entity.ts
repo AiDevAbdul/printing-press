@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -6,6 +6,9 @@ export enum UserRole {
   PLANNER = 'planner',
   ACCOUNTS = 'accounts',
   INVENTORY = 'inventory',
+  QA_MANAGER = 'qa_manager',
+  OPERATOR = 'operator',
+  ANALYST = 'analyst',
 }
 
 @Entity('users')
@@ -28,6 +31,37 @@ export class User {
     default: UserRole.SALES,
   })
   role: UserRole;
+
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ nullable: true })
+  department: string;
+
+  @Column({ type: 'text', nullable: true })
+  bio: string;
+
+  @Column({ nullable: true })
+  avatar_url: string;
+
+  @Column({ type: 'jsonb', default: [] })
+  system_access: string[];
+
+  @Column({ type: 'jsonb', default: {} })
+  partial_access: Record<string, string[]>;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'substitute_user_id' })
+  substitute_user: User;
+
+  @Column({ type: 'date', nullable: true })
+  substitute_start_date: Date;
+
+  @Column({ type: 'date', nullable: true })
+  substitute_end_date: Date;
+
+  @Column({ type: 'text', nullable: true })
+  substitute_reason: string;
 
   @Column({ default: true })
   is_active: boolean;

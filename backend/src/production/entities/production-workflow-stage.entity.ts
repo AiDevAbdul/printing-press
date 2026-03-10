@@ -75,6 +75,26 @@ export class ProductionWorkflowStage {
   @Column({ type: 'varchar', length: 255, nullable: true })
   pause_reason: string;
 
+  // QA Approval fields
+  @Column({ type: 'boolean', default: true })
+  qa_approval_required: boolean;
+
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  qa_approval_status: string;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'qa_approved_by' })
+  qa_approved_by_user: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  qa_approved_by: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  qa_approved_at: Date;
+
+  @Column({ type: 'text', nullable: true })
+  qa_rejection_reason: string;
+
   // Metadata
   @CreateDateColumn()
   created_at: Date;

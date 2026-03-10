@@ -14,6 +14,9 @@ import { QuotationsModule } from './quotations/quotations.module';
 import { QualityModule } from './quality/quality.module';
 import { DispatchModule } from './dispatch/dispatch.module';
 import { ExportModule } from './export/export.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ActivityLogModule } from './activity-log/activity-log.module';
+import { ApprovalsModule } from './approvals/approvals.module';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { ExportModule } from './export/export.module';
     QualityModule,
     DispatchModule,
     ExportModule,
+    NotificationsModule,
+    ActivityLogModule,
+    ApprovalsModule,
   ],
 })
 export class AppModule {}

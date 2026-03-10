@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Grid3x3, Kanban, X } from 'lucide-react';
+import { Grid3x3, Kanban } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import OrderFormModal from './OrderFormModal';
+import OrderDetailsModal from '../../components/orders/OrderDetailsModal';
 import { OrdersGrid } from './OrdersGrid';
 import { OrdersKanban } from './OrdersKanban';
 
@@ -352,69 +353,20 @@ export default function Orders() {
         error={createMutation.isError}
       />
 
-      {showOrderDetails && selectedOrderId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Order Details</h2>
-              <button
-                onClick={() => {
-                  setShowOrderDetails(false);
-                  setSelectedOrderId(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-6">
-              {(() => {
-                const order = orders.find((o: any) => o.id === selectedOrderId);
-                if (!order) return <p>Order not found</p>;
+      {showOrderDetails && selectedOrderId && (() => {
+        const order = orders.find((o: any) => o.id === selectedOrderId);
+        if (!order) return null;
 
-                return (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Order Number</p>
-                        <p className="text-lg font-semibold">{order.order_number}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Status</p>
-                        <p className="text-lg font-semibold capitalize">{order.status}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Customer</p>
-                        <p className="text-lg font-semibold">{order.customer?.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Product</p>
-                        <p className="text-lg font-semibold">{order.product_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Quantity</p>
-                        <p className="text-lg font-semibold">{order.quantity} {order.unit}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Delivery Date</p>
-                        <p className="text-lg font-semibold">{new Date(order.delivery_date).toLocaleDateString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Priority</p>
-                        <p className="text-lg font-semibold capitalize">{order.priority}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <p className="text-lg font-semibold">₹{order.final_price?.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
+        return (
+          <OrderDetailsModal
+            order={order}
+            onClose={() => {
+              setShowOrderDetails(false);
+              setSelectedOrderId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

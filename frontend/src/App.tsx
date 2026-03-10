@@ -25,6 +25,9 @@ const Quality = lazy(() => import('./pages/quality/Quality'));
 const Dispatch = lazy(() => import('./pages/dispatch/Dispatch'));
 const WastageAnalytics = lazy(() => import('./pages/wastage/WastageAnalytics'));
 const WorkflowPage = lazy(() => import('./pages/workflow/WorkflowPage'));
+const UserProfile = lazy(() => import('./pages/profile/UserProfile'));
+const UserManagement = lazy(() => import('./pages/users/UserManagement'));
+const QAApproval = lazy(() => import('./pages/qa/QAApproval'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -218,6 +221,38 @@ function App() {
             element={
               <PrivateRoute>
                 <WastageAnalytics />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <UserProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile/:userId"
+            element={
+              <PrivateRoute>
+                <UserProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/user-management"
+            element={
+              <PrivateRoute>
+                <UserManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/qa-approval"
+            element={
+              <PrivateRoute>
+                <QAApproval />
               </PrivateRoute>
             }
           />

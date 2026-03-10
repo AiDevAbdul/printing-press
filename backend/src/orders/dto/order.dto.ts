@@ -95,6 +95,14 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
+  card_width?: string;
+
+  @IsOptional()
+  @IsString()
+  card_length?: string;
+
+  @IsOptional()
+  @IsString()
   strength?: string;
 
   @IsOptional()
@@ -104,7 +112,19 @@ export class CreateOrderDto {
   // Color Details
   @IsOptional()
   @IsString()
-  color_cmyk?: string;
+  color_cyan?: string;
+
+  @IsOptional()
+  @IsString()
+  color_magenta?: string;
+
+  @IsOptional()
+  @IsString()
+  color_yellow?: string;
+
+  @IsOptional()
+  @IsString()
+  color_black?: string;
 
   @IsOptional()
   @IsString()
@@ -124,8 +144,8 @@ export class CreateOrderDto {
 
   // Varnish Details
   @IsOptional()
-  @IsEnum(VarnishType)
-  varnish_type?: VarnishType;
+  @IsString({ each: true })
+  varnish_type?: string[];
 
   @IsOptional()
   @IsString()
@@ -133,8 +153,8 @@ export class CreateOrderDto {
 
   // Lamination
   @IsOptional()
-  @IsEnum(LaminationType)
-  lamination_type?: LaminationType;
+  @IsString({ each: true })
+  lamination_type?: string[];
 
   @IsOptional()
   @IsString()
@@ -342,6 +362,14 @@ export class UpdateOrderDto {
 
   @IsOptional()
   @IsString()
+  card_width?: string;
+
+  @IsOptional()
+  @IsString()
+  card_length?: string;
+
+  @IsOptional()
+  @IsString()
   strength?: string;
 
   @IsOptional()
@@ -351,7 +379,19 @@ export class UpdateOrderDto {
   // Color Details
   @IsOptional()
   @IsString()
-  color_cmyk?: string;
+  color_cyan?: string;
+
+  @IsOptional()
+  @IsString()
+  color_magenta?: string;
+
+  @IsOptional()
+  @IsString()
+  color_yellow?: string;
+
+  @IsOptional()
+  @IsString()
+  color_black?: string;
 
   @IsOptional()
   @IsString()
@@ -371,8 +411,8 @@ export class UpdateOrderDto {
 
   // Varnish Details
   @IsOptional()
-  @IsEnum(VarnishType)
-  varnish_type?: VarnishType;
+  @IsString({ each: true })
+  varnish_type?: string[];
 
   @IsOptional()
   @IsString()
@@ -380,8 +420,8 @@ export class UpdateOrderDto {
 
   // Lamination
   @IsOptional()
-  @IsEnum(LaminationType)
-  lamination_type?: LaminationType;
+  @IsString({ each: true })
+  lamination_type?: string[];
 
   @IsOptional()
   @IsString()

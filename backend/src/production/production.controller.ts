@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
 import { ProductionService } from './production.service';
+import { WorkflowApprovalService } from './workflow-approval.service';
 import { CreateProductionJobDto, UpdateProductionJobDto, UpdateProductionJobStatusDto, StartStageDto, CompleteStageDto, QueryProductionJobsDto } from './dto/production-job.dto';
 import { IssueMaterialDto, ReturnMaterialDto } from './dto/material-consumption.dto';
 import { RecordMachineCounterDto } from './dto/machine-counter.dto';
@@ -11,11 +12,15 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { ProductionJobStatus } from './entities/production-job.entity';
+import { BadRequestException } from '@nestjs/common';
 
-@Controller('production')
+@Controller('api/production')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductionController {
-  constructor(private readonly productionService: ProductionService) {}
+  constructor(
+    private readonly productionService: ProductionService,
+    private readonly workflowApprovalService: WorkflowApprovalService,
+  ) {}
 
   @Post('jobs')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)

@@ -10,6 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { InvoicesGrid } from './InvoicesGrid';
+import { InvoiceView } from '../../components/invoices/InvoiceView';
 
 interface Invoice {
   id: string;
@@ -77,6 +78,7 @@ interface InvoiceFormData {
 export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [formData, setFormData] = useState<InvoiceFormData>({
     order_id: '',
     customer_id: '',
@@ -130,6 +132,7 @@ export default function Invoices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Invoice created successfully');
       setIsModalOpen(false);
       setFormData({
         order_id: '',
@@ -152,6 +155,23 @@ export default function Invoices() {
     onError: (error: any) => {
       console.error('Invoice creation error:', error.response?.data || error);
       console.error('Error messages:', error.response?.data?.message);
+      toast.error('Failed to create invoice');
+    },
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const response = await api.patch(`/invoices/${invoiceId}/mark-paid`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Invoice marked as paid');
+      setSelectedInvoice(null);
+    },
+    onError: (error: any) => {
+      console.error('Mark paid error:', error.response?.data || error);
+      toast.error('Failed to mark invoice as paid');
     },
   });
 
@@ -297,10 +317,24 @@ export default function Invoices() {
           }}
         />
       ) : (
-        <InvoicesGrid invoices={invoices} isLoading={isLoading} />
+        <InvoicesGrid
+          invoices={invoices}
+          isLoading={isLoading}
+          onInvoiceClick={(invoice) => setSelectedInvoice(invoice)}
+        />
       )}
 
-      {/* Modal */}
+      {/* Invoice View Modal */}
+      {selectedInvoice && (
+        <InvoiceView
+          invoice={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
+          onMarkPaid={(invoiceId) => markPaidMutation.mutate(invoiceId)}
+          isMarkingPaid={markPaidMutation.isPending}
+        />
+      )}
+
+      {/* Create Invoice Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

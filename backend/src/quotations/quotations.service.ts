@@ -389,7 +389,7 @@ export class QuotationsService {
       throw new BadRequestException('Quotation already converted to order');
     }
 
-    // Create order from quotation
+    // Create order from quotation - map quotation fields to order fields
     const orderData = {
       customer_id: quotation.customer_id,
       order_date: dto?.order_date ? new Date(dto.order_date) : new Date(),
@@ -398,42 +398,42 @@ export class QuotationsService {
       product_type: quotation.product_type,
       quantity: quotation.quantity,
       unit: quotation.unit,
-      length: quotation.length,
-      width: quotation.width,
-      height: quotation.height,
-      dimension_unit: quotation.dimension_unit,
-      paper_type: quotation.paper_type,
+      // Map quotation dimensions to order dimensions
+      size_length: quotation.length,
+      size_width: quotation.width,
+      size_unit: quotation.dimension_unit || 'mm',
+      // Map quotation material fields to order fields
+      substrate: quotation.paper_type,
       gsm: quotation.gsm?.toString(),
-      board_quality: quotation.board_quality,
-      color_front: quotation.color_front,
-      color_back: quotation.color_back,
-      pantone_p1: quotation.pantone_p1,
-      pantone_p1_code: quotation.pantone_p1_code,
-      pantone_p2: quotation.pantone_p2,
-      pantone_p2_code: quotation.pantone_p2_code,
-      pantone_p3: quotation.pantone_p3,
-      pantone_p3_code: quotation.pantone_p3_code,
-      pantone_p4: quotation.pantone_p4,
-      pantone_p4_code: quotation.pantone_p4_code,
-      varnish_type: quotation.varnish_type,
-      lamination_type: quotation.lamination_type,
-      embossing: quotation.embossing,
-      embossing_details: quotation.embossing_details,
-      foiling: quotation.foiling,
-      foiling_details: quotation.foiling_details,
-      die_cutting: quotation.die_cutting,
-      die_cutting_details: quotation.die_cutting_details,
-      pasting: quotation.pasting,
-      pasting_details: quotation.pasting_details,
-      ctp_required: quotation.ctp_required,
-      ctp_details: quotation.ctp_details,
+      // Map color fields - quotation uses color_front/back, order uses CMYK + Pantone
+      colors: quotation.color_front && quotation.color_back
+        ? `${quotation.color_front}/${quotation.color_back}`
+        : undefined,
+      color_cyan: quotation.color_front ? '100' : undefined,
+      color_magenta: quotation.color_front ? '100' : undefined,
+      color_yellow: quotation.color_front ? '100' : undefined,
+      color_black: quotation.color_front ? '100' : undefined,
+      color_p1: quotation.pantone_p1_code,
+      color_p2: quotation.pantone_p2_code,
+      color_p3: quotation.pantone_p3_code,
+      color_p4: quotation.pantone_p4_code,
+      // Map finishing fields
+      varnish_type: quotation.varnish_type ? [quotation.varnish_type] : undefined,
+      lamination_type: quotation.lamination_type ? [quotation.lamination_type] : undefined,
+      uv_emboss_details: quotation.embossing_details,
+      // Map pre-press fields
+      ctp_info: quotation.ctp_details,
       die_type: quotation.die_type as any,
       plate_reference: quotation.plate_reference,
-      cylinder_size: quotation.cylinder_size,
-      foil_thickness: quotation.foil_thickness,
+      // Map product-specific fields
+      cylinder_reference: quotation.cylinder_size?.toString(),
+      thickness_micron: quotation.foil_thickness,
       tablet_size: quotation.tablet_size,
       punch_size: quotation.punch_size,
-      notes: dto?.notes || quotation.notes,
+      // Pricing
+      quoted_price: quotation.total_amount,
+      final_price: quotation.total_amount,
+      special_instructions: dto?.notes || quotation.notes,
     };
 
     const order = await this.ordersService.create(orderData, userId);

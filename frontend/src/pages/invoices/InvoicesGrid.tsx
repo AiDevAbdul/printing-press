@@ -25,6 +25,7 @@ interface Invoice {
 interface InvoicesGridProps {
   invoices: Invoice[];
   isLoading?: boolean;
+  onInvoiceClick?: (invoice: Invoice) => void;
 }
 
 const statusColors: Record<string, { badge: string; bg: string }> = {
@@ -35,7 +36,7 @@ const statusColors: Record<string, { badge: string; bg: string }> = {
   cancelled: { badge: 'error', bg: 'bg-red-50' },
 };
 
-export function InvoicesGrid({ invoices, isLoading = false }: InvoicesGridProps) {
+export function InvoicesGrid({ invoices, isLoading = false, onInvoiceClick }: InvoicesGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -71,7 +72,8 @@ export function InvoicesGrid({ invoices, isLoading = false }: InvoicesGridProps)
             variant="elevated"
             padding="md"
             hover
-            className={statusConfig.bg}
+            className={`${statusConfig.bg} cursor-pointer transition-transform hover:scale-[1.02]`}
+            onClick={() => onInvoiceClick?.(invoice)}
           >
             <div className="space-y-4">
               {/* Header */}

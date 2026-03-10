@@ -118,4 +118,10 @@ export class InvoicesController {
   recordPayment(@Param('id') id: string, @Body() recordPaymentDto: RecordPaymentDto) {
     return this.costingService.recordPayment(id, recordPaymentDto);
   }
+
+  @Patch(':id/mark-paid')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTS)
+  markAsPaid(@Param('id') id: string) {
+    return this.costingService.markInvoiceAsPaid(id);
+  }
 }
