@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { Plus } from 'lucide-react';
 import api from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 
 interface Invoice {
   id: string;
@@ -237,305 +243,189 @@ export default function Invoices() {
   const invoices: Invoice[] = response?.data || [];
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-          <p className="mt-2 text-gray-600">Manage invoices and payments</p>
+          <p className="text-gray-600 mt-1">Manage invoices and payments</p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="md"
+          icon={<Plus className="w-4 h-4" />}
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
         >
           Add Invoice
-        </button>
+        </Button>
       </div>
 
-      <div className="mb-6">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
-          <option value="paid">Paid</option>
-          <option value="overdue">Overdue</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+      {/* Filters */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+        <div className="flex-1">
+          <Select
+            label="Filter by Status"
+            options={[
+              { value: '', label: 'All Statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'sent', label: 'Sent' },
+              { value: 'paid', label: 'Paid' },
+              { value: 'overdue', label: 'Overdue' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {invoices.length === 0 ? (
+      {/* Content */}
+      {isLoading ? (
+        <div className="text-center py-8">Loading...</div>
+      ) : error ? (
+        <Card variant="outlined" className="p-4 border-red-200 bg-red-50">
+          <p className="text-red-700">Error loading invoices</p>
+        </Card>
+      ) : invoices.length === 0 ? (
+        <Card variant="outlined" className="p-8 text-center">
+          <p className="text-gray-500">No invoices found</p>
+        </Card>
+      ) : (
+        <Card variant="elevated">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
-                    No invoices found
-                  </td>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Invoice #</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Order #</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Customer</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Amount</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Invoice Date</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Due Date</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Status</th>
                 </tr>
-              ) : (
-                invoices.map((invoice) => (
+              </thead>
+              <tbody className="divide-y">
+                {invoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {invoice.invoice_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.order.order_number}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div className="font-medium">{invoice.customer.name}</div>
+                    <td className="px-4 py-3 font-medium text-gray-900">{invoice.invoice_number}</td>
+                    <td className="px-4 py-3 text-gray-900">{invoice.order.order_number}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{invoice.customer.name}</div>
                       {invoice.company_name && (
                         <div className="text-xs text-gray-500">{invoice.company_name}</div>
                       )}
-                      {invoice.group_name && (
-                        <div className="text-xs text-gray-400">{invoice.group_name}</div>
-                      )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {invoice.product_type && (
-                        <div className="font-medium">{invoice.product_type}</div>
-                      )}
-                      {invoice.strength && (
-                        <div className="text-xs text-gray-500">{invoice.strength}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.final_quantity ? invoice.final_quantity.toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.invoice_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(invoice.due_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₨{invoice.total_amount.toLocaleString()}
-                      {invoice.unit_rate && (
-                        <div className="text-xs text-gray-500">@₨{invoice.unit_rate.toLocaleString()}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {invoice.sales_tax_applicable ? (
-                        <span className="text-green-600">Yes</span>
-                      ) : (
-                        <span className="text-gray-400">No</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[invoice.status]}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900">₹{invoice.total_amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-gray-600">{new Date(invoice.due_date).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${statusColors[invoice.status]}`}>
                         {invoice.status}
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">Add New Invoice</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Order *</label>
-                  <select
-                    required
-                    value={formData.order_id}
-                    onChange={(e) => handleOrderChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Order</option>
-                    {ordersResponse?.data?.map((order: Order) => (
-                      <option key={order.id} value={order.id}>
-                        {order.order_number} - {order.product_name} (₹{order.final_price?.toLocaleString() || 0})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                  <input
-                    type="text"
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Full legal company name"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
-                  <input
-                    type="text"
-                    value={formData.group_name}
-                    onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Parent organization or group"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
-                  <input
-                    type="text"
-                    value={formData.product_type}
-                    onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Carton, Label, Leaflet"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Strength</label>
-                  <input
-                    type="text"
-                    value={formData.strength}
-                    onChange={(e) => setFormData({ ...formData, strength: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 500mg, 10ml"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Final Quantity</label>
-                  <input
-                    type="number"
-                    value={formData.final_quantity}
-                    onChange={(e) => setFormData({ ...formData, final_quantity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Delivered quantity"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Rate</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.unit_rate}
-                    onChange={(e) => setFormData({ ...formData, unit_rate: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Price per unit"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.sales_tax_applicable}
-                      onChange={(e) => setFormData({ ...formData, sales_tax_applicable: e.target.checked })}
-                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Sales Tax Applicable</span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.invoice_date}
-                    onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subtotal *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.subtotal}
-                    onChange={(e) => setFormData({ ...formData, subtotal: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    value={formData.tax_rate}
-                    onChange={(e) => setFormData({ ...formData, tax_rate: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                  <input
-                    type="number"
-                    disabled
-                    value={(formData.subtotal * (1 + formData.tax_rate / 100)).toFixed(2)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending ? 'Creating...' : 'Create Invoice'}
-                </button>
-              </div>
-              {createMutation.isError && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                  Error creating invoice
-                </div>
-              )}
-            </form>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </Card>
       )}
+
+      {/* Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add New Invoice"
+        size="md"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Select
+            label="Order *"
+            options={[
+              { value: '', label: 'Select Order' },
+              ...(ordersResponse?.data?.map((order: Order) => ({
+                value: order.id,
+                label: `${order.order_number} - ${order.product_name} (₹${order.final_price?.toLocaleString() || 0})`,
+              })) || []),
+            ]}
+            value={formData.order_id}
+            onChange={(e) => handleOrderChange(e.target.value)}
+          />
+
+          <Input
+            label="Company Name"
+            value={formData.company_name}
+            onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+            placeholder="Full legal company name"
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Invoice Date *"
+              type="date"
+              required
+              value={formData.invoice_date}
+              onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
+            />
+            <Input
+              label="Due Date *"
+              type="date"
+              required
+              value={formData.due_date}
+              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Subtotal *"
+              type="number"
+              required
+              value={formData.subtotal}
+              onChange={(e) => setFormData({ ...formData, subtotal: Number(e.target.value) })}
+            />
+            <Input
+              label="Tax Rate (%)"
+              type="number"
+              value={formData.tax_rate}
+              onChange={(e) => setFormData({ ...formData, tax_rate: Number(e.target.value) })}
+            />
+          </div>
+
+          <Input
+            label="Total Amount"
+            type="number"
+            disabled
+            value={(formData.subtotal * (1 + formData.tax_rate / 100)).toFixed(2)}
+          />
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              fullWidth
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? 'Creating...' : 'Create Invoice'}
+            </Button>
+          </div>
+
+          {createMutation.isError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              Error creating invoice
+            </div>
+          )}
+        </form>
+      </Modal>
     </div>
   );
 }
