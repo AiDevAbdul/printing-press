@@ -1,6 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { Sidebar, SidebarItem } from './Sidebar';
+import { Header } from './Header';
+import { MobileNav } from './MobileNav';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,49 +13,137 @@ export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const isDashboard = location.pathname === '/dashboard';
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
+  // Define navigation items based on user role
+  const navigationItems: SidebarItem[] = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'dashboard',
+      href: '/dashboard',
+    },
+    {
+      id: 'sales',
+      label: 'Sales',
+      icon: 'orders',
+      children: [
+        { id: 'customers', label: 'Customers', icon: 'customers', href: '/customers' },
+        { id: 'quotations', label: 'Quotations', icon: 'quotations', href: '/quotations' },
+        { id: 'orders', label: 'Orders', icon: 'orders', href: '/orders' },
+      ],
+    },
+    {
+      id: 'production',
+      label: 'Production',
+      icon: 'production',
+      children: [
+        { id: 'planning', label: 'Planning', icon: 'planning', href: '/planning' },
+        { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
+        { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },
+        { id: 'quality', label: 'Quality', icon: 'quality', href: '/quality' },
+        { id: 'wastage', label: 'Wastage', icon: 'wastage', href: '/wastage' },
+      ],
+    },
+    {
+      id: 'logistics',
+      label: 'Logistics',
+      icon: 'dispatch',
+      children: [
+        { id: 'dispatch', label: 'Dispatch', icon: 'dispatch', href: '/dispatch' },
+        { id: 'inventory', label: 'Inventory', icon: 'inventory', href: '/inventory' },
+      ],
+    },
+    {
+      id: 'finance',
+      label: 'Finance',
+      icon: 'costing',
+      children: [
+        { id: 'costing', label: 'Costing', icon: 'costing', href: '/costing' },
+        { id: 'invoices', label: 'Invoices', icon: 'invoices', href: '/invoices' },
+      ],
+    },
+  ];
+
+  // Add users menu for admin
+  if (user?.role === 'admin') {
+    navigationItems.push({
+      id: 'system',
+      label: 'System',
+      icon: 'users',
+      children: [
+        { id: 'users', label: 'Users', icon: 'users', href: '/users' },
+      ],
+    });
+  }
+
+  // Get active item from current path
+  const getActiveItem = () => {
+    const path = location.pathname.split('/')[1];
+    return path || 'dashboard';
+  };
+
+  const handleItemClick = (itemId: string) => {
+    const findItem = (items: SidebarItem[]): SidebarItem | undefined => {
+      for (const item of items) {
+        if (item.id === itemId) return item;
+        if (item.children) {
+          const found = findItem(item.children);
+          if (found) return found;
+        }
+      }
+    };
+
+    const item = findItem(navigationItems);
+    if (item?.href) {
+      navigate(item.href);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-4">
-            {!isDashboard && (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                <span>←</span>
-                <span>Back to Dashboard</span>
-              </button>
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Printing Press</h1>
-              <p className="text-sm text-gray-500">Management System</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <Sidebar
+          items={navigationItems}
+          activeItem={getActiveItem()}
+          onItemClick={handleItemClick}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
+      </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-800">{user?.full_name}</p>
-              <p className="text-xs text-gray-500">{user?.role}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Mobile Navigation */}
+      <MobileNav
+        isOpen={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        items={navigationItems}
+        activeItem={getActiveItem()}
+        onItemClick={handleItemClick}
+      />
 
-      <main className="p-6">{children}</main>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        <Header
+          onMenuToggle={() => setMobileNavOpen(true)}
+          user={{
+            name: user?.full_name || '',
+            email: user?.email || '',
+            role: user?.role || '',
+          }}
+          onLogout={handleLogout}
+        />
+
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
