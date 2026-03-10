@@ -4,6 +4,9 @@ import toast from 'react-hot-toast';
 import { Plus, Grid3x3, Kanban } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductionGrid } from './ProductionGrid';
@@ -271,114 +274,100 @@ export default function Production() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">Add New Production Job</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Order *</label>
-                  <select
-                    required
-                    value={formData.order_id}
-                    onChange={(e) => setFormData({ ...formData, order_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Order</option>
-                    {ordersResponse?.data?.map((order: Order) => (
-                      <option key={order.id} value={order.id}>
-                        {order.order_number} - {order.product_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={formData.scheduled_start_date}
-                    onChange={(e) => setFormData({ ...formData, scheduled_start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={formData.scheduled_end_date}
-                    onChange={(e) => setFormData({ ...formData, scheduled_end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Machine</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., HB1, HB2, UV#1, Dye 1"
-                    value={formData.assigned_machine}
-                    onChange={(e) => setFormData({ ...formData, assigned_machine: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Operator</label>
-                  <select
-                    value={formData.assigned_operator_id}
-                    onChange={(e) => setFormData({ ...formData, assigned_operator_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Operator</option>
-                    {usersResponse?.map((user: User) => (
-                      <option key={user.id} value={user.id}>
-                        {user.full_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
-                  <input
-                    type="number"
-                    value={formData.estimated_hours}
-                    onChange={(e) => setFormData({ ...formData, estimated_hours: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Additional notes or instructions..."
-                  />
-                </div>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Add New Production Job"
+          size="md"
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Select
+                  label="Order *"
+                  options={[
+                    { value: '', label: 'Select Order' },
+                    ...(ordersResponse?.data?.map((order: Order) => ({
+                      value: order.id,
+                      label: `${order.order_number} - ${order.product_name}`,
+                    })) || []),
+                  ]}
+                  value={formData.order_id}
+                  onChange={(e) => setFormData({ ...formData, order_id: e.target.value })}
+                />
               </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending ? 'Creating...' : 'Create Job'}
-                </button>
+              <Input
+                label="Start Date"
+                type="date"
+                value={formData.scheduled_start_date}
+                onChange={(e) => setFormData({ ...formData, scheduled_start_date: e.target.value })}
+              />
+              <Input
+                label="End Date"
+                type="date"
+                value={formData.scheduled_end_date}
+                onChange={(e) => setFormData({ ...formData, scheduled_end_date: e.target.value })}
+              />
+              <Input
+                label="Assigned Machine"
+                value={formData.assigned_machine}
+                onChange={(e) => setFormData({ ...formData, assigned_machine: e.target.value })}
+                placeholder="e.g., HB1, HB2, UV#1, Dye 1"
+              />
+              <Select
+                label="Assigned Operator"
+                options={[
+                  { value: '', label: 'Select Operator' },
+                  ...(usersResponse?.map((user: User) => ({
+                    value: user.id,
+                    label: user.full_name,
+                  })) || []),
+                ]}
+                value={formData.assigned_operator_id}
+                onChange={(e) => setFormData({ ...formData, assigned_operator_id: e.target.value })}
+              />
+              <Input
+                label="Estimated Hours"
+                type="number"
+                value={formData.estimated_hours}
+                onChange={(e) => setFormData({ ...formData, estimated_hours: Number(e.target.value) })}
+              />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  rows={3}
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Additional notes or instructions..."
+                />
               </div>
-              {createMutation.isError && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                  Error creating production job
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
+            </div>
+
+            {createMutation.isError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                Error creating production job
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create Job'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {showWorkflowModal && selectedJobId && (
