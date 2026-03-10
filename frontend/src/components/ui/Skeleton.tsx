@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface SkeletonProps {
-  variant?: 'text' | 'circular' | 'rectangular';
+  variant?: 'text' | 'circular' | 'rectangular' | 'card';
   width?: string | number;
   height?: string | number;
   className?: string;
@@ -19,6 +19,7 @@ export function Skeleton({
     text: 'rounded h-4',
     circular: 'rounded-full',
     rectangular: 'rounded-lg',
+    card: 'rounded-lg h-72 bg-white border border-gray-200',
   };
 
   const style: React.CSSProperties = {};
