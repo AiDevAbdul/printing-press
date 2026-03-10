@@ -1,56 +1,89 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    visualizer({
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      filename: 'dist/stats.html',
+    }),
+  ],
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-query': ['@tanstack/react-query'],
-          'vendor-ui': ['lucide-react', 'react-hot-toast'],
+        manualChunks: (id) => {
+          // Vendor chunks - split by library
+          if (id.includes('node_modules/react-dom')) {
+            return 'vendor-react-dom'
+          }
+          if (id.includes('node_modules/react')) {
+            return 'vendor-react'
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'vendor-router'
+          }
+          if (id.includes('node_modules/@tanstack/react-query')) {
+            return 'vendor-query'
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons'
+          }
+          if (id.includes('node_modules/react-hot-toast')) {
+            return 'vendor-toast'
+          }
+          if (id.includes('node_modules/react-hook-form')) {
+            return 'vendor-forms'
+          }
+          if (id.includes('node_modules')) {
+            return 'vendor-other'
+          }
 
           // Feature chunks
-          'chunk-orders': [
-            './src/pages/orders/Orders.tsx',
-            './src/pages/orders/OrdersGrid.tsx',
-            './src/pages/orders/OrdersKanban.tsx',
-            './src/pages/orders/OrderForm.tsx',
-          ],
-          'chunk-production': [
-            './src/pages/production/Production.tsx',
-            './src/pages/production/ProductionGrid.tsx',
-            './src/pages/production/ProductionKanban.tsx',
-          ],
-          'chunk-quality': [
-            './src/pages/quality/Quality.tsx',
-            './src/pages/quality/InspectionsGrid.tsx',
-            './src/pages/quality/ComplaintsGrid.tsx',
-            './src/pages/quality/RejectionsGrid.tsx',
-          ],
-          'chunk-dispatch': [
-            './src/pages/dispatch/Dispatch.tsx',
-            './src/pages/dispatch/DispatchGrid.tsx',
-            './src/pages/dispatch/DispatchTimeline.tsx',
-          ],
-          'chunk-inventory': [
-            './src/pages/inventory/Inventory.tsx',
-            './src/pages/inventory/InventoryGrid.tsx',
-          ],
-          'chunk-sales': [
-            './src/pages/customers/Customers.tsx',
-            './src/pages/customers/CustomersGrid.tsx',
-            './src/pages/quotations/Quotations.tsx',
-            './src/pages/quotations/QuotationsGrid.tsx',
-          ],
+          if (id.includes('pages/orders')) {
+            return 'chunk-orders'
+          }
+          if (id.includes('pages/production')) {
+            return 'chunk-production'
+          }
+          if (id.includes('pages/quality')) {
+            return 'chunk-quality'
+          }
+          if (id.includes('pages/dispatch')) {
+            return 'chunk-dispatch'
+          }
+          if (id.includes('pages/inventory')) {
+            return 'chunk-inventory'
+          }
+          if (id.includes('pages/customers') || id.includes('pages/quotations')) {
+            return 'chunk-sales'
+          }
+          if (id.includes('pages/dashboard') || id.includes('pages/reports')) {
+            return 'chunk-analytics'
+          }
+          if (id.includes('pages/users') || id.includes('pages/profile')) {
+            return 'chunk-users'
+          }
+          if (id.includes('pages/qa')) {
+            return 'chunk-qa'
+          }
+          if (id.includes('components/ui')) {
+            return 'chunk-ui-components'
+          }
+          if (id.includes('components')) {
+            return 'chunk-components'
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 400,
     minify: 'esbuild',
+    sourcemap: false,
   },
 })

@@ -1,5 +1,5 @@
 import { motion, useSpring, useTransform } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useMemo, memo } from 'react';
 
 interface StatCardProps {
   title: string;
@@ -10,8 +10,8 @@ interface StatCardProps {
   onClick?: () => void;
 }
 
-export default function StatCard({ title, value, subtitle, details, glowColor, onClick }: StatCardProps) {
-  const glowClass = `glow-${glowColor}`;
+function StatCard({ title, value, subtitle, details, glowColor, onClick }: StatCardProps) {
+  const glowClass = useMemo(() => `glow-${glowColor}`, [glowColor]);
 
   // Animated number counting
   const spring = useSpring(0, { duration: 1000 });
@@ -24,6 +24,19 @@ export default function StatCard({ title, value, subtitle, details, glowColor, o
       spring.set(value);
     }
   }, [spring, value]);
+
+  const detailsContent = useMemo(() => {
+    if (!details || details.length === 0) return null;
+    return (
+      <div className="mt-4 text-sm text-gray-400 space-y-1">
+        {details.map((detail, index) => (
+          <div key={index}>
+            {detail.label}: <span className={`font-mono ${detail.color || 'text-gray-300'}`}>{detail.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }, [details]);
 
   return (
     <motion.div
@@ -59,15 +72,9 @@ export default function StatCard({ title, value, subtitle, details, glowColor, o
         <p className="mt-4 text-sm text-gray-400">{subtitle}</p>
       )}
 
-      {details && details.length > 0 && (
-        <div className="mt-4 text-sm text-gray-400 space-y-1">
-          {details.map((detail, index) => (
-            <div key={index}>
-              {detail.label}: <span className={`font-mono ${detail.color || 'text-gray-300'}`}>{detail.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {detailsContent}
     </motion.div>
   );
 }
+
+export default memo(StatCard);
