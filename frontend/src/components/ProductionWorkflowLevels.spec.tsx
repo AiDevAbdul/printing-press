@@ -5,7 +5,8 @@ import * as workflowServiceModule from '../services/workflow.service';
 
 vi.mock('../services/workflow.service', () => ({
   default: {
-    getWorkflow: vi.fn(),
+    getWorkflowStages: vi.fn(),
+    initializeWorkflow: vi.fn(),
     startStage: vi.fn(),
     pauseStage: vi.fn(),
     completeStage: vi.fn(),
@@ -22,16 +23,22 @@ vi.mock('react-hot-toast', () => ({
 describe('ProductionWorkflowLevels', () => {
   const mockWorkflowData = {
     job_id: 'job-1',
+    current_stage: '1',
     stages: [
       {
-        id: 'stage-1',
+        id: 1,
         stage_name: 'Printing - Cyan',
         stage_order: 1,
-        status: 'completed',
+        status: 'completed' as const,
         operator_id: 'op-1',
         operator_name: 'John Doe',
         machine: 'Printer-1',
         duration_minutes: 30,
+        active_duration_minutes: 30,
+        pause_duration_minutes: 0,
+        can_start: false,
+        can_pause: false,
+        can_complete: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -41,7 +48,7 @@ describe('ProductionWorkflowLevels', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(workflowServiceModule.default.getWorkflow).mockResolvedValue(mockWorkflowData);
+    vi.mocked(workflowServiceModule.default.getWorkflowStages).mockResolvedValue(mockWorkflowData);
   });
 
   it('should render component without crashing', () => {
@@ -69,7 +76,7 @@ describe('ProductionWorkflowLevels', () => {
   });
 
   it('should handle API errors gracefully', () => {
-    vi.mocked(workflowServiceModule.default.getWorkflow).mockRejectedValue(
+    vi.mocked(workflowServiceModule.default.getWorkflowStages).mockRejectedValue(
       new Error('API Error')
     );
 
