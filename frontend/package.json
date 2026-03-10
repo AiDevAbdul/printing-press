@@ -14,7 +14,9 @@
     "test:coverage": "vitest --run --coverage",
     "e2e": "cypress open",
     "e2e:run": "cypress run",
-    "e2e:headless": "cypress run --headless"
+    "e2e:headless": "cypress run --headless",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -37,6 +39,10 @@
   "devDependencies": {
     "@cypress/schematic": "^5.0.0",
     "@eslint/js": "^9.39.1",
+    "@storybook/addon-a11y": "^10.2.17",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/react": "^10.2.17",
     "@tailwindcss/postcss": "^4.2.0",
     "@tailwindcss/vite": "^4.2.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -56,10 +62,20 @@
     "jsdom": "^28.1.0",
     "postcss": "^8.5.6",
     "rollup-plugin-visualizer": "^7.0.1",
+    "storybook": "^10.2.17",
     "tailwindcss": "^4.2.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "@storybook/react-vite": "^10.2.17",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-vitest": "^10.2.17",
+    "@storybook/addon-docs": "^10.2.17",
+    "@storybook/addon-onboarding": "^10.2.17",
+    "eslint-plugin-storybook": "^10.2.17",
+    "playwright": "^1.58.2",
+    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18"
   }
 }
