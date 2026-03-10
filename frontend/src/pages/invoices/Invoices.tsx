@@ -6,8 +6,10 @@ import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { InvoicesGrid } from './InvoicesGrid';
 
 interface Invoice {
   id: string;
@@ -71,14 +73,6 @@ interface InvoiceFormData {
     unit_price: number;
   }>;
 }
-
-const statusColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-800',
-  sent: 'bg-blue-100 text-blue-800',
-  paid: 'bg-green-100 text-green-800',
-  overdue: 'bg-red-100 text-red-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
 
 export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState('');
@@ -281,55 +275,29 @@ export default function Invoices() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
       ) : error ? (
-        <Card variant="outlined" className="p-4 border-red-200 bg-red-50">
-          <p className="text-red-700">Error loading invoices</p>
-        </Card>
+        <EmptyState
+          icon="AlertCircle"
+          title="Error loading invoices"
+          description="There was an error loading the invoices. Please try again."
+        />
       ) : invoices.length === 0 ? (
-        <Card variant="outlined" className="p-8 text-center">
-          <p className="text-gray-500">No invoices found</p>
-        </Card>
+        <EmptyState
+          icon="FileText"
+          title="No invoices found"
+          description="Get started by creating your first invoice."
+          action={{
+            label: 'Add Invoice',
+            onClick: () => setIsModalOpen(true),
+          }}
+        />
       ) : (
-        <Card variant="elevated">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Invoice #</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Order #</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Customer</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Amount</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Invoice Date</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Due Date</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{invoice.invoice_number}</td>
-                    <td className="px-4 py-3 text-gray-900">{invoice.order.order_number}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{invoice.customer.name}</div>
-                      {invoice.company_name && (
-                        <div className="text-xs text-gray-500">{invoice.company_name}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">₹{invoice.total_amount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
-                    <td className="px-4 py-3 text-gray-600">{new Date(invoice.due_date).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${statusColors[invoice.status]}`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <InvoicesGrid invoices={invoices} isLoading={isLoading} />
       )}
 
       {/* Modal */}

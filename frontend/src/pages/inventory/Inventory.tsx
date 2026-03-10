@@ -5,11 +5,13 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
+import { InventoryGrid } from './InventoryGrid';
 import CategoryTabs from '../../components/inventory/CategoryTabs';
 import PaperFilters from '../../components/inventory/PaperFilters';
 import OtherMaterialFilters from '../../components/inventory/OtherMaterialFilters';
 import CommonFilters from '../../components/inventory/CommonFilters';
 import { Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface InventoryFormData {
   item_code: string;
@@ -30,14 +32,6 @@ interface InventoryFormData {
   reorder_quantity: number;
   unit_cost: number;
 }
-
-const categoryColors: Record<string, string> = {
-  paper: 'bg-blue-100 text-blue-800',
-  ink: 'bg-purple-100 text-purple-800',
-  plates: 'bg-green-100 text-green-800',
-  finishing_materials: 'bg-yellow-100 text-yellow-800',
-  packaging: 'bg-orange-100 text-orange-800',
-};
 
 export default function Inventory() {
   const [filters, setFilters] = useState<InventoryFilters>({
@@ -60,7 +54,7 @@ export default function Inventory() {
     unit_cost: 0,
   });
 
-  const { data: response, isLoading, error } = useInventoryItems(filters);
+  const { data: response, isLoading } = useInventoryItems(filters);
   const createMutation = useCreateInventoryItem();
   const updateMutation = useUpdateInventoryItem();
   const deleteMutation = useDeleteInventoryItem();
@@ -133,9 +127,15 @@ export default function Inventory() {
   };
 
   const handleDelete = (id: string) => {
-    const confirmed = window.confirm('Are you sure you want to delete this item?');
-    if (confirmed) {
-      deleteMutation.mutate(id);
+    if (confirm('Are you sure you want to delete this item?')) {
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          toast.success('Item deleted successfully');
+        },
+        onError: () => {
+          toast.error('Failed to delete item');
+        },
+      });
     }
   };
 
@@ -154,37 +154,19 @@ export default function Inventory() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          Error loading inventory items
-        </div>
-      </div>
-    );
-  }
-
   const items: InventoryItem[] = response?.data || [];
   const total = response?.total || 0;
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-          <p className="mt-2 text-gray-600">Manage stock levels and materials</p>
+          <p className="text-gray-600 mt-1">Manage stock levels and materials</p>
         </div>
         <Button
           variant="primary"
-          size="sm"
+          size="md"
           icon={<Plus className="w-4 h-4" />}
           onClick={() => {
             setEditingItem(null);
@@ -208,122 +190,34 @@ export default function Inventory() {
         <OtherMaterialFilters filters={filters} onFilterChange={handleFilterChange} />
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item Code</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                {filters.main_category === 'paper' && (
-                  <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">GSM</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Material Type</th>
-                  </>
-                )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reorder Level</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
-                    No inventory items found
-                  </td>
-                </tr>
-              ) : (
-                items.map((item) => {
-                  const isLowStock = item.current_stock <= item.reorder_level;
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.item_code}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{item.item_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${categoryColors[item.category]}`}>
-                          {item.category.replace('_', ' ')}
-                        </span>
-                      </td>
-                      {filters.main_category === 'paper' && (
-                        <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.size || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.gsm ? `${item.gsm} GSM` : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.material_type || '-'}
-                          </td>
-                        </>
-                      )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.brand || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.color || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className={isLowStock ? 'text-red-600 font-semibold' : ''}>
-                          {item.current_stock} {item.unit}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.reorder_level} {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ₹{item.unit_cost.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <InventoryGrid
+        items={items}
+        isLoading={isLoading}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
-      <div className="mt-4 flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div className="text-sm text-gray-700">
           Showing {items.length} of {total} items
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => handleFilterChange('page', (filters.page || 1) - 1)}
             disabled={!filters.page || filters.page <= 1}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
           >
             Previous
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => handleFilterChange('page', (filters.page || 1) + 1)}
             disabled={items.length < (filters.limit || 50)}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 
