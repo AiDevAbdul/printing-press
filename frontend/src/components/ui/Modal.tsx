@@ -22,6 +22,9 @@ export function Modal({
   closeOnOverlayClick = true,
   footer,
 }: ModalProps) {
+  const modalId = `modal-${Math.random().toString(36).substr(2, 9)}`;
+  const titleId = title ? `${modalId}-title` : undefined;
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -65,15 +68,21 @@ export function Modal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
       onClick={handleOverlayClick}
+      role="presentation"
     >
       <div
         className={`bg-white rounded-lg shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col animate-slideInUp`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
       >
         {/* Header */}
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             {title && (
-              <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+              <h2 id={titleId} className="text-xl font-semibold text-gray-900">
+                {title}
+              </h2>
             )}
             {showCloseButton && (
               <button
@@ -81,7 +90,7 @@ export function Modal({
                 className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             )}
           </div>

@@ -23,10 +23,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       className = '',
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
+    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const errorId = error ? `${inputId}-error` : undefined;
+    const helperId = helperText ? `${inputId}-helper` : undefined;
+
     const baseClasses =
       'px-3 py-2 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1';
 
@@ -47,46 +52,55 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
               {leftIcon}
             </div>
           )}
           <input
             ref={ref}
+            id={inputId}
             className={`${baseClasses} ${stateClasses} ${disabledClasses} ${widthClass} ${paddingClasses} ${className}`}
             disabled={disabled}
+            aria-invalid={!!error}
+            aria-describedby={errorId || helperId}
             {...props}
           />
           {rightIcon && !error && !success && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
               {rightIcon}
             </div>
           )}
           {error && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" aria-hidden="true">
               <AlertCircle className="w-5 h-5" />
             </div>
           )}
           {success && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" aria-hidden="true">
               <CheckCircle className="w-5 h-5" />
             </div>
           )}
         </div>
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+            {error}
+          </p>
         )}
         {success && (
-          <p className="mt-1 text-sm text-green-600">{success}</p>
+          <p className="mt-1 text-sm text-green-600" role="status">
+            {success}
+          </p>
         )}
         {helperText && !error && !success && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+          <p id={helperId} className="mt-1 text-sm text-gray-500">
+            {helperText}
+          </p>
         )}
       </div>
     );

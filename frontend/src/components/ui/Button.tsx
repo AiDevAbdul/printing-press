@@ -42,12 +42,14 @@ export function Button({
     <button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
       {isLoading ? (
-        <Loader className="w-4 h-4 animate-spin" />
+        <Loader className="w-4 h-4 animate-spin" aria-hidden="true" />
       ) : icon ? (
-        <span className="flex-shrink-0">{icon}</span>
+        <span className="flex-shrink-0" aria-hidden="true">{icon}</span>
       ) : null}
       {children}
     </button>
