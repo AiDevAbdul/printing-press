@@ -1,27 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
-import Customers from './pages/customers/Customers';
-import Orders from './pages/orders/Orders';
-import Quotations from './pages/quotations/Quotations';
-import Planning from './pages/planning/Planning';
-import Production from './pages/production/Production';
-import Inventory from './pages/inventory/Inventory';
-import Invoices from './pages/invoices/Invoices';
-import Users from './pages/users/Users';
-import Costing from './pages/costing/Costing';
-import ShopFloor from './pages/shop-floor/ShopFloor';
-import JobDetails from './pages/shop-floor/JobDetails';
-import StartStage from './pages/shop-floor/StartStage';
-import CompleteStage from './pages/shop-floor/CompleteStage';
-import IssueMaterial from './pages/shop-floor/IssueMaterial';
-import Quality from './pages/quality/Quality';
-import Dispatch from './pages/dispatch/Dispatch';
-import WastageAnalytics from './pages/wastage/WastageAnalytics';
-import WorkflowPage from './pages/workflow/WorkflowPage';
+
+// Lazy load pages for code splitting
+const Customers = lazy(() => import('./pages/customers/Customers'));
+const Orders = lazy(() => import('./pages/orders/Orders'));
+const Quotations = lazy(() => import('./pages/quotations/Quotations'));
+const Planning = lazy(() => import('./pages/planning/Planning'));
+const Production = lazy(() => import('./pages/production/Production'));
+const Inventory = lazy(() => import('./pages/inventory/Inventory'));
+const Invoices = lazy(() => import('./pages/invoices/Invoices'));
+const Users = lazy(() => import('./pages/users/Users'));
+const Costing = lazy(() => import('./pages/costing/Costing'));
+const ShopFloor = lazy(() => import('./pages/shop-floor/ShopFloor'));
+const JobDetails = lazy(() => import('./pages/shop-floor/JobDetails'));
+const StartStage = lazy(() => import('./pages/shop-floor/StartStage'));
+const CompleteStage = lazy(() => import('./pages/shop-floor/CompleteStage'));
+const IssueMaterial = lazy(() => import('./pages/shop-floor/IssueMaterial'));
+const Quality = lazy(() => import('./pages/quality/Quality'));
+const Dispatch = lazy(() => import('./pages/dispatch/Dispatch'));
+const WastageAnalytics = lazy(() => import('./pages/wastage/WastageAnalytics'));
+const WorkflowPage = lazy(() => import('./pages/workflow/WorkflowPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,7 +46,21 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return isAuthenticated ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+  return isAuthenticated ? (
+    <Layout>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-lg">Loading page...</div>
+          </div>
+        }
+      >
+        {children}
+      </Suspense>
+    </Layout>
+  ) : (
+    <Navigate to="/login" />
+  );
 }
 
 function App() {
