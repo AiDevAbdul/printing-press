@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -30,9 +31,9 @@ interface OrderFormData {
   color_p2?: string;
   color_p3?: string;
   color_p4?: string;
-  varnish_type?: string;
+  varnish_type?: string[];
   varnish_details?: string;
-  lamination_type?: string;
+  lamination_type?: string[];
   lamination_size?: string;
   uv_emboss_details?: string;
   has_back_printing?: boolean;
@@ -84,10 +85,35 @@ export default function OrderFormModal({
     is_repeat_order: false,
     has_back_printing: false,
     has_barcode: false,
+    varnish_type: [],
+    lamination_type: [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.customer_id) {
+      toast.error('Please select a customer');
+      return;
+    }
+    if (!formData.order_date) {
+      toast.error('Please select an order date');
+      return;
+    }
+    if (!formData.delivery_date) {
+      toast.error('Please select a delivery date');
+      return;
+    }
+    if (!formData.product_name) {
+      toast.error('Please enter a product name');
+      return;
+    }
+    if (!formData.quantity || formData.quantity <= 0) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
+
     onSubmit(formData);
   };
 
@@ -100,8 +126,12 @@ export default function OrderFormModal({
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Section */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <span className="text-2xl">📋</span>
+            Basic Information
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">Essential order details and customer information</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Select
@@ -198,8 +228,12 @@ export default function OrderFormModal({
         </div>
 
         {/* Specifications Section */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h3>
+        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <span className="text-2xl">📐</span>
+            Specifications
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">Product dimensions, materials, and color details</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Card Width (mm)"
@@ -331,37 +365,67 @@ export default function OrderFormModal({
         </div>
 
         {/* Finishing Section */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Finishing Options</h3>
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <span className="text-2xl">✨</span>
+            Finishing Options
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">Varnish, lamination, and special finishing effects</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Varnish Type"
-              options={[
-                { value: 'none', label: 'None' },
-                { value: 'water_base', label: 'Water Base' },
-                { value: 'duck', label: 'Duck' },
-                { value: 'plain_uv', label: 'Plain UV' },
-                { value: 'spot_uv', label: 'Spot UV' },
-                { value: 'drip_off_uv', label: 'Drip Off UV' },
-                { value: 'matt_uv', label: 'Matt UV' },
-                { value: 'rough_uv', label: 'Rough UV' },
-              ]}
-              value={formData.varnish_type || 'none'}
-              onChange={(e) => setFormData({ ...formData, varnish_type: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Varnish Type</label>
+              <div className="space-y-2">
+                {[
+                  { value: 'water_base', label: 'Water Base' },
+                  { value: 'duck', label: 'Duck' },
+                  { value: 'plain_uv', label: 'Plain UV' },
+                  { value: 'spot_uv', label: 'Spot UV' },
+                  { value: 'drip_off_uv', label: 'Drip Off UV' },
+                  { value: 'matt_uv', label: 'Matt UV' },
+                  { value: 'rough_uv', label: 'Rough UV' },
+                ].map((option) => (
+                  <Checkbox
+                    key={option.value}
+                    label={option.label}
+                    checked={(formData.varnish_type || []).includes(option.value)}
+                    onChange={(e) => {
+                      const current = formData.varnish_type || [];
+                      if (e.target.checked) {
+                        setFormData({ ...formData, varnish_type: [...current, option.value] });
+                      } else {
+                        setFormData({ ...formData, varnish_type: current.filter(v => v !== option.value) });
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
-            <Select
-              label="Lamination Type"
-              options={[
-                { value: 'none', label: 'None' },
-                { value: 'shine', label: 'Shine' },
-                { value: 'matt', label: 'Matt' },
-                { value: 'metalize', label: 'Metalize' },
-                { value: 'rainbow', label: 'Rainbow' },
-              ]}
-              value={formData.lamination_type || 'none'}
-              onChange={(e) => setFormData({ ...formData, lamination_type: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Lamination Type</label>
+              <div className="space-y-2">
+                {[
+                  { value: 'shine', label: 'Shine' },
+                  { value: 'matt', label: 'Matt' },
+                  { value: 'metalize', label: 'Metalize' },
+                  { value: 'rainbow', label: 'Rainbow' },
+                ].map((option) => (
+                  <Checkbox
+                    key={option.value}
+                    label={option.label}
+                    checked={(formData.lamination_type || []).includes(option.value)}
+                    onChange={(e) => {
+                      const current = formData.lamination_type || [];
+                      if (e.target.checked) {
+                        setFormData({ ...formData, lamination_type: [...current, option.value] });
+                      } else {
+                        setFormData({ ...formData, lamination_type: current.filter(v => v !== option.value) });
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Varnish Details</label>
@@ -406,8 +470,12 @@ export default function OrderFormModal({
         </div>
 
         {/* Pre-Press Section */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pre-Press Details</h3>
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <span className="text-2xl">🎨</span>
+            Pre-Press Details
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">Design, plates, dies, and production setup information</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">CTP Info</label>
@@ -472,8 +540,12 @@ export default function OrderFormModal({
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            Error creating order
+          <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <p className="font-semibold text-red-800">Error creating order</p>
+              <p className="text-sm text-red-700">Please check all required fields are filled correctly.</p>
+            </div>
           </div>
         )}
       </form>

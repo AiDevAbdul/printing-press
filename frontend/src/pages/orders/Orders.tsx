@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Grid3x3, Kanban } from 'lucide-react';
+import { Grid3x3, Kanban, X } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -71,11 +71,11 @@ interface OrderFormData {
   color_p4?: string;
 
   // Varnish
-  varnish_type?: string;
+  varnish_type?: string[];
   varnish_details?: string;
 
   // Lamination
-  lamination_type?: string;
+  lamination_type?: string[];
   lamination_size?: string;
 
   // Embossing & Finishing
@@ -112,6 +112,8 @@ export default function Orders() {
   const [productTypeFilter, setProductTypeFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -158,6 +160,21 @@ export default function Orders() {
         payload.cylinder_received_date = new Date(data.cylinder_received_date).toISOString();
       }
 
+      // Remove empty arrays for varnish and lamination types
+      if (!payload.varnish_type || payload.varnish_type.length === 0) {
+        delete payload.varnish_type;
+      }
+      if (!payload.lamination_type || payload.lamination_type.length === 0) {
+        delete payload.lamination_type;
+      }
+
+      // Remove empty optional fields
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
       const response = await api.post('/orders', payload);
       return response.data;
     },
@@ -166,8 +183,9 @@ export default function Orders() {
       setIsModalOpen(false);
       toast.success('Order created successfully');
     },
-    onError: () => {
-      toast.error('Failed to create order');
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || 'Failed to create order';
+      toast.error(errorMessage);
     },
   });
 
@@ -175,35 +193,50 @@ export default function Orders() {
     createMutation.mutate(data);
   };
 
+  const approveOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await api.patch(`/orders/${orderId}/status`, { status: 'approved' });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order approved successfully');
+    },
+    onError: () => {
+      toast.error('Failed to approve order');
+    },
+  });
+
+  const handleViewOrder = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setShowOrderDetails(true);
+  };
+
+  const handleApproveOrder = (orderId: string) => {
+    approveOrderMutation.mutate(orderId);
+  };
+
   const orders: Order[] = response?.data || [];
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch = searchTerm === '' ||
-      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.batch_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
+  const transformedOrders = orders.map((order: Order) => ({
+    id: order.id,
+    order_number: order.order_number,
+    customer_name: order.customer?.name || '',
+    product_name: order.product_name,
+    quantity: order.quantity,
+    unit: order.unit,
+    delivery_date: order.delivery_date,
+    amount: order.final_price,
+    status: order.status,
+    priority: order.priority,
+  }));
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600 mt-1">Manage customer orders and track progress</p>
-        </div>
-        <Button
-          variant="primary"
-          size="md"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add Order
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+        <p className="text-gray-600 mt-1">Manage customer orders and track progress</p>
       </div>
 
       {/* View Toggle */}
@@ -285,7 +318,7 @@ export default function Orders() {
           title="Error loading orders"
           description="There was an error loading the orders. Please try again."
         />
-      ) : filteredOrders.length === 0 ? (
+      ) : transformedOrders.length === 0 ? (
         <EmptyState
           icon="Package"
           title="No orders found"
@@ -296,9 +329,18 @@ export default function Orders() {
           }}
         />
       ) : viewMode === 'grid' ? (
-        <OrdersGrid orders={filteredOrders} />
+        <OrdersGrid
+          orders={transformedOrders}
+          onCreateOrder={() => setIsModalOpen(true)}
+          onViewOrder={handleViewOrder}
+          onApproveOrder={handleApproveOrder}
+        />
       ) : (
-        <OrdersKanban orders={filteredOrders} />
+        <OrdersKanban
+          orders={transformedOrders}
+          onCreateOrder={() => setIsModalOpen(true)}
+          onViewOrder={handleViewOrder}
+        />
       )}
 
       <OrderFormModal
@@ -309,6 +351,70 @@ export default function Orders() {
         isSubmitting={createMutation.isPending}
         error={createMutation.isError}
       />
+
+      {showOrderDetails && selectedOrderId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Order Details</h2>
+              <button
+                onClick={() => {
+                  setShowOrderDetails(false);
+                  setSelectedOrderId(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              {(() => {
+                const order = orders.find((o: any) => o.id === selectedOrderId);
+                if (!order) return <p>Order not found</p>;
+
+                return (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Order Number</p>
+                        <p className="text-lg font-semibold">{order.order_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Status</p>
+                        <p className="text-lg font-semibold capitalize">{order.status}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Customer</p>
+                        <p className="text-lg font-semibold">{order.customer?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Product</p>
+                        <p className="text-lg font-semibold">{order.product_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Quantity</p>
+                        <p className="text-lg font-semibold">{order.quantity} {order.unit}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Delivery Date</p>
+                        <p className="text-lg font-semibold">{new Date(order.delivery_date).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Priority</p>
+                        <p className="text-lg font-semibold capitalize">{order.priority}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Amount</p>
+                        <p className="text-lg font-semibold">₹{order.final_price?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

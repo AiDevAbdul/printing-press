@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Grid3x3, Kanban } from 'lucide-react';
+import { Grid3x3, Kanban, X } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProductionGrid } from './ProductionGrid';
 import { ProductionKanban } from './ProductionKanban';
+import ProductionWorkflowLevels from '../../components/ProductionWorkflowLevels';
 
 interface ProductionJob {
   id: string;
@@ -139,75 +140,63 @@ export default function Production() {
     },
   });
 
-  // Note: Job-level mutations commented out as workflow is now managed at stage level
-  // Uncomment if needed for mobile fallback or additional job actions
-  /*
-  const startJobMutation = useMutation({
+  const pauseJobMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      const response = await api.post(`/production/jobs/${jobId}/start`);
+      const response = await api.patch(`/production/jobs/${jobId}/status`, { status: 'paused' });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production'] });
-      toast.success('Job started successfully');
+      toast.success('Job paused successfully');
     },
     onError: () => {
-      toast.error('Failed to start job');
+      toast.error('Failed to pause job');
     },
   });
 
-  const completeJobMutation = useMutation({
+  const resumeJobMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      const response = await api.post(`/production/jobs/${jobId}/complete`);
+      const response = await api.patch(`/production/jobs/${jobId}/status`, { status: 'in_progress' });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production'] });
-      toast.success('Job completed successfully');
+      toast.success('Job resumed successfully');
     },
     onError: () => {
-      toast.error('Failed to complete job');
+      toast.error('Failed to resume job');
     },
   });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ jobId, status }: { jobId: string; status: string }) => {
-      const response = await api.patch(`/production/jobs/${jobId}/status`, { status });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['production'] });
-      toast.success('Job status updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update job status');
-    },
-  });
-  */
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
   };
 
-  const jobs: ProductionJob[] = response?.data || [];
+  // Transform backend data to match component expectations
+  const jobs = (response?.data || []).map((job: ProductionJob) => ({
+    id: job.id,
+    job_number: job.job_number,
+    order_number: job.order?.order_number || '',
+    product_name: job.order?.product_name || '',
+    quantity: job.order?.quantity || 0,
+    unit: 'pcs', // Default unit
+    status: job.status,
+    machine: job.assigned_machine || '',
+    operator_name: job.assigned_operator?.full_name || '',
+    operator_id: job.assigned_operator?.id || '',
+    progress: job.progress_percent || 0,
+    current_stage: job.current_stage || '',
+    inline_status: job.inline_status || '',
+    assigned_operator: job.assigned_operator,
+  }));
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Production</h1>
-          <p className="text-gray-600 mt-1">Track production jobs and schedules</p>
-        </div>
-        <Button
-          variant="primary"
-          size="md"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add Production Job
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Production</h1>
+        <p className="text-gray-600 mt-1">Track production jobs and schedules</p>
       </div>
 
       {/* View Toggle */}
@@ -268,9 +257,35 @@ export default function Production() {
           }}
         />
       ) : viewMode === 'grid' ? (
-        <ProductionGrid jobs={jobs} />
+        <ProductionGrid
+          jobs={jobs}
+          onCreateJob={() => setIsModalOpen(true)}
+          onViewWorkflow={(jobId) => {
+            setSelectedJobId(jobId);
+            setShowWorkflowModal(true);
+          }}
+          onPauseJob={(jobId) => pauseJobMutation.mutate(jobId)}
+          onResumeJob={(jobId) => resumeJobMutation.mutate(jobId)}
+        />
       ) : (
-        <ProductionKanban jobs={jobs} />
+        <ProductionKanban
+          jobs={jobs}
+          onCreateJob={() => setIsModalOpen(true)}
+          onViewWorkflow={(jobId) => {
+            setSelectedJobId(jobId);
+            setShowWorkflowModal(true);
+          }}
+          onStatusChange={(jobId, newStatus) => {
+            api.patch(`/production/jobs/${jobId}/status`, { status: newStatus })
+              .then(() => {
+                queryClient.invalidateQueries({ queryKey: ['production'] });
+                toast.success('Job status updated successfully');
+              })
+              .catch(() => {
+                toast.error('Failed to update job status');
+              });
+          }}
+        />
       )}
 
       {isModalOpen && (
@@ -371,22 +386,32 @@ export default function Production() {
       )}
 
       {showWorkflowModal && selectedJobId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
               <h2 className="text-xl font-bold">Production Workflow</h2>
               <button
                 onClick={() => {
                   setShowWorkflowModal(false);
                   setSelectedJobId(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="text-center py-8 text-gray-500">
-              Workflow details would be displayed here
+            <div className="p-6">
+              {selectedJobId && (() => {
+                const selectedJob = jobs.find((j: any) => j.id === selectedJobId);
+                return (
+                  <ProductionWorkflowLevels
+                    jobId={selectedJobId}
+                    operatorName={selectedJob?.operator_name}
+                    machine={selectedJob?.machine}
+                    operatorId={selectedJob?.operator_id}
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>
