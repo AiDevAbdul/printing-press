@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Plus, Grid3x3, Kanban } from 'lucide-react';
 import api from '../../services/api';
-import ProductionWorkflow from '../../components/ProductionWorkflow';
-import { ExpandableJobRow } from '../../components/workflow/ExpandableJobRow';
-import { MobileWorkflowModal } from '../../components/workflow/MobileWorkflowModal';
-import { useIsDesktop, useIsMobile } from '../../hooks/useMediaQuery';
+import { Button } from '../../components/ui/Button';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { ProductionGrid } from './ProductionGrid';
+import { ProductionKanban } from './ProductionKanban';
 
 interface ProductionJob {
   id: string;
@@ -59,15 +60,8 @@ interface ProductionFormData {
   notes: string;
 }
 
-const statusColors: Record<string, string> = {
-  queued: 'bg-gray-100 text-gray-800',
-  in_progress: 'bg-blue-100 text-blue-800',
-  paused: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
-
 export default function Production() {
+  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
@@ -83,9 +77,6 @@ export default function Production() {
   });
 
   const queryClient = useQueryClient();
-  const isDesktop = useIsDesktop();
-  const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['production', statusFilter],
@@ -196,46 +187,50 @@ export default function Production() {
     createMutation.mutate(formData);
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          Error loading production jobs
-        </div>
-      </div>
-    );
-  }
-
   const jobs: ProductionJob[] = response?.data || [];
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Production</h1>
-          <p className="mt-2 text-gray-600">Track production jobs and schedules</p>
+          <p className="text-gray-600 mt-1">Track production jobs and schedules</p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="md"
+          icon={<Plus className="w-4 h-4" />}
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
         >
           Add Production Job
-        </button>
+        </Button>
       </div>
 
-      <div className="mb-6">
+      {/* View Toggle */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+            size="sm"
+            icon={<Grid3x3 className="w-4 h-4" />}
+            onClick={() => setViewMode('grid')}
+          >
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
+            size="sm"
+            icon={<Kanban className="w-4 h-4" />}
+            onClick={() => setViewMode('kanban')}
+          >
+            Kanban
+          </Button>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
         >
           <option value="">All Statuses</option>
           <option value="queued">Queued</option>
@@ -246,75 +241,34 @@ export default function Production() {
         </select>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>}
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Operator</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
-                {isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Workflow</th>}
-                {!isDesktop && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {jobs.length === 0 ? (
-                <tr>
-                  <td colSpan={isDesktop ? 9 : 8} className="px-6 py-4 text-center text-gray-500">
-                    No production jobs found
-                  </td>
-                </tr>
-              ) : isDesktop ? (
-                jobs.map((job) => (
-                  <ExpandableJobRow
-                    key={job.id}
-                    job={{
-                      ...job,
-                      product_name: job.order.product_name,
-                      quantity: job.order.quantity || 0,
-                      operator_name: job.assigned_operator?.full_name,
-                      operator_id: job.assigned_operator?.id,
-                      machine: job.assigned_machine,
-                    }}
-                    isExpanded={false}
-                    onToggle={() => {}}
-                  />
-                ))
-              ) : (
-                jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{job.job_number}</td>
-                    <td className="px-4 py-3 text-sm">{job.order.order_number}</td>
-                    <td className="px-4 py-3 text-sm">{job.order.product_name}</td>
-                    <td className="px-4 py-3 text-sm">{job.order.quantity || 0}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[job.status]}`}>
-                        {job.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">{job.assigned_operator?.full_name || '-'}</td>
-                    <td className="px-4 py-3 text-sm">{job.assigned_machine || '-'}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => navigate(`/workflow/${job.id}`)}
-                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
-                      >
-                        Workflow
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
         </div>
-      </div>
+      ) : error ? (
+        <EmptyState
+          icon="AlertCircle"
+          title="Error loading production jobs"
+          description="There was an error loading the production jobs. Please try again."
+        />
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          icon="Factory"
+          title="No production jobs found"
+          description="Get started by creating your first production job."
+          action={{
+            label: 'Add Production Job',
+            onClick: () => setIsModalOpen(true),
+          }}
+        />
+      ) : viewMode === 'grid' ? (
+        <ProductionGrid jobs={jobs} />
+      ) : (
+        <ProductionKanban jobs={jobs} />
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -427,52 +381,27 @@ export default function Production() {
         </div>
       )}
 
-      {showWorkflowModal && selectedJobId && (() => {
-        const selectedJob = jobs?.find((job: ProductionJob) => job.id === selectedJobId);
-        const currentIndex = jobs.findIndex((job: ProductionJob) => job.id === selectedJobId);
-        const allJobIds = jobs.map((job: ProductionJob) => job.id);
-
-        return isMobile ? (
-          <MobileWorkflowModal
-            jobId={selectedJobId}
-            operatorId={selectedJob?.assigned_operator?.id}
-            operatorName={selectedJob?.assigned_operator?.full_name}
-            machine={selectedJob?.assigned_machine}
-            onClose={() => {
-              setShowWorkflowModal(false);
-              setSelectedJobId(null);
-            }}
-            allJobIds={allJobIds}
-            currentIndex={currentIndex}
-            onNavigate={(index) => {
-              setSelectedJobId(allJobIds[index]);
-            }}
-          />
-        ) : (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Job #{selectedJob?.job_number}</h2>
-                <button
-                  onClick={() => {
-                    setShowWorkflowModal(false);
-                    setSelectedJobId(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-              <ProductionWorkflow
-                jobId={selectedJobId}
-                operatorName={selectedJob?.assigned_operator?.full_name}
-                machine={selectedJob?.assigned_machine}
-                operatorId={selectedJob?.assigned_operator?.id}
-              />
+      {showWorkflowModal && selectedJobId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Production Workflow</h2>
+              <button
+                onClick={() => {
+                  setShowWorkflowModal(false);
+                  setSelectedJobId(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="text-center py-8 text-gray-500">
+              Workflow details would be displayed here
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }

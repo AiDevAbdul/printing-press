@@ -4,7 +4,6 @@ import { Plus, Grid3x3, Clock } from 'lucide-react';
 import { dispatchService } from '../../services/dispatch.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { DispatchGrid } from './DispatchGrid';
 import { DispatchTimeline } from './DispatchTimeline';
 import DeliveryForm from './DeliveryForm';
@@ -78,20 +77,20 @@ const Dispatch = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Select
-          options={[
-            { value: 'all', label: 'All Status' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'packed', label: 'Packed' },
-            { value: 'dispatched', label: 'Dispatched' },
-            { value: 'in_transit', label: 'In Transit' },
-            { value: 'delivered', label: 'Delivered' },
-            { value: 'failed', label: 'Failed' },
-            { value: 'returned', label: 'Returned' },
-          ]}
+        <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-        />
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="packed">Packed</option>
+          <option value="dispatched">Dispatched</option>
+          <option value="in_transit">In Transit</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+          <option value="returned">Returned</option>
+        </select>
       </div>
 
       {/* Content */}

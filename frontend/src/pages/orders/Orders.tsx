@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { Plus, Grid3x3, Kanban } from 'lucide-react';
 import api from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 import OrderFormModal from './OrderFormModal';
+import { OrdersGrid } from './OrdersGrid';
+import { OrdersKanban } from './OrdersKanban';
 
 interface Order {
   id: string;
@@ -97,23 +105,8 @@ interface OrderFormData {
   punch_size?: string;
 }
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-blue-100 text-blue-800',
-  in_production: 'bg-orange-600 text-white',
-  completed: 'bg-green-100 text-green-800',
-  delivered: 'bg-green-600 text-white',
-  cancelled: 'bg-red-100 text-red-800',
-};
-
-const priorityColors: Record<string, string> = {
-  low: 'bg-gray-100 text-gray-800',
-  normal: 'bg-blue-100 text-blue-800',
-  high: 'bg-orange-100 text-orange-800',
-  urgent: 'bg-red-100 text-red-800',
-};
-
 export default function Orders() {
+  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [productTypeFilter, setProductTypeFilter] = useState('');
@@ -178,250 +171,135 @@ export default function Orders() {
     },
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
-      const response = await api.patch(`/orders/${orderId}/status`, { status });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast.success('Order status updated successfully');
-    },
-    onError: () => {
-      toast.error('Failed to update order status');
-    },
-  });
-
   const handleFormSubmit = (data: OrderFormData) => {
     createMutation.mutate(data);
   };
 
-  const handleStatusUpdate = (orderId: string, status: string) => {
-    if (confirm(`Are you sure you want to change the order status to ${status}?`)) {
-      updateStatusMutation.mutate({ orderId, status });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          Error loading orders
-        </div>
-      </div>
-    );
-  }
-
   const orders: Order[] = response?.data || [];
 
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch = searchTerm === '' ||
+      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.batch_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
+  });
+
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="mt-2 text-gray-600">Manage customer orders and track progress</p>
+          <p className="text-gray-600 mt-1">Manage customer orders and track progress</p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="md"
+          icon={<Plus className="w-4 h-4" />}
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
         >
           Add Order
-        </button>
+        </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      {/* View Toggle */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+            size="sm"
+            icon={<Grid3x3 className="w-4 h-4" />}
+            onClick={() => setViewMode('grid')}
           >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="in_production">In Production</option>
-            <option value="completed">Completed</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          <select
-            value={productTypeFilter}
-            onChange={(e) => setProductTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
+            size="sm"
+            icon={<Kanban className="w-4 h-4" />}
+            onClick={() => setViewMode('kanban')}
           >
-            <option value="">All Product Types</option>
-            <option value="cpp_carton">CPP Carton</option>
-            <option value="silvo_blister">Silvo/Blister</option>
-            <option value="bent_foil">Bent Foil</option>
-            <option value="alu_alu">Alu-Alu</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-
-          <button
-            onClick={() => {
-              setStatusFilter('');
-              setProductTypeFilter('');
-              setPriorityFilter('');
-              setSearchTerm('');
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Clear Filters
-          </button>
+            Kanban
+          </Button>
         </div>
+      </div>
 
-        <input
-          type="text"
-          placeholder="Search by order #, customer, product, group, batch #..."
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Input
+          placeholder="Search orders..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <Select
+          options={[
+            { value: '', label: 'All Statuses' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'approved', label: 'Approved' },
+            { value: 'in_production', label: 'In Production' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'delivered', label: 'Delivered' },
+            { value: 'cancelled', label: 'Cancelled' },
+          ]}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        />
+        <Select
+          options={[
+            { value: '', label: 'All Product Types' },
+            { value: 'cpp_carton', label: 'CPP Carton' },
+            { value: 'silvo_blister', label: 'Silvo/Blister' },
+            { value: 'bent_foil', label: 'Bent Foil' },
+            { value: 'alu_alu', label: 'Alu-Alu' },
+          ]}
+          value={productTypeFilter}
+          onChange={(e) => setProductTypeFilter(e.target.value)}
+        />
+        <Select
+          options={[
+            { value: '', label: 'All Priorities' },
+            { value: 'low', label: 'Low' },
+            { value: 'normal', label: 'Normal' },
+            { value: 'high', label: 'High' },
+            { value: 'urgent', label: 'Urgent' },
+          ]}
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type/Strength</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
-                    No orders found
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.order_number}
-                      {order.batch_number && (
-                        <div className="text-xs text-gray-500">Batch: {order.batch_number}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{order.customer.name}</div>
-                      {order.customer.company_name && (
-                        <div className="text-xs text-gray-500">{order.customer.company_name}</div>
-                      )}
-                      {order.group_name && (
-                        <div className="text-xs text-gray-500">Group: {order.group_name}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div>{order.product_name}</div>
-                      {order.specifications && (
-                        <div className="text-xs text-gray-500 truncate max-w-xs" title={order.specifications}>
-                          {order.specifications}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.product_type && (
-                        <div className="text-xs font-medium text-gray-700">
-                          {order.product_type.replace('_', ' ').toUpperCase()}
-                        </div>
-                      )}
-                      {order.strength && (
-                        <div className="text-xs text-gray-500">{order.strength}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.quantity} {order.unit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.delivery_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityColors[order.priority]}`}>
-                        {order.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[order.status]}`}>
-                        {order.status.replace('_', ' ')}
-                      </span>
-                      {order.production_status && (
-                        <div className="text-xs text-gray-500 mt-1">{order.production_status}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.final_price ? `₹${order.final_price.toLocaleString()}` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex gap-2">
-                        {order.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleStatusUpdate(order.id, 'approved')}
-                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                              disabled={updateStatusMutation.isPending}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                              disabled={updateStatusMutation.isPending}
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        )}
-                        {order.status === 'approved' && (
-                          <button
-                            onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        {(order.status === 'cancelled' || order.status === 'completed' || order.status === 'delivered') && (
-                          <span className="text-xs text-gray-400">No actions</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
         </div>
-      </div>
+      ) : error ? (
+        <EmptyState
+          icon="AlertCircle"
+          title="Error loading orders"
+          description="There was an error loading the orders. Please try again."
+        />
+      ) : filteredOrders.length === 0 ? (
+        <EmptyState
+          icon="Package"
+          title="No orders found"
+          description="Get started by creating your first order."
+          action={{
+            label: 'Add Order',
+            onClick: () => setIsModalOpen(true),
+          }}
+        />
+      ) : viewMode === 'grid' ? (
+        <OrdersGrid orders={filteredOrders} />
+      ) : (
+        <OrdersKanban orders={filteredOrders} />
+      )}
 
       <OrderFormModal
         isOpen={isModalOpen}

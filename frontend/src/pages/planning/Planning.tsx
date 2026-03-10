@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { Card } from '../../components/ui/Card';
 
 interface Order {
   id: string;
@@ -129,145 +135,91 @@ export default function Planning() {
     createProductionJobMutation.mutate(formData);
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          Error loading approved orders
-        </div>
-      </div>
-    );
-  }
-
   const orders: Order[] = response?.data || [];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Planning</h1>
-        <p className="mt-2 text-gray-600">Create production jobs from approved orders</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Planning</h1>
+          <p className="text-gray-600 mt-1">Create production jobs from approved orders</p>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-
-          <button
-            onClick={() => {
-              setPriorityFilter('');
-              setSearchTerm('');
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        <input
-          type="text"
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Input
           placeholder="Search by order #, customer, product..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <Select
+          options={[
+            { value: '', label: 'All Priorities' },
+            { value: 'low', label: 'Low' },
+            { value: 'normal', label: 'Normal' },
+            { value: 'high', label: 'High' },
+            { value: 'urgent', label: 'Urgent' },
+          ]}
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type/Strength</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
-                    No approved orders found
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.order_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{order.customer.name}</div>
-                      {order.customer.company_name && (
-                        <div className="text-xs text-gray-500">{order.customer.company_name}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div>{order.product_name}</div>
-                      {order.specifications && (
-                        <div className="text-xs text-gray-500 truncate max-w-xs" title={order.specifications}>
-                          {order.specifications}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.product_type && (
-                        <div className="text-xs font-medium text-gray-700">
-                          {order.product_type.replace('_', ' ').toUpperCase()}
-                        </div>
-                      )}
-                      {order.strength && (
-                        <div className="text-xs text-gray-500">{order.strength}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.quantity} {order.unit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.delivery_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityColors[order.priority]}`}>
-                        {order.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button
-                        onClick={() => handleCreateJob(order)}
-                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                      >
-                        Create Job
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
         </div>
-      </div>
+      ) : error ? (
+        <EmptyState
+          icon="AlertCircle"
+          title="Error loading approved orders"
+          description="There was an error loading the orders. Please try again."
+        />
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon="Package"
+          title="No approved orders found"
+          description="Approve orders from the Orders page to see them here."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {orders.map((order) => (
+            <Card key={order.id} variant="elevated" className="hover:shadow-lg transition-shadow">
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{order.order_number}</h3>
+                    <p className="text-sm text-gray-600">{order.customer.name}</p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${priorityColors[order.priority]}`}>
+                    {order.priority}
+                  </span>
+                </div>
+
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-700"><span className="font-medium">Product:</span> {order.product_name}</p>
+                  <p className="text-gray-600"><span className="font-medium">Qty:</span> {order.quantity} {order.unit}</p>
+                  <p className="text-gray-600"><span className="font-medium">Delivery:</span> {new Date(order.delivery_date).toLocaleDateString()}</p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  fullWidth
+                  onClick={() => handleCreateJob(order)}
+                  disabled={createProductionJobMutation.isPending}
+                >
+                  Create Job
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
