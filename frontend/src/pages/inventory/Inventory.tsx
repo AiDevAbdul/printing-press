@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { useInventoryItems, useCreateInventoryItem, useUpdateInventoryItem, useDeleteInventoryItem } from '../../hooks/useInventory';
 import { InventoryItem, InventoryFilters, InventoryCategory } from '../../types';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Modal } from '../../components/ui/Modal';
 import CategoryTabs from '../../components/inventory/CategoryTabs';
 import PaperFilters from '../../components/inventory/PaperFilters';
 import OtherMaterialFilters from '../../components/inventory/OtherMaterialFilters';
 import CommonFilters from '../../components/inventory/CommonFilters';
+import { Plus } from 'lucide-react';
 
 interface InventoryFormData {
   item_code: string;
@@ -177,16 +182,18 @@ export default function Inventory() {
           <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
           <p className="mt-2 text-gray-600">Manage stock levels and materials</p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<Plus className="w-4 h-4" />}
           onClick={() => {
             setEditingItem(null);
             resetForm();
             setIsModalOpen(true);
           }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
         >
           Add Item
-        </button>
+        </Button>
       </div>
 
       <CategoryTabs activeCategory={filters.main_category || 'paper'} onCategoryChange={handleCategoryChange} />
@@ -321,215 +328,171 @@ export default function Inventory() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">
-              {editingItem ? 'Edit Inventory Item' : 'Add New Inventory Item'}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Item Code *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.item_code}
-                    onChange={(e) => setFormData({ ...formData, item_code: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.item_name}
-                    onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Main Category *</label>
-                  <select
-                    required
-                    value={formData.main_category}
-                    onChange={(e) => setFormData({ ...formData, main_category: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="block">Block</option>
-                    <option value="paper">Paper</option>
-                    <option value="other_material">Other Material</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                  <select
-                    required
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as InventoryCategory })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={InventoryCategory.PAPER}>Paper</option>
-                    <option value={InventoryCategory.INK}>Ink</option>
-                    <option value={InventoryCategory.PLATES}>Plates</option>
-                    <option value={InventoryCategory.FINISHING_MATERIALS}>Finishing Materials</option>
-                    <option value={InventoryCategory.PACKAGING}>Packaging</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
-                  <input
-                    type="text"
-                    value={formData.subcategory}
-                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
-                  <select
-                    required
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="kg">Kg</option>
-                    <option value="liters">Liters</option>
-                    <option value="pieces">Pieces</option>
-                    <option value="reams">Reams</option>
-                    <option value="boxes">Boxes</option>
-                  </select>
-                </div>
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingItem(null);
+            resetForm();
+          }}
+          title={editingItem ? 'Edit Inventory Item' : 'Add New Inventory Item'}
+          size="lg"
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Item Code *"
+                required
+                value={formData.item_code}
+                onChange={(e) => setFormData({ ...formData, item_code: e.target.value })}
+              />
+              <Input
+                label="Item Name *"
+                required
+                value={formData.item_name}
+                onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
+              />
+              <Select
+                label="Main Category *"
+                options={[
+                  { value: 'block', label: 'Block' },
+                  { value: 'paper', label: 'Paper' },
+                  { value: 'other_material', label: 'Other Material' },
+                ]}
+                value={formData.main_category}
+                onChange={(e) => setFormData({ ...formData, main_category: e.target.value as any })}
+              />
+              <Select
+                label="Category *"
+                options={[
+                  { value: InventoryCategory.PAPER, label: 'Paper' },
+                  { value: InventoryCategory.INK, label: 'Ink' },
+                  { value: InventoryCategory.PLATES, label: 'Plates' },
+                  { value: InventoryCategory.FINISHING_MATERIALS, label: 'Finishing Materials' },
+                  { value: InventoryCategory.PACKAGING, label: 'Packaging' },
+                ]}
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value as InventoryCategory })}
+              />
+              <Input
+                label="Subcategory"
+                value={formData.subcategory}
+                onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+              />
+              <Select
+                label="Unit *"
+                options={[
+                  { value: 'kg', label: 'Kg' },
+                  { value: 'liters', label: 'Liters' },
+                  { value: 'pieces', label: 'Pieces' },
+                  { value: 'reams', label: 'Reams' },
+                  { value: 'boxes', label: 'Boxes' },
+                ]}
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              />
 
-                {formData.main_category === 'paper' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
-                      <select
-                        value={formData.size || ''}
-                        onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select Size</option>
-                        <option value="A4">A4</option>
-                        <option value="A3">A3</option>
-                        <option value="A5">A5</option>
-                        <option value="custom">Custom</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">GSM</label>
-                      <input
-                        type="number"
-                        value={formData.gsm || ''}
-                        onChange={(e) => setFormData({ ...formData, gsm: e.target.value ? Number(e.target.value) : undefined })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Material Type</label>
-                      <input
-                        type="text"
-                        value={formData.material_type || ''}
-                        onChange={(e) => setFormData({ ...formData, material_type: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., Art Paper, Bond, Cardstock"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                  <input
-                    type="text"
-                    value={formData.brand || ''}
-                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              {formData.main_category === 'paper' && (
+                <>
+                  <Select
+                    label="Size"
+                    options={[
+                      { value: '', label: 'Select Size' },
+                      { value: 'A4', label: 'A4' },
+                      { value: 'A3', label: 'A3' },
+                      { value: 'A5', label: 'A5' },
+                      { value: 'custom', label: 'Custom' },
+                    ]}
+                    value={formData.size || ''}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                  <input
-                    type="text"
-                    value={formData.color || ''}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Stock *</label>
-                  <input
+                  <Input
+                    label="GSM"
                     type="number"
-                    required
-                    value={formData.current_stock}
-                    onChange={(e) => setFormData({ ...formData, current_stock: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    value={formData.gsm || ''}
+                    onChange={(e) => setFormData({ ...formData, gsm: e.target.value ? Number(e.target.value) : undefined })}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reorder Level *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.reorder_level}
-                    onChange={(e) => setFormData({ ...formData, reorder_level: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  <Input
+                    label="Material Type"
+                    value={formData.material_type || ''}
+                    onChange={(e) => setFormData({ ...formData, material_type: e.target.value })}
+                    placeholder="e.g., Art Paper, Bond, Cardstock"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reorder Quantity *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.reorder_quantity}
-                    onChange={(e) => setFormData({ ...formData, reorder_quantity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Cost *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.unit_cost}
-                    onChange={(e) => setFormData({ ...formData, unit_cost: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setEditingItem(null);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : editingItem
-                    ? 'Update Item'
-                    : 'Create Item'}
-                </button>
-              </div>
-              {(createMutation.isError || updateMutation.isError) && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                  Error {editingItem ? 'updating' : 'creating'} inventory item
-                </div>
+                </>
               )}
-            </form>
-          </div>
-        </div>
+
+              <Input
+                label="Brand"
+                value={formData.brand || ''}
+                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+              />
+              <Input
+                label="Color"
+                value={formData.color || ''}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              />
+              <Input
+                label="Current Stock *"
+                type="number"
+                required
+                value={formData.current_stock}
+                onChange={(e) => setFormData({ ...formData, current_stock: Number(e.target.value) })}
+              />
+              <Input
+                label="Reorder Level *"
+                type="number"
+                required
+                value={formData.reorder_level}
+                onChange={(e) => setFormData({ ...formData, reorder_level: Number(e.target.value) })}
+              />
+              <Input
+                label="Reorder Quantity *"
+                type="number"
+                required
+                value={formData.reorder_quantity}
+                onChange={(e) => setFormData({ ...formData, reorder_quantity: Number(e.target.value) })}
+              />
+              <Input
+                label="Unit Cost *"
+                type="number"
+                required
+                value={formData.unit_cost}
+                onChange={(e) => setFormData({ ...formData, unit_cost: Number(e.target.value) })}
+              />
+            </div>
+
+            {(createMutation.isError || updateMutation.isError) && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                Error {editingItem ? 'updating' : 'creating'} inventory item
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingItem(null);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? 'Saving...'
+                  : editingItem
+                  ? 'Update Item'
+                  : 'Create Item'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
