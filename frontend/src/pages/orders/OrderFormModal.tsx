@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Modal } from '../../components/ui/Modal';
+import { Checkbox } from '../../components/ui/Checkbox';
 
 interface OrderFormData {
   customer_id: string;
@@ -81,550 +86,416 @@ export default function OrderFormModal({
     has_barcode: false,
   });
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg w-full max-w-6xl m-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Add New Order</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Order"
+      size="xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Info Section */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <Select
+                label="Customer *"
+                options={[
+                  { value: '', label: 'Select Customer' },
+                  ...(customers?.map((customer: any) => ({
+                    value: customer.id,
+                    label: `${customer.name} ${customer.company_name ? `(${customer.company_name})` : ''}`,
+                  })) || []),
+                ]}
+                value={formData.customer_id}
+                onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+              />
+            </div>
+
+            <Select
+              label="Product Type *"
+              options={[
+                { value: 'cpp_carton', label: 'CPP Carton' },
+                { value: 'silvo_blister', label: 'Silvo/Blister Foil' },
+                { value: 'bent_foil', label: 'Bent Foil' },
+                { value: 'alu_alu', label: 'Alu-Alu' },
+              ]}
+              value={formData.product_type}
+              onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
+            />
+
+            <Input
+              label="Order Date *"
+              type="date"
+              required
+              value={formData.order_date}
+              onChange={(e) => setFormData({ ...formData, order_date: e.target.value })}
+            />
+
+            <Input
+              label="Delivery Date *"
+              type="date"
+              required
+              value={formData.delivery_date}
+              onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
+            />
+
+            <div className="md:col-span-2">
+              <Input
+                label="Product Name *"
+                required
+                value={formData.product_name}
+                onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                placeholder="e.g., Business Cards, Packaging Box"
+              />
+            </div>
+
+            <Input
+              label="Quantity *"
+              type="number"
+              required
+              value={formData.quantity}
+              onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+            />
+
+            <Select
+              label="Unit *"
+              options={[
+                { value: 'pieces', label: 'Pieces' },
+                { value: 'boxes', label: 'Boxes' },
+                { value: 'reams', label: 'Reams' },
+                { value: 'kg', label: 'Kg' },
+              ]}
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            />
+
+            <Select
+              label="Priority *"
+              options={[
+                { value: 'low', label: 'Low' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'high', label: 'High' },
+                { value: 'urgent', label: 'Urgent' },
+              ]}
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+            />
+
+            <Input
+              label="Final Price"
+              type="number"
+              value={formData.final_price}
+              onChange={(e) => setFormData({ ...formData, final_price: Number(e.target.value) })}
+            />
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
-            {/* Basic Info Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
-                  <select
-                    required
-                    value={formData.customer_id}
-                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Customer</option>
-                    {customers?.map((customer: any) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} {customer.company_name && `(${customer.company_name})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        {/* Specifications Section */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Card Width (mm)"
+              value={formData.card_width || ''}
+              onChange={(e) => setFormData({ ...formData, card_width: e.target.value })}
+              placeholder="e.g., 100"
+            />
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
-                  <select
-                    required
-                    value={formData.product_type}
-                    onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="cpp_carton">CPP Carton</option>
-                    <option value="silvo_blister">Silvo/Blister Foil</option>
-                    <option value="bent_foil">Bent Foil</option>
-                    <option value="alu_alu">Alu-Alu</option>
-                  </select>
-                </div>
+            <Input
+              label="Card Length (mm)"
+              value={formData.card_length || ''}
+              onChange={(e) => setFormData({ ...formData, card_length: e.target.value })}
+              placeholder="e.g., 150"
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Order Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.order_date}
-                    onChange={(e) => setFormData({ ...formData, order_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <Input
+              label="Strength"
+              value={formData.strength || ''}
+              onChange={(e) => setFormData({ ...formData, strength: e.target.value })}
+              placeholder="e.g., 300 GSM"
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.delivery_date}
-                    onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <Input
+              label="Type"
+              value={formData.type || ''}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            />
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.product_name}
-                    onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
-                  <select
-                    required
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="pieces">Pieces</option>
-                    <option value="boxes">Boxes</option>
-                    <option value="reams">Reams</option>
-                    <option value="kg">Kg</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority *</label>
-                  <select
-                    required
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Final Price</label>
-                  <input
-                    type="number"
-                    value={formData.final_price}
-                    onChange={(e) => setFormData({ ...formData, final_price: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Batch Number"
+                value={formData.batch_number || ''}
+                onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
+              />
             </div>
 
-            {/* Specifications Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Specifications</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Card Width (mm)</label>
-                  <input
-                    type="text"
-                    value={formData.card_width || ''}
-                    onChange={(e) => setFormData({ ...formData, card_width: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 100"
-                  />
-                </div>
+            <Input
+              label="Cyan (%)"
+              value={formData.color_cyan || ''}
+              onChange={(e) => setFormData({ ...formData, color_cyan: e.target.value })}
+              placeholder="e.g., 100"
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Card Length (mm)</label>
-                  <input
-                    type="text"
-                    value={formData.card_length || ''}
-                    onChange={(e) => setFormData({ ...formData, card_length: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 150"
-                  />
-                </div>
+            <Input
+              label="Magenta (%)"
+              value={formData.color_magenta || ''}
+              onChange={(e) => setFormData({ ...formData, color_magenta: e.target.value })}
+              placeholder="e.g., 50"
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Strength</label>
-                  <input
-                    type="text"
-                    value={formData.strength || ''}
-                    onChange={(e) => setFormData({ ...formData, strength: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 300 GSM"
-                  />
-                </div>
+            <Input
+              label="Yellow (%)"
+              value={formData.color_yellow || ''}
+              onChange={(e) => setFormData({ ...formData, color_yellow: e.target.value })}
+              placeholder="e.g., 0"
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <input
-                    type="text"
-                    value={formData.type || ''}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <Input
+              label="Black (%)"
+              value={formData.color_black || ''}
+              onChange={(e) => setFormData({ ...formData, color_black: e.target.value })}
+              placeholder="e.g., 25"
+            />
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
-                  <input
-                    type="text"
-                    value={formData.batch_number || ''}
-                    onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <Input
+              label="Pantone 1"
+              value={formData.color_p1 || ''}
+              onChange={(e) => setFormData({ ...formData, color_p1: e.target.value })}
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cyan (%)</label>
-                  <input
-                    type="text"
-                    value={formData.color_cyan || ''}
-                    onChange={(e) => setFormData({ ...formData, color_cyan: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 100"
-                  />
-                </div>
+            <Input
+              label="Pantone 2"
+              value={formData.color_p2 || ''}
+              onChange={(e) => setFormData({ ...formData, color_p2: e.target.value })}
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Magenta (%)</label>
-                  <input
-                    type="text"
-                    value={formData.color_magenta || ''}
-                    onChange={(e) => setFormData({ ...formData, color_magenta: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 50"
-                  />
-                </div>
+            <Input
+              label="Pantone 3"
+              value={formData.color_p3 || ''}
+              onChange={(e) => setFormData({ ...formData, color_p3: e.target.value })}
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Yellow (%)</label>
-                  <input
-                    type="text"
-                    value={formData.color_yellow || ''}
-                    onChange={(e) => setFormData({ ...formData, color_yellow: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 0"
-                  />
-                </div>
+            <Input
+              label="Pantone 4"
+              value={formData.color_p4 || ''}
+              onChange={(e) => setFormData({ ...formData, color_p4: e.target.value })}
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Black (%)</label>
-                  <input
-                    type="text"
-                    value={formData.color_black || ''}
-                    onChange={(e) => setFormData({ ...formData, color_black: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 25"
-                  />
-                </div>
+            {formData.product_type === 'silvo_blister' && (
+              <>
+                <Input
+                  label="Cylinder Reference"
+                  value={formData.cylinder_reference || ''}
+                  onChange={(e) => setFormData({ ...formData, cylinder_reference: e.target.value })}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pantone 1</label>
-                  <input
-                    type="text"
-                    value={formData.color_p1 || ''}
-                    onChange={(e) => setFormData({ ...formData, color_p1: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <Input
+                  label="Cylinder Sent Date"
+                  type="date"
+                  value={formData.cylinder_sent_date || ''}
+                  onChange={(e) => setFormData({ ...formData, cylinder_sent_date: e.target.value })}
+                />
+              </>
+            )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pantone 2</label>
-                  <input
-                    type="text"
-                    value={formData.color_p2 || ''}
-                    onChange={(e) => setFormData({ ...formData, color_p2: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {(formData.product_type === 'bent_foil' || formData.product_type === 'alu_alu') && (
+              <>
+                <Input
+                  label="Thickness (Micron)"
+                  type="number"
+                  value={formData.thickness_micron || ''}
+                  onChange={(e) => setFormData({ ...formData, thickness_micron: Number(e.target.value) })}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pantone 3</label>
-                  <input
-                    type="text"
-                    value={formData.color_p3 || ''}
-                    onChange={(e) => setFormData({ ...formData, color_p3: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <Input
+                  label="Tablet Size"
+                  value={formData.tablet_size || ''}
+                  onChange={(e) => setFormData({ ...formData, tablet_size: e.target.value })}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pantone 4</label>
-                  <input
-                    type="text"
-                    value={formData.color_p4 || ''}
-                    onChange={(e) => setFormData({ ...formData, color_p4: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <Input
+                  label="Punch Size"
+                  value={formData.punch_size || ''}
+                  onChange={(e) => setFormData({ ...formData, punch_size: e.target.value })}
+                />
+              </>
+            )}
+          </div>
+        </div>
 
-                {formData.product_type === 'silvo_blister' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cylinder Reference</label>
-                      <input
-                        type="text"
-                        value={formData.cylinder_reference || ''}
-                        onChange={(e) => setFormData({ ...formData, cylinder_reference: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+        {/* Finishing Section */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Finishing Options</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Varnish Type"
+              options={[
+                { value: 'none', label: 'None' },
+                { value: 'water_base', label: 'Water Base' },
+                { value: 'duck', label: 'Duck' },
+                { value: 'plain_uv', label: 'Plain UV' },
+                { value: 'spot_uv', label: 'Spot UV' },
+                { value: 'drip_off_uv', label: 'Drip Off UV' },
+                { value: 'matt_uv', label: 'Matt UV' },
+                { value: 'rough_uv', label: 'Rough UV' },
+              ]}
+              value={formData.varnish_type || 'none'}
+              onChange={(e) => setFormData({ ...formData, varnish_type: e.target.value })}
+            />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cylinder Sent Date</label>
-                      <input
-                        type="date"
-                        value={formData.cylinder_sent_date || ''}
-                        onChange={(e) => setFormData({ ...formData, cylinder_sent_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
+            <Select
+              label="Lamination Type"
+              options={[
+                { value: 'none', label: 'None' },
+                { value: 'shine', label: 'Shine' },
+                { value: 'matt', label: 'Matt' },
+                { value: 'metalize', label: 'Metalize' },
+                { value: 'rainbow', label: 'Rainbow' },
+              ]}
+              value={formData.lamination_type || 'none'}
+              onChange={(e) => setFormData({ ...formData, lamination_type: e.target.value })}
+            />
 
-                {(formData.product_type === 'bent_foil' || formData.product_type === 'alu_alu') && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Thickness (Micron)</label>
-                      <input
-                        type="number"
-                        value={formData.thickness_micron || ''}
-                        onChange={(e) => setFormData({ ...formData, thickness_micron: Number(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tablet Size</label>
-                      <input
-                        type="text"
-                        value={formData.tablet_size || ''}
-                        onChange={(e) => setFormData({ ...formData, tablet_size: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Punch Size</label>
-                      <input
-                        type="text"
-                        value={formData.punch_size || ''}
-                        onChange={(e) => setFormData({ ...formData, punch_size: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Varnish Details</label>
+              <textarea
+                value={formData.varnish_details || ''}
+                onChange={(e) => setFormData({ ...formData, varnish_details: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
-            {/* Finishing Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Finishing Options</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Varnish Type</label>
-                  <select
-                    value={formData.varnish_type || 'none'}
-                    onChange={(e) => setFormData({ ...formData, varnish_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="none">None</option>
-                    <option value="water_base">Water Base</option>
-                    <option value="duck">Duck</option>
-                    <option value="plain_uv">Plain UV</option>
-                    <option value="spot_uv">Spot UV</option>
-                    <option value="drip_off_uv">Drip Off UV</option>
-                    <option value="matt_uv">Matt UV</option>
-                    <option value="rough_uv">Rough UV</option>
-                  </select>
-                </div>
+            <Input
+              label="Lamination Size"
+              value={formData.lamination_size || ''}
+              onChange={(e) => setFormData({ ...formData, lamination_size: e.target.value })}
+            />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lamination Type</label>
-                  <select
-                    value={formData.lamination_type || 'none'}
-                    onChange={(e) => setFormData({ ...formData, lamination_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="none">None</option>
-                    <option value="shine">Shine</option>
-                    <option value="matt">Matt</option>
-                    <option value="metalize">Metalize</option>
-                    <option value="rainbow">Rainbow</option>
-                  </select>
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Varnish Details</label>
-                  <textarea
-                    value={formData.varnish_details || ''}
-                    onChange={(e) => setFormData({ ...formData, varnish_details: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lamination Size</label>
-                  <input
-                    type="text"
-                    value={formData.lamination_size || ''}
-                    onChange={(e) => setFormData({ ...formData, lamination_size: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">UV Emboss Details</label>
-                  <textarea
-                    value={formData.uv_emboss_details || ''}
-                    onChange={(e) => setFormData({ ...formData, uv_emboss_details: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="col-span-2 flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.has_back_printing || false}
-                      onChange={(e) => setFormData({ ...formData, has_back_printing: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Has Back Printing</span>
-                  </label>
-
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.has_barcode || false}
-                      onChange={(e) => setFormData({ ...formData, has_barcode: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Has Barcode</span>
-                  </label>
-                </div>
-              </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">UV Emboss Details</label>
+              <textarea
+                value={formData.uv_emboss_details || ''}
+                onChange={(e) => setFormData({ ...formData, uv_emboss_details: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
-            {/* Pre-Press Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Pre-Press Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CTP Info</label>
-                  <textarea
-                    value={formData.ctp_info || ''}
-                    onChange={(e) => setFormData({ ...formData, ctp_info: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            <div className="md:col-span-2 flex gap-4">
+              <Checkbox
+                label="Has Back Printing"
+                checked={formData.has_back_printing || false}
+                onChange={(e) => setFormData({ ...formData, has_back_printing: e.target.checked })}
+              />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Die Type</label>
-                  <select
-                    value={formData.die_type || 'none'}
-                    onChange={(e) => setFormData({ ...formData, die_type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="none">None</option>
-                    <option value="new_die">New Die</option>
-                    <option value="old_die">Old Die</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Die Reference</label>
-                  <input
-                    type="text"
-                    value={formData.die_reference || ''}
-                    onChange={(e) => setFormData({ ...formData, die_reference: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Emboss Film Details</label>
-                  <textarea
-                    value={formData.emboss_film_details || ''}
-                    onChange={(e) => setFormData({ ...formData, emboss_film_details: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plate Reference</label>
-                  <input
-                    type="text"
-                    value={formData.plate_reference || ''}
-                    onChange={(e) => setFormData({ ...formData, plate_reference: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Designer Name</label>
-                  <input
-                    type="text"
-                    value={formData.designer_name || ''}
-                    onChange={(e) => setFormData({ ...formData, designer_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
-                  <textarea
-                    value={formData.special_instructions}
-                    onChange={(e) => setFormData({ ...formData, special_instructions: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+              <Checkbox
+                label="Has Barcode"
+                checked={formData.has_barcode || false}
+                onChange={(e) => setFormData({ ...formData, has_barcode: e.target.checked })}
+              />
             </div>
           </div>
+        </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-200 flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Order'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="mx-6 mb-6 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-              Error creating order
+        {/* Pre-Press Section */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pre-Press Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">CTP Info</label>
+              <textarea
+                value={formData.ctp_info || ''}
+                onChange={(e) => setFormData({ ...formData, ctp_info: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-          )}
-        </form>
+
+            <Select
+              label="Die Type"
+              options={[
+                { value: 'none', label: 'None' },
+                { value: 'new_die', label: 'New Die' },
+                { value: 'old_die', label: 'Old Die' },
+              ]}
+              value={formData.die_type || 'none'}
+              onChange={(e) => setFormData({ ...formData, die_type: e.target.value })}
+            />
+
+            <Input
+              label="Die Reference"
+              value={formData.die_reference || ''}
+              onChange={(e) => setFormData({ ...formData, die_reference: e.target.value })}
+            />
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Emboss Film Details</label>
+              <textarea
+                value={formData.emboss_film_details || ''}
+                onChange={(e) => setFormData({ ...formData, emboss_film_details: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <Input
+              label="Plate Reference"
+              value={formData.plate_reference || ''}
+              onChange={(e) => setFormData({ ...formData, plate_reference: e.target.value })}
+            />
+
+            <Input
+              label="Designer Name"
+              value={formData.designer_name || ''}
+              onChange={(e) => setFormData({ ...formData, designer_name: e.target.value })}
+            />
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+              <textarea
+                value={formData.special_instructions}
+                onChange={(e) => setFormData({ ...formData, special_instructions: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            Error creating order
+          </div>
+        )}
+      </form>
+
+      {/* Footer Actions */}
+      <div className="flex gap-3 justify-end pt-4">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isSubmitting}
+          onClick={handleSubmit}
+        >
+          {isSubmitting ? 'Creating...' : 'Create Order'}
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }
