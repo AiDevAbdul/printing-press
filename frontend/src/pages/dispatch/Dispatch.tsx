@@ -4,9 +4,11 @@ import { Plus, Grid3x3, Clock } from 'lucide-react';
 import { dispatchService } from '../../services/dispatch.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { SortButton } from '../../components/ui/SortButton';
 import { DispatchGrid } from './DispatchGrid';
 import { DispatchTimeline } from './DispatchTimeline';
 import DeliveryForm from './DeliveryForm';
+import { useSorting } from '../../hooks/useSorting';
 
 const Dispatch = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
@@ -29,6 +31,8 @@ const Dispatch = () => {
     delivery.customer.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     delivery.job.job_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const { sortedItems, sortConfig, toggleSort } = useSorting(filteredDeliveries, 'delivery_date');
 
   return (
     <div className="space-y-6">
@@ -68,6 +72,20 @@ const Dispatch = () => {
             Timeline
           </Button>
         </div>
+        <div className="flex gap-2">
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'delivery_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('delivery_date')}
+          />
+          <SortButton
+            label="Status"
+            isActive={sortConfig.key === 'status'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('status')}
+          />
+        </div>
       </div>
 
       {/* Filters */}
@@ -96,12 +114,12 @@ const Dispatch = () => {
       {/* Content */}
       {viewMode === 'grid' ? (
         <DispatchGrid
-          deliveries={filteredDeliveries}
+          deliveries={sortedItems}
           isLoading={isLoading}
         />
       ) : (
         <DispatchTimeline
-          deliveries={filteredDeliveries}
+          deliveries={sortedItems}
           isLoading={isLoading}
         />
       )}

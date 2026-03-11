@@ -47,22 +47,25 @@ export default function UserProfile() {
   const profileId = userId || currentUser?.id;
 
   useEffect(() => {
-    fetchProfile();
-    fetchActivityLog();
+    if (profileId) {
+      fetchProfile();
+      fetchActivityLog();
+    }
   }, [profileId]);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const endpoint = isOwnProfile
-        ? '/api/users/profile'
-        : `/api/users/${profileId}/profile`;
+        ? '/users/profile'
+        : `/users/${profileId}/profile`;
       const response = await api.get(endpoint);
       setProfile(response.data);
       setError(null);
-    } catch (err) {
-      setError('Failed to load profile');
-      console.error(err);
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load profile';
+      setError(errorMessage);
+      console.error('Profile fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -70,10 +73,12 @@ export default function UserProfile() {
 
   const fetchActivityLog = async () => {
     try {
-      const response = await api.get(`/api/users/${profileId}/activity-log`);
+      const response = await api.get(`/users/${profileId}/activity-log`);
       setActivityLog(response.data.logs || []);
     } catch (err) {
       console.error('Failed to load activity log:', err);
+      // Activity log endpoint may not exist, continue without it
+      setActivityLog([]);
     }
   };
 

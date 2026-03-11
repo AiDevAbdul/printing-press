@@ -4,8 +4,8 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Alert } from '../../components/ui/Alert';
-import axios from 'axios';
 import { toast } from 'sonner';
+import api from '../../services/api';
 
 interface PermissionMatrixProps {
   isOpen: boolean;
@@ -119,7 +119,7 @@ export function PermissionMatrix({ isOpen, onClose, userId, userName, currentRol
       setLoading(true);
       setError(null);
 
-      await axios.put(`/api/users/${userId}/permissions`, {
+      await api.put(`/users/${userId}/permissions`, {
         system_access: systemAccess,
         partial_access: partialAccess,
       });

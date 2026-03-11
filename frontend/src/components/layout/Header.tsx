@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { Menu } from 'lucide-react';
@@ -20,6 +21,7 @@ export function Header({
   onLogout,
   className = '',
 }: HeaderProps) {
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -160,7 +162,10 @@ export function Header({
                 )}
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                  onClick={() => setShowUserMenu(false)}
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/profile');
+                  }}
                   role="menuitem"
                 >
                   <User className="w-4 h-4" aria-hidden="true" />

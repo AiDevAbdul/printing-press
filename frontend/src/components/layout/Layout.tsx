@@ -78,7 +78,7 @@ export default function Layout({ children }: LayoutProps) {
       label: 'System',
       icon: 'users',
       children: [
-        { id: 'users', label: 'Users', icon: 'users', href: '/users' },
+        { id: 'user-management', label: 'Users', icon: 'users', href: '/user-management' },
       ],
     });
   }

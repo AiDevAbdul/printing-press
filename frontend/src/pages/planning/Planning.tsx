@@ -9,6 +9,8 @@ import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
+import { SortButton } from '../../components/ui/SortButton';
+import { useSorting } from '../../hooks/useSorting';
 
 interface Order {
   id: string;
@@ -138,6 +140,8 @@ export default function Planning() {
 
   const orders: Order[] = response?.data || [];
 
+  const { sortedItems, sortConfig, toggleSort } = useSorting(orders, 'order_date');
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -148,24 +152,40 @@ export default function Planning() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input
-          placeholder="Search by order #, customer, product..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Select
-          options={[
-            { value: '', label: 'All Priorities' },
-            { value: 'low', label: 'Low' },
-            { value: 'normal', label: 'Normal' },
-            { value: 'high', label: 'High' },
-            { value: 'urgent', label: 'Urgent' },
-          ]}
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-        />
+      {/* Filters & Sort */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Input
+            placeholder="Search by order #, customer, product..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Select
+            options={[
+              { value: '', label: 'All Priorities' },
+              { value: 'low', label: 'Low' },
+              { value: 'normal', label: 'Normal' },
+              { value: 'high', label: 'High' },
+              { value: 'urgent', label: 'Urgent' },
+            ]}
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'order_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('order_date')}
+          />
+          <SortButton
+            label="Delivery"
+            isActive={sortConfig.key === 'delivery_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('delivery_date')}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -188,7 +208,7 @@ export default function Planning() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {orders.map((order) => (
+          {sortedItems.map((order) => (
             <Card key={order.id} variant="elevated" className="hover:shadow-lg transition-shadow">
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
@@ -263,7 +283,7 @@ export default function Planning() {
                 label="Assigned Operator"
                 options={[
                   { value: '', label: 'Select Operator' },
-                  ...(usersResponse?.map((user: User) => ({
+                  ...(usersResponse?.users?.map((user: User) => ({
                     value: user.id,
                     label: user.full_name,
                   })) || []),

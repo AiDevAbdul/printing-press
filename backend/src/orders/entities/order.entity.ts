@@ -56,6 +56,54 @@ export enum DieType {
   NONE = 'none',
 }
 
+export enum DesignFileStatus {
+  NOT_RECEIVED = 'not_received',
+  RECEIVED = 'received',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  REVISION_NEEDED = 'revision_needed',
+}
+
+export enum ColorSeparationType {
+  CMYK = 'cmyk',
+  SPOT_COLORS = 'spot_colors',
+  RGB = 'rgb',
+  PANTONE = 'pantone',
+}
+
+export enum PlateMaterial {
+  ALUMINUM = 'aluminum',
+  POLYESTER = 'polyester',
+  STEEL = 'steel',
+}
+
+export enum PlateCondition {
+  NEW = 'new',
+  REUSED = 'reused',
+  REFURBISHED = 'refurbished',
+}
+
+export enum PlateApprovalStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum ProofStatus {
+  NOT_REQUIRED = 'not_required',
+  PENDING = 'pending',
+  SENT = 'sent',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum ColorMatchingStandard {
+  PANTONE = 'pantone',
+  CMYK = 'cmyk',
+  CUSTOM = 'custom',
+  NONE = 'none',
+}
+
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn('uuid')
@@ -281,6 +329,107 @@ export class Order {
 
   @Column({ type: 'boolean', default: true })
   auto_sync_enabled: boolean;
+
+  // Design & File Management
+  @Column({
+    type: 'enum',
+    enum: DesignFileStatus,
+    nullable: true,
+  })
+  design_file_status: DesignFileStatus;
+
+  @Column({ type: 'text', nullable: true })
+  design_file_formats: string;
+
+  @Column({ type: 'date', nullable: true })
+  design_approval_date: Date;
+
+  @Column({ type: 'int', default: 0 })
+  design_revisions_count: number;
+
+  @Column({ type: 'text', nullable: true })
+  design_notes: string;
+
+  // Plate & Separation Details
+  @Column({
+    type: 'enum',
+    enum: ColorSeparationType,
+    nullable: true,
+  })
+  color_separation_type: ColorSeparationType;
+
+  @Column({ type: 'int', nullable: true })
+  number_of_plates: number;
+
+  @Column({ nullable: true })
+  plate_size: string;
+
+  @Column({
+    type: 'enum',
+    enum: PlateMaterial,
+    nullable: true,
+  })
+  plate_material: PlateMaterial;
+
+  @Column({
+    type: 'enum',
+    enum: PlateCondition,
+    nullable: true,
+  })
+  plate_condition: PlateCondition;
+
+  @Column({
+    type: 'enum',
+    enum: PlateApprovalStatus,
+    nullable: true,
+  })
+  plate_approval_status: PlateApprovalStatus;
+
+  @Column({ type: 'date', nullable: true })
+  plate_approval_date: Date;
+
+  // Proofing & Quality Control
+  @Column({ type: 'text', nullable: true })
+  proof_type_required: string;
+
+  @Column({
+    type: 'enum',
+    enum: ProofStatus,
+    nullable: true,
+  })
+  proof_status: ProofStatus;
+
+  @Column({ type: 'date', nullable: true })
+  proof_approval_date: Date;
+
+  @Column({
+    type: 'enum',
+    enum: ColorMatchingStandard,
+    nullable: true,
+  })
+  color_matching_standard: ColorMatchingStandard;
+
+  @Column({ type: 'text', nullable: true })
+  quality_check_notes: string;
+
+  @Column({ nullable: true })
+  approved_by: string;
+
+  // Production Setup & Machine Requirements
+  @Column({ type: 'text', nullable: true })
+  preferred_machines: string;
+
+  @Column({ type: 'boolean', default: false })
+  special_setup_required: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  setup_instructions: string;
+
+  @Column({ type: 'int', nullable: true })
+  estimated_setup_time: number;
+
+  @Column({ type: 'text', nullable: true })
+  machine_calibration_notes: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })

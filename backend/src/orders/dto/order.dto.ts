@@ -1,6 +1,6 @@
 import { IsString, IsDate, IsEnum, IsNumber, IsOptional, IsUUID, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderStatus, OrderPriority, PrintingType, ProductType, VarnishType, LaminationType, DieType } from '../entities/order.entity';
+import { OrderStatus, OrderPriority, PrintingType, ProductType, VarnishType, LaminationType, DieType, DesignFileStatus, ColorSeparationType, PlateMaterial, PlateCondition, PlateApprovalStatus, ProofStatus, ColorMatchingStandard } from '../entities/order.entity';
 
 export class CreateOrderDto {
   @IsUUID()
@@ -261,6 +261,105 @@ export class CreateOrderDto {
   @IsOptional()
   @IsBoolean()
   auto_sync_enabled?: boolean;
+
+  // Design & File Management
+  @IsOptional()
+  @IsEnum(DesignFileStatus)
+  design_file_status?: DesignFileStatus;
+
+  @IsOptional()
+  @IsString()
+  design_file_formats?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  design_approval_date?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  design_revisions_count?: number;
+
+  @IsOptional()
+  @IsString()
+  design_notes?: string;
+
+  // Plate & Separation Details
+  @IsOptional()
+  @IsEnum(ColorSeparationType)
+  color_separation_type?: ColorSeparationType;
+
+  @IsOptional()
+  @IsNumber()
+  number_of_plates?: number;
+
+  @IsOptional()
+  @IsString()
+  plate_size?: string;
+
+  @IsOptional()
+  @IsEnum(PlateMaterial)
+  plate_material?: PlateMaterial;
+
+  @IsOptional()
+  @IsEnum(PlateCondition)
+  plate_condition?: PlateCondition;
+
+  @IsOptional()
+  @IsEnum(PlateApprovalStatus)
+  plate_approval_status?: PlateApprovalStatus;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  plate_approval_date?: Date;
+
+  // Proofing & Quality Control
+  @IsOptional()
+  @IsString()
+  proof_type_required?: string;
+
+  @IsOptional()
+  @IsEnum(ProofStatus)
+  proof_status?: ProofStatus;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  proof_approval_date?: Date;
+
+  @IsOptional()
+  @IsEnum(ColorMatchingStandard)
+  color_matching_standard?: ColorMatchingStandard;
+
+  @IsOptional()
+  @IsString()
+  quality_check_notes?: string;
+
+  @IsOptional()
+  @IsString()
+  approved_by?: string;
+
+  // Production Setup & Machine Requirements
+  @IsOptional()
+  @IsString()
+  preferred_machines?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  special_setup_required?: boolean;
+
+  @IsOptional()
+  @IsString()
+  setup_instructions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  estimated_setup_time?: number;
+
+  @IsOptional()
+  @IsString()
+  machine_calibration_notes?: string;
 }
 
 export class UpdateOrderDto {
@@ -528,6 +627,105 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsBoolean()
   auto_sync_enabled?: boolean;
+
+  // Design & File Management
+  @IsOptional()
+  @IsEnum(DesignFileStatus)
+  design_file_status?: DesignFileStatus;
+
+  @IsOptional()
+  @IsString()
+  design_file_formats?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  design_approval_date?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  design_revisions_count?: number;
+
+  @IsOptional()
+  @IsString()
+  design_notes?: string;
+
+  // Plate & Separation Details
+  @IsOptional()
+  @IsEnum(ColorSeparationType)
+  color_separation_type?: ColorSeparationType;
+
+  @IsOptional()
+  @IsNumber()
+  number_of_plates?: number;
+
+  @IsOptional()
+  @IsString()
+  plate_size?: string;
+
+  @IsOptional()
+  @IsEnum(PlateMaterial)
+  plate_material?: PlateMaterial;
+
+  @IsOptional()
+  @IsEnum(PlateCondition)
+  plate_condition?: PlateCondition;
+
+  @IsOptional()
+  @IsEnum(PlateApprovalStatus)
+  plate_approval_status?: PlateApprovalStatus;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  plate_approval_date?: Date;
+
+  // Proofing & Quality Control
+  @IsOptional()
+  @IsString()
+  proof_type_required?: string;
+
+  @IsOptional()
+  @IsEnum(ProofStatus)
+  proof_status?: ProofStatus;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  proof_approval_date?: Date;
+
+  @IsOptional()
+  @IsEnum(ColorMatchingStandard)
+  color_matching_standard?: ColorMatchingStandard;
+
+  @IsOptional()
+  @IsString()
+  quality_check_notes?: string;
+
+  @IsOptional()
+  @IsString()
+  approved_by?: string;
+
+  // Production Setup & Machine Requirements
+  @IsOptional()
+  @IsString()
+  preferred_machines?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  special_setup_required?: boolean;
+
+  @IsOptional()
+  @IsString()
+  setup_instructions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  estimated_setup_time?: number;
+
+  @IsOptional()
+  @IsString()
+  machine_calibration_notes?: string;
 }
 
 export class UpdateOrderStatusDto {

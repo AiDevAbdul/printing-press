@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Grid3x3, Kanban, X } from 'lucide-react';
+import { Grid3x3, Kanban } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -9,9 +9,11 @@ import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { SortButton } from '../../components/ui/SortButton';
 import { ProductionGrid } from './ProductionGrid';
 import { ProductionKanban } from './ProductionKanban';
 import ProductionWorkflowLevels from '../../components/ProductionWorkflowLevels';
+import { useSorting } from '../../hooks/useSorting';
 
 interface ProductionJob {
   id: string;
@@ -189,7 +191,10 @@ export default function Production() {
     current_stage: job.current_stage || '',
     inline_status: job.inline_status || '',
     assigned_operator: job.assigned_operator,
+    scheduled_start_date: job.scheduled_start_date,
   }));
+
+  const { sortedItems, sortConfig, toggleSort } = useSorting(jobs, 'scheduled_start_date');
 
   return (
     <div className="space-y-6">
@@ -199,7 +204,7 @@ export default function Production() {
         <p className="text-gray-600 mt-1">Track production jobs and schedules</p>
       </div>
 
-      {/* View Toggle */}
+      {/* View Toggle & Sort */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <Button
@@ -219,18 +224,32 @@ export default function Production() {
             Kanban
           </Button>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-        >
-          <option value="">All Statuses</option>
-          <option value="queued">Queued</option>
-          <option value="in_progress">In Progress</option>
-          <option value="paused">Paused</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="flex gap-2 items-center">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="">All Statuses</option>
+            <option value="queued">Queued</option>
+            <option value="in_progress">In Progress</option>
+            <option value="paused">Paused</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'scheduled_start_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('scheduled_start_date')}
+          />
+          <SortButton
+            label="Progress"
+            isActive={sortConfig.key === 'progress'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('progress')}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -258,7 +277,7 @@ export default function Production() {
         />
       ) : viewMode === 'grid' ? (
         <ProductionGrid
-          jobs={jobs}
+          jobs={sortedItems}
           onCreateJob={() => setIsModalOpen(true)}
           onViewWorkflow={(jobId) => {
             setSelectedJobId(jobId);
@@ -269,7 +288,7 @@ export default function Production() {
         />
       ) : (
         <ProductionKanban
-          jobs={jobs}
+          jobs={sortedItems}
           onCreateJob={() => setIsModalOpen(true)}
           onViewWorkflow={(jobId) => {
             setSelectedJobId(jobId);
@@ -388,18 +407,6 @@ export default function Production() {
       {showWorkflowModal && selectedJobId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Production Workflow</h2>
-              <button
-                onClick={() => {
-                  setShowWorkflowModal(false);
-                  setSelectedJobId(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
             <div className="p-6">
               {selectedJobId && (() => {
                 const selectedJob = jobs.find((j: any) => j.id === selectedJobId);
@@ -409,6 +416,13 @@ export default function Production() {
                     operatorName={selectedJob?.operator_name}
                     machine={selectedJob?.machine}
                     operatorId={selectedJob?.operator_id}
+                    clientName={selectedJob?.order?.customer?.name}
+                    companyName={selectedJob?.order?.customer?.company_name}
+                    productName={selectedJob?.order?.product_name}
+                    onClose={() => {
+                      setShowWorkflowModal(false);
+                      setSelectedJobId(null);
+                    }}
                   />
                 );
               })()}

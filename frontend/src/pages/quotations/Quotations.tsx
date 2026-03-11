@@ -5,10 +5,12 @@ import { quotationService, Quotation } from '../../services/quotation.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Tabs } from '../../components/ui/Tabs';
+import { SortButton } from '../../components/ui/SortButton';
 import { QuotationsGrid } from './QuotationsGrid';
 import QuotationForm from './QuotationForm';
 import QuotationDetails from './QuotationDetails';
 import toast from 'react-hot-toast';
+import { useSorting } from '../../hooks/useSorting';
 
 const Quotations = () => {
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -26,6 +28,8 @@ const Quotations = () => {
         search: searchTerm || undefined,
       }),
   });
+
+  const { sortedItems, sortConfig, toggleSort } = useSorting(data?.data || [], 'created_at');
 
   const sendMutation = useMutation({
     mutationFn: quotationService.send,
@@ -49,7 +53,7 @@ const Quotations = () => {
     },
   });
 
-  const quotations = data?.data || [];
+  const quotations = sortedItems || [];
 
   const handleEdit = (quotation: Quotation) => {
     setSelectedQuotation(quotation);
@@ -105,12 +109,30 @@ const Quotations = () => {
         </Button>
       </div>
 
-      {/* Search */}
-      <Input
-        placeholder="Search by quotation number, product, or customer..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      {/* Search & Sort */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex-1">
+          <Input
+            placeholder="Search by quotation number, product, or customer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'created_at'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('created_at')}
+          />
+          <SortButton
+            label="Amount"
+            isActive={sortConfig.key === 'total_amount'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('total_amount')}
+          />
+        </div>
+      </div>
 
       {/* Tabs */}
       <Tabs

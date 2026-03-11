@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   Printer, Palette, Zap, Layers, Scissors, Stamp, Package,
-  Play, Pause, CheckCircle, Lock, ChevronRight, Clock, AlertCircle
+  Play, Pause, CheckCircle, Lock, ChevronRight, Clock, AlertCircle, X, User, Zap as ZapIcon
 } from 'lucide-react';
 import workflowService, { WorkflowStage, WorkflowResponse } from '../services/workflow.service';
+import { ProgressSegments } from './workflow/ProgressSegments';
 
 interface ProductionWorkflowLevelsProps {
   jobId: string;
   operatorName?: string;
   machine?: string;
   operatorId?: string;
+  onClose?: () => void;
+  clientName?: string;
+  companyName?: string;
+  productName?: string;
 }
 
 const stageIcons: { [key: string]: React.ReactNode } = {
@@ -28,10 +33,10 @@ const stageIcons: { [key: string]: React.ReactNode } = {
 };
 
 const stageColors: { [key: string]: string } = {
-  pending: 'bg-gray-100 border-gray-300 text-gray-600',
-  in_progress: 'bg-green-100 border-green-400 text-green-700 shadow-lg shadow-green-200',
-  paused: 'bg-orange-100 border-orange-400 text-orange-700 shadow-lg shadow-orange-200',
-  completed: 'bg-blue-100 border-blue-400 text-blue-700',
+  pending: 'bg-gray-100 border-gray-300 text-gray-900',
+  in_progress: 'bg-green-100 border-green-400 text-green-900 shadow-lg shadow-green-200',
+  paused: 'bg-orange-100 border-orange-400 text-orange-900 shadow-lg shadow-orange-200',
+  completed: 'bg-blue-100 border-blue-400 text-blue-900',
 };
 
 const statusBadgeColors: { [key: string]: string } = {
@@ -339,6 +344,10 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
   operatorName,
   machine: jobMachine,
   operatorId: jobOperatorId,
+  onClose,
+  clientName,
+  companyName,
+  productName,
 }) => {
   const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -384,44 +393,94 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
     );
   }
 
-  const completedCount = workflow.stages.filter(s => s.status === 'completed').length;
-  const totalStages = workflow.stages.length;
-  const progressPercent = (completedCount / totalStages) * 100;
   const selectedStage = workflow.stages.find(s => s.id === selectedStageId);
 
   return (
     <div className="space-y-8">
-      {/* Header with Progress */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Production Workflow</h2>
-
-        {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm mb-2">
-            <span>Progress</span>
-            <span className="font-bold">{completedCount} / {totalStages} stages</span>
+      {/* Header */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        {/* Header Top Row */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Production Workflow</h2>
+            <p className="text-sm text-gray-500 mt-1">Job #{jobId.slice(0, 8)}</p>
           </div>
-          <div className="w-full bg-white bg-opacity-30 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-white h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Close workflow"
+            >
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          )}
         </div>
 
-        {/* Job Info */}
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="bg-white bg-opacity-20 rounded-lg p-3">
-            <div className="text-xs opacity-90 mb-1">Operator</div>
-            <div className="font-semibold truncate">{operatorName || 'Not assigned'}</div>
+        {/* Progress Segments */}
+        <div className="mb-6">
+          <ProgressSegments stages={workflow.stages} />
+        </div>
+
+        {/* Job Info Grid - 2 rows */}
+        <div className="space-y-4">
+          {/* First Row - Client, Company, Product */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Client Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Client</div>
+              <div className="text-lg font-bold text-gray-900 truncate">{clientName || '—'}</div>
+            </div>
+
+            {/* Company Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Company</div>
+              <div className="text-lg font-bold text-gray-900 truncate">{companyName || '—'}</div>
+            </div>
+
+            {/* Product Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Product</div>
+              <div className="text-lg font-bold text-gray-900 truncate">{productName || '—'}</div>
+            </div>
           </div>
-          <div className="bg-white bg-opacity-20 rounded-lg p-3">
-            <div className="text-xs opacity-90 mb-1">Machine</div>
-            <div className="font-semibold truncate">{jobMachine || 'Not assigned'}</div>
-          </div>
-          <div className="bg-white bg-opacity-20 rounded-lg p-3">
-            <div className="text-xs opacity-90 mb-1">Current Stage</div>
-            <div className="font-semibold truncate">{workflow.current_stage || 'Not started'}</div>
+
+          {/* Second Row - Operator, Machine, Current Stage */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Operator Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="w-4 h-4 text-gray-600" />
+                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Operator</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900 truncate">{operatorName || '—'}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {operatorName ? 'Assigned' : 'Not assigned'}
+              </div>
+            </div>
+
+            {/* Machine Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <ZapIcon className="w-4 h-4 text-gray-600" />
+                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Machine</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900 truncate">{jobMachine || '—'}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {jobMachine ? 'Active' : 'Not assigned'}
+              </div>
+            </div>
+
+            {/* Current Stage Info */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-4 h-4 text-gray-600" />
+                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Current Stage</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900 truncate">{workflow.current_stage || '—'}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {workflow.current_stage ? 'In Progress' : 'Not started'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -504,7 +563,7 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
 
                 {/* Status Badge */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wide capitalize">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-900 capitalize">
                     {stage.status.replace('_', ' ')}
                   </span>
                   {!isLocked && !isCompleted && (

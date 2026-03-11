@@ -45,13 +45,15 @@ export default function Users() {
 
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading, error } = useQuery({
+  const { data: usersData, isLoading, error } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
       const response = await api.get('/users');
       return response.data;
     },
   });
+
+  const users = usersData?.users || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
@@ -85,8 +87,6 @@ export default function Users() {
     createMutation.mutate(formData);
   };
 
-  const userList = users || [];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -118,7 +118,7 @@ export default function Users() {
           title="Error loading users"
           description="There was an error loading the users. Please try again."
         />
-      ) : userList.length === 0 ? (
+      ) : users.length === 0 ? (
         <EmptyState
           icon="Users"
           title="No users found"
@@ -130,7 +130,7 @@ export default function Users() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {userList.map((user: User) => (
+          {users.map((user: User) => (
             <Card key={user.id} variant="elevated">
               <div className="space-y-3">
                 <div className="flex justify-between items-start">

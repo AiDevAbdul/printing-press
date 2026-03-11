@@ -8,10 +8,12 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { SortButton } from '../../components/ui/SortButton';
 import OrderFormModal from './OrderFormModal';
 import OrderDetailsModal from '../../components/orders/OrderDetailsModal';
 import { OrdersGrid } from './OrdersGrid';
 import { OrdersKanban } from './OrdersKanban';
+import { useSorting } from '../../hooks/useSorting';
 
 interface Order {
   id: string;
@@ -230,7 +232,10 @@ export default function Orders() {
     amount: order.final_price,
     status: order.status,
     priority: order.priority,
+    order_date: order.order_date,
   }));
+
+  const { sortedItems, sortConfig, toggleSort } = useSorting(transformedOrders, 'order_date');
 
   return (
     <div className="space-y-6">
@@ -240,7 +245,7 @@ export default function Orders() {
         <p className="text-gray-600 mt-1">Manage customer orders and track progress</p>
       </div>
 
-      {/* View Toggle */}
+      {/* View Toggle & Sort */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <Button
@@ -259,6 +264,26 @@ export default function Orders() {
           >
             Kanban
           </Button>
+        </div>
+        <div className="flex gap-2">
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'order_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('order_date')}
+          />
+          <SortButton
+            label="Delivery Date"
+            isActive={sortConfig.key === 'delivery_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('delivery_date')}
+          />
+          <SortButton
+            label="Amount"
+            isActive={sortConfig.key === 'amount'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('amount')}
+          />
         </div>
       </div>
 
@@ -319,7 +344,7 @@ export default function Orders() {
           title="Error loading orders"
           description="There was an error loading the orders. Please try again."
         />
-      ) : transformedOrders.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <EmptyState
           icon="Package"
           title="No orders found"
@@ -331,14 +356,14 @@ export default function Orders() {
         />
       ) : viewMode === 'grid' ? (
         <OrdersGrid
-          orders={transformedOrders}
+          orders={sortedItems}
           onCreateOrder={() => setIsModalOpen(true)}
           onViewOrder={handleViewOrder}
           onApproveOrder={handleApproveOrder}
         />
       ) : (
         <OrdersKanban
-          orders={transformedOrders}
+          orders={sortedItems}
           onCreateOrder={() => setIsModalOpen(true)}
           onViewOrder={handleViewOrder}
         />

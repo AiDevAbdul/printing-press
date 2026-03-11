@@ -29,7 +29,7 @@ export const wastageService = {
     const response = await axios.get(`${API_URL}/production/wastage-analytics`, {
       params: { startDate, endDate },
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
     });
     return response.data;

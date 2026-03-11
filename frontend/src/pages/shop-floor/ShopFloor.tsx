@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Wifi, WifiOff, Grid3x3, Users } from 'lucide-react';
-import { shopFloorService, ProductionJob } from '../../services/shop-floor.service';
+import { shopFloorService } from '../../services/shop-floor.service';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
+import { SortButton } from '../../components/ui/SortButton';
 import api from '../../services/api';
+import { useSorting } from '../../hooks/useSorting';
 
 const ShopFloor = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -49,15 +51,7 @@ const ShopFloor = () => {
   const isLoading = showAllJobs ? allJobsLoading : myJobsLoading;
   const error = showAllJobs ? allJobsError : myJobsError;
 
-  // Debug logging
-  console.log('Shop Floor Debug:', {
-    showAllJobs,
-    isLoading,
-    error,
-    jobs,
-    myJobs,
-    allJobsResponse
-  });
+  const { sortedItems, sortConfig, toggleSort } = useSorting(jobs, 'scheduled_start_date');
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -102,6 +96,22 @@ const ShopFloor = () => {
         </div>
       </div>
 
+      {/* Sort Buttons */}
+      <div className="flex gap-2">
+        <SortButton
+          label="Latest"
+          isActive={sortConfig.key === 'scheduled_start_date'}
+          sortOrder={sortConfig.order}
+          onClick={() => toggleSort('scheduled_start_date')}
+        />
+        <SortButton
+          label="Status"
+          isActive={sortConfig.key === 'status'}
+          sortOrder={sortConfig.order}
+          onClick={() => toggleSort('status')}
+        />
+      </div>
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,7 +143,7 @@ const ShopFloor = () => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.map((job: ProductionJob) => (
+          {sortedItems.map((job: any) => (
             <Link
               key={job.id}
               to={`/shop-floor/job/${job.id}`}

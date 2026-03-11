@@ -5,7 +5,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
-@Controller('api/production/workflow-approval')
+@Controller('production/workflow-approval')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkflowApprovalController {
   constructor(private workflowApprovalService: WorkflowApprovalService) {}

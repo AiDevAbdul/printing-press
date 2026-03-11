@@ -14,7 +14,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { ProductionJobStatus } from './entities/production-job.entity';
 import { BadRequestException } from '@nestjs/common';
 
-@Controller('api/production')
+@Controller('production')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductionController {
   constructor(

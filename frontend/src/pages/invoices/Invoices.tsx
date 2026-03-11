@@ -9,8 +9,10 @@ import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { SortButton } from '../../components/ui/SortButton';
 import { InvoicesGrid } from './InvoicesGrid';
 import { InvoiceView } from '../../components/invoices/InvoiceView';
+import { useSorting } from '../../hooks/useSorting';
 
 interface Invoice {
   id: string;
@@ -108,6 +110,9 @@ export default function Invoices() {
       return response.data;
     },
   });
+
+  const invoices: Invoice[] = response?.data || [];
+  const { sortedItems, sortConfig, toggleSort } = useSorting(invoices, 'invoice_date');
 
   const { data: ordersResponse } = useQuery({
     queryKey: ['orders-for-invoice'],
@@ -254,8 +259,6 @@ export default function Invoices() {
     );
   }
 
-  const invoices: Invoice[] = response?.data || [];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -274,7 +277,7 @@ export default function Invoices() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Sort */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
         <div className="flex-1">
           <Select
@@ -289,6 +292,26 @@ export default function Invoices() {
             ]}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <SortButton
+            label="Latest"
+            isActive={sortConfig.key === 'invoice_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('invoice_date')}
+          />
+          <SortButton
+            label="Amount"
+            isActive={sortConfig.key === 'total_amount'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('total_amount')}
+          />
+          <SortButton
+            label="Due Date"
+            isActive={sortConfig.key === 'due_date'}
+            sortOrder={sortConfig.order}
+            onClick={() => toggleSort('due_date')}
           />
         </div>
       </div>
@@ -318,7 +341,7 @@ export default function Invoices() {
         />
       ) : (
         <InvoicesGrid
-          invoices={invoices}
+          invoices={sortedItems}
           isLoading={isLoading}
           onInvoiceClick={(invoice) => setSelectedInvoice(invoice)}
         />

@@ -6,12 +6,13 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Alert } from '../../components/ui/Alert';
-import { Plus, Search, Edit2, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../services/api';
 import { AddUserModal } from './AddUserModal';
 import { EditUserModal } from './EditUserModal';
 import { DeleteUserDialog } from './DeleteUserDialog';
+import { PermissionMatrix } from './PermissionMatrix';
 
 interface User {
   id: string;
@@ -39,6 +40,7 @@ export default function UserManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function UserManagement() {
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await api.get(`/api/users?${params}`);
+      const response = await api.get(`/users?${params}`);
       setUsers(response.data.users || []);
       setTotalUsers(response.data.total || 0);
       setError(null);
@@ -71,7 +73,7 @@ export default function UserManagement() {
 
   const handleAddUser = async (userData: any) => {
     try {
-      await api.post('/api/users', userData);
+      await api.post('/users', userData);
       toast.success('User created successfully');
       setShowAddModal(false);
       fetchUsers();
@@ -84,7 +86,7 @@ export default function UserManagement() {
   const handleEditUser = async (userData: any) => {
     if (!selectedUser) return;
     try {
-      await api.patch(`/api/users/${selectedUser.id}`, userData);
+      await api.patch(`/users/${selectedUser.id}`, userData);
       toast.success('User updated successfully');
       setShowEditModal(false);
       setSelectedUser(null);
@@ -98,7 +100,7 @@ export default function UserManagement() {
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
     try {
-      await api.delete(`/api/users/${selectedUser.id}`);
+      await api.delete(`/users/${selectedUser.id}`);
       toast.success('User deleted successfully');
       setShowDeleteDialog(false);
       setSelectedUser(null);
@@ -265,6 +267,18 @@ export default function UserManagement() {
                           size="sm"
                           onClick={() => {
                             setSelectedUser(user);
+                            setShowPermissionsModal(true);
+                          }}
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                        >
+                          <Lock size={16} />
+                          Permissions
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
                             setShowDeleteDialog(true);
                           }}
                           className="flex items-center gap-1 text-red-600 hover:text-red-700"
@@ -341,6 +355,17 @@ export default function UserManagement() {
             }}
             user={selectedUser}
             onSubmit={handleEditUser}
+          />
+
+          <PermissionMatrix
+            isOpen={showPermissionsModal}
+            onClose={() => {
+              setShowPermissionsModal(false);
+              setSelectedUser(null);
+            }}
+            userId={selectedUser.id}
+            userName={selectedUser.full_name}
+            currentRole={selectedUser.role}
           />
 
           <DeleteUserDialog
