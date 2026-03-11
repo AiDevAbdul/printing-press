@@ -168,7 +168,14 @@ export default function OrderFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateStep1()) {
-      onSubmit(formData);
+      // Convert arrays to comma-separated strings for backend
+      const submitData = {
+        ...formData,
+        design_file_formats: (formData.design_file_formats || []).join(','),
+        proof_type_required: (formData.proof_type_required || []).join(','),
+        preferred_machines: (formData.preferred_machines || []).join(','),
+      };
+      onSubmit(submitData as any);
     }
   };
 

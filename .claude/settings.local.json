@@ -23,7 +23,14 @@
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_wait_for",
       "Bash(npm test:*)",
-      "Bash(npx storybook:*)"
+      "Bash(npx storybook:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "Bash(tasklist:*)",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(lsof -i :3000)",
+      "Bash(xargs kill -9)",
+      "Bash(grep:*)"
     ]
   }
 }
