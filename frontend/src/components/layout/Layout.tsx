@@ -48,7 +48,7 @@ export default function Layout({ children }: LayoutProps) {
         { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
         { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },
         { id: 'quality', label: 'Quality', icon: 'quality', href: '/quality' },
-        { id: 'wastage', label: 'Wastage', icon: 'wastage', href: '/wastage' },
+        { id: 'wastage', label: 'Wastage', icon: 'wastage', href: '/wastage-analytics' },
       ],
     },
     {

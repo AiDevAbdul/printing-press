@@ -32,7 +32,7 @@ const Dispatch = () => {
     delivery.job.job_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const { sortedItems, sortConfig, toggleSort } = useSorting(filteredDeliveries, 'delivery_date');
+  const { sortedItems, sortConfig, toggleSort } = useSorting(filteredDeliveries, 'scheduled_date');
 
   return (
     <div className="space-y-6">
@@ -75,15 +75,15 @@ const Dispatch = () => {
         <div className="flex gap-2">
           <SortButton
             label="Latest"
-            isActive={sortConfig.key === 'delivery_date'}
+            isActive={sortConfig.key === 'scheduled_date'}
             sortOrder={sortConfig.order}
-            onClick={() => toggleSort('delivery_date')}
+            onClick={() => toggleSort('scheduled_date')}
           />
           <SortButton
             label="Status"
-            isActive={sortConfig.key === 'status'}
+            isActive={sortConfig.key === 'delivery_status'}
             sortOrder={sortConfig.order}
-            onClick={() => toggleSort('status')}
+            onClick={() => toggleSort('delivery_status')}
           />
         </div>
       </div>

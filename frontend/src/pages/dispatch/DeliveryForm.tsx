@@ -124,8 +124,8 @@ const DeliveryForm = ({ onClose }: DeliveryFormProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto pt-4 pb-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-auto max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">New Delivery</h2>
           <button
