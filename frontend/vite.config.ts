@@ -15,15 +15,15 @@ export default defineConfig({
       filename: 'dist/stats.html',
     }),
   ],
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'scheduler'],
+  },
   build: {
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks - split by library
-          if (id.includes('node_modules/react-dom')) {
-            return 'vendor-react-dom'
-          }
-          if (id.includes('node_modules/react')) {
+          // Core React + scheduler - must be together
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
             return 'vendor-react'
           }
           if (id.includes('node_modules/react-router')) {
@@ -38,46 +38,11 @@ export default defineConfig({
           if (id.includes('node_modules/react-hot-toast')) {
             return 'vendor-toast'
           }
-          if (id.includes('node_modules/react-hook-form')) {
+          if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform')) {
             return 'vendor-forms'
           }
           if (id.includes('node_modules')) {
             return 'vendor-other'
-          }
-
-          // Feature chunks
-          if (id.includes('pages/orders')) {
-            return 'chunk-orders'
-          }
-          if (id.includes('pages/production')) {
-            return 'chunk-production'
-          }
-          if (id.includes('pages/quality')) {
-            return 'chunk-quality'
-          }
-          if (id.includes('pages/dispatch')) {
-            return 'chunk-dispatch'
-          }
-          if (id.includes('pages/inventory')) {
-            return 'chunk-inventory'
-          }
-          if (id.includes('pages/customers') || id.includes('pages/quotations')) {
-            return 'chunk-sales'
-          }
-          if (id.includes('pages/dashboard') || id.includes('pages/reports')) {
-            return 'chunk-analytics'
-          }
-          if (id.includes('pages/users') || id.includes('pages/profile')) {
-            return 'chunk-users'
-          }
-          if (id.includes('pages/qa')) {
-            return 'chunk-qa'
-          }
-          if (id.includes('components/ui')) {
-            return 'chunk-ui-components'
-          }
-          if (id.includes('components')) {
-            return 'chunk-components'
           }
         },
       },
