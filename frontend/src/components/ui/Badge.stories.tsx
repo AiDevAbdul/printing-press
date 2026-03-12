@@ -81,6 +81,10 @@ export const WithPriority: Story = {
 };
 
 export const AllVariants: Story = {
+  args: {
+    variant: 'default',
+    children: 'Badge',
+  },
   render: () => (
     <div className="flex flex-wrap gap-3">
       <Badge variant="default">Default</Badge>
@@ -93,6 +97,10 @@ export const AllVariants: Story = {
 };
 
 export const AllVariantsExtended: Story = {
+  args: {
+    variant: 'default',
+    children: 'Badge',
+  },
   render: () => (
     <div className="flex flex-wrap gap-3 items-center">
       <Badge variant="default">Default</Badge>
