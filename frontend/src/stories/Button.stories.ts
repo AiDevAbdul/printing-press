@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { fn } from 'storybook/test';
+import { fn } from '@storybook/test';
 
 import { Button } from './Button';
 
@@ -30,12 +30,14 @@ export const Primary: Story = {
   args: {
     primary: true,
     label: 'Button',
+    onClick: fn(),
   },
 };
 
 export const Secondary: Story = {
   args: {
     label: 'Button',
+    onClick: fn(),
   },
 };
 
@@ -43,6 +45,7 @@ export const Large: Story = {
   args: {
     size: 'large',
     label: 'Button',
+    onClick: fn(),
   },
 };
 
@@ -50,5 +53,6 @@ export const Small: Story = {
   args: {
     size: 'small',
     label: 'Button',
+    onClick: fn(),
   },
 };

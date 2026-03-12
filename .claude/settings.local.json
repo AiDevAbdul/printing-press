@@ -30,7 +30,8 @@
       "mcp__playwright__browser_take_screenshot",
       "Bash(lsof -i :3000)",
       "Bash(xargs kill -9)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }

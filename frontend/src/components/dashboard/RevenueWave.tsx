@@ -75,7 +75,7 @@ export default function RevenueWave() {
             }}
             labelStyle={{ color: '#fff', fontFamily: 'Rajdhani, sans-serif' }}
             itemStyle={{ color: '#00D9FF', fontFamily: 'JetBrains Mono, monospace' }}
-            formatter={(value: number | undefined) => [`₹${(value || 0).toLocaleString()}`, 'Revenue']}
+            formatter={(value) => [`₹${(Number(value) || 0).toLocaleString()}`, 'Revenue']}
           />
           <Area
             type="monotone"

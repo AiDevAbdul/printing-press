@@ -28,7 +28,7 @@ const meta = {
       control: 'boolean',
       description: 'Disable the button',
     },
-    loading: {
+    isLoading: {
       control: 'boolean',
       description: 'Show loading state',
     },
@@ -97,7 +97,7 @@ export const Large: Story = {
 
 export const Loading: Story = {
   args: {
-    loading: true,
+    isLoading: true,
     children: 'Loading...',
   },
 };
@@ -133,7 +133,7 @@ export const AllVariants: Story = {
       </div>
       <div className="flex gap-2">
         <Button disabled>Disabled</Button>
-        <Button loading>Loading</Button>
+        <Button isLoading>Loading</Button>
       </div>
     </div>
   ),

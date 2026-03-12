@@ -19,11 +19,6 @@ const meta = {
       options: ['default', 'success', 'warning', 'error', 'info'],
       description: 'Visual style variant',
     },
-    size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
-      description: 'Size of the badge',
-    },
     children: {
       control: 'text',
       description: 'Badge text content',
@@ -69,17 +64,19 @@ export const Info: Story = {
   },
 };
 
-export const Small: Story = {
+export const WithStatus: Story = {
   args: {
-    size: 'sm',
-    children: 'Small',
+    variant: 'status',
+    status: 'pending',
+    children: 'Pending',
   },
 };
 
-export const Large: Story = {
+export const WithPriority: Story = {
   args: {
-    size: 'lg',
-    children: 'Large',
+    variant: 'priority',
+    priority: 'high',
+    children: 'High Priority',
   },
 };
 
@@ -95,12 +92,16 @@ export const AllVariants: Story = {
   ),
 };
 
-export const AllSizes: Story = {
+export const AllVariantsExtended: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3 items-center">
-      <Badge size="sm">Small</Badge>
-      <Badge size="md">Medium</Badge>
-      <Badge size="lg">Large</Badge>
+      <Badge variant="default">Default</Badge>
+      <Badge variant="success">Success</Badge>
+      <Badge variant="warning">Warning</Badge>
+      <Badge variant="error">Error</Badge>
+      <Badge variant="info">Info</Badge>
+      <Badge variant="status" status="pending">Pending</Badge>
+      <Badge variant="priority" priority="high">High</Badge>
     </div>
   ),
 };

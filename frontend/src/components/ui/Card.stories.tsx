@@ -58,6 +58,10 @@ export const Glass: Story = {
 };
 
 export const WithContent: Story = {
+  args: {
+    variant: 'default',
+    children: 'Card content',
+  },
   render: () => (
     <Card variant="default" className="w-80">
       <div className="space-y-4">
@@ -79,6 +83,10 @@ export const WithContent: Story = {
 };
 
 export const AllVariants: Story = {
+  args: {
+    variant: 'default',
+    children: 'Card content',
+  },
   render: () => (
     <div className="grid grid-cols-2 gap-4">
       <Card variant="default">
