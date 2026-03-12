@@ -13,6 +13,7 @@ import { IssueMaterialDto, ReturnMaterialDto } from './dto/material-consumption.
 import { RecordMachineCounterDto } from './dto/machine-counter.dto';
 import { RecordWastageDto } from './dto/wastage.dto';
 import { StartStageEnhancedDto, CompleteStageEnhancedDto, OfflineSyncDto } from './dto/shop-floor.dto';
+import { ApprovalsService } from '../approvals/approvals.service';
 import * as QRCode from 'qrcode';
 
 @Injectable()
@@ -32,6 +33,7 @@ export class ProductionService {
     private wastageRecordRepository: Repository<WastageRecord>,
     @InjectRepository(OfflineSyncQueue)
     private offlineSyncQueueRepository: Repository<OfflineSyncQueue>,
+    private approvalsService: ApprovalsService,
   ) {}
 
   private generateJobNumber(): string {
@@ -755,12 +757,31 @@ export class ProductionService {
     const requiredStages = allStages.filter(s => s.required);
 
     for (const stage of requiredStages) {
-      await this.workflowStagesRepository.save({
+      const savedStage = await this.workflowStagesRepository.save({
         job: { id: jobId } as any,
         stage_name: stage.name,
         stage_order: stage.order,
         status: 'pending' as any,
+        qa_approval_required: true,
+        qa_approval_status: 'pending',
       });
+
+      // Create corresponding approval record
+      try {
+        console.log('Creating approval for stage:', {
+          inline_item_id: savedStage.id,
+          job_id: jobId,
+          stage_name: stage.name,
+        });
+        const approval = await this.approvalsService.createApproval({
+          inline_item_id: savedStage.id,
+          job_id: jobId,
+          stage_name: stage.name,
+        });
+        console.log('Approval created successfully:', approval.id);
+      } catch (error) {
+        console.error('Failed to create approval record for stage:', stage.name, error);
+      }
     }
   }
 
@@ -780,7 +801,27 @@ export class ProductionService {
 
     // Auto-initialize workflow if no stages exist
     if (stages.length === 0) {
-      await this.initializeWorkflow(jobId);
+      const job = await this.productionJobsRepository.findOne({
+        where: { id: jobId },
+        relations: ['order'],
+      });
+
+      if (!job) {
+        throw new NotFoundException('Job not found');
+      }
+
+      // Derive workflow specs from order data
+      const specs = {
+        has_pantone: !!(job.order?.color_p1 || job.order?.color_p2 || job.order?.color_p3 || job.order?.color_p4),
+        has_uv_varnish: !!(job.order?.varnish_type && job.order.varnish_type.length > 0 && job.order.varnish_type.some(v => v.toLowerCase().includes('uv'))),
+        has_lamination: !!(job.order?.lamination_type && job.order.lamination_type.length > 0 && !job.order.lamination_type.includes('none')),
+        has_emboss: !!(job.order?.uv_emboss_details),
+        needs_pasting: false, // Default to false, can be set manually via initialize endpoint
+      };
+
+      console.log('Auto-initializing workflow with specs:', specs);
+      await this.initializeWorkflow(jobId, specs);
+
       stages = await this.workflowStagesRepository.find({
         where: { job: { id: jobId } },
         relations: ['operator'],
@@ -790,6 +831,10 @@ export class ProductionService {
 
     const job = await this.findOne(jobId);
 
+    // Fetch all approvals for this job to sync QA status
+    const approvals = await this.approvalsService.getApprovalsByJobId(jobId);
+    const approvalsMap = new Map(approvals.map(a => [a.inline_item_id, a]));
+
     const stagesWithButtons = stages.map((stage, index) => {
       const previousStage = index > 0 ? stages[index - 1] : null;
       const canStart = stage.status === 'pending' &&
@@ -797,8 +842,17 @@ export class ProductionService {
 
       console.log(`Stage ${index + 1} (${stage.stage_name}): status=${stage.status}, prevStatus=${previousStage?.status}, can_start=${canStart}`);
 
+      // Sync QA approval status from approvals table
+      const approval = approvalsMap.get(stage.id);
+      const qaApprovalStatus = approval?.status || stage.qa_approval_status;
+      const qaRejectionReason = approval?.rejection_reason || stage.qa_rejection_reason;
+      const qaApprovedAt = approval?.approved_at || stage.qa_approved_at;
+
       return {
         ...stage,
+        qa_approval_status: qaApprovalStatus,
+        qa_rejection_reason: qaRejectionReason,
+        qa_approved_at: qaApprovedAt,
         can_start: canStart,
         can_pause: stage.status === 'in_progress',
         can_complete: stage.status === 'in_progress' || stage.status === 'paused',
@@ -1026,6 +1080,44 @@ export class ProductionService {
       total_duration_minutes: stage.total_duration_minutes,
       next_stage: nextStage?.stage_name,
       status: stage.status,
+    };
+  }
+
+  async backfillApprovals(jobId: string): Promise<any> {
+    console.log('Starting backfill approvals for job:', jobId);
+
+    // Get all workflow stages for this job
+    const stages = await this.workflowStagesRepository.find({
+      where: { job: { id: jobId } },
+    });
+
+    console.log('Found stages:', stages.length);
+
+    let createdCount = 0;
+    let skippedCount = 0;
+
+    for (const stage of stages) {
+      try {
+        // Create approval
+        console.log('Creating approval for stage:', stage.id, stage.stage_name);
+        await this.approvalsService.createApproval({
+          inline_item_id: stage.id,
+          job_id: jobId,
+          stage_name: stage.stage_name,
+        });
+        createdCount++;
+      } catch (error) {
+        console.error('Failed to create approval for stage:', stage.id, error);
+        skippedCount++;
+      }
+    }
+
+    return {
+      message: 'Backfill completed',
+      jobId,
+      createdCount,
+      skippedCount,
+      totalStages: stages.length,
     };
   }
 }

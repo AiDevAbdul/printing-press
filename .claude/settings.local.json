@@ -31,7 +31,8 @@
       "Bash(lsof -i :3000)",
       "Bash(xargs kill -9)",
       "Bash(grep:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

@@ -6,6 +6,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from './entities/user.entity';
 import { SubstituteService } from './substitute.service';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -13,6 +14,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly substituteService: SubstituteService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   @Post()
@@ -86,6 +88,21 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   async removeSubstituteUser(@Param('id') id: string) {
     return this.substituteService.removeSubstituteUser(id);
+  }
+
+  @Get(':id/activity-log')
+  async getUserActivityLog(
+    @Param('id') id: string,
+    @Query('limit') limit: number = 50,
+    @Query('offset') offset: number = 0,
+  ) {
+    const { logs, total } = await this.activityLogService.getUserActivityLog(id, limit, offset);
+    return {
+      data: logs,
+      total,
+      limit,
+      offset,
+    };
   }
 
   @Delete(':id')

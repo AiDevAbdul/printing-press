@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   Printer, Palette, Zap, Layers, Scissors, Stamp, Package,
-  Play, Pause, CheckCircle, Lock, ChevronRight, Clock, AlertCircle, X, User, Zap as ZapIcon
+  Play, Pause, CheckCircle, Lock, ChevronRight, Clock, AlertCircle, X, User, Zap as ZapIcon, Shield
 } from 'lucide-react';
 import workflowService, { WorkflowStage, WorkflowResponse } from '../services/workflow.service';
 import { ProgressSegments } from './workflow/ProgressSegments';
+import { QAApprovalModal } from './workflow/QAApprovalModal';
 
 interface ProductionWorkflowLevelsProps {
   jobId: string;
@@ -73,6 +74,16 @@ const StageActionMenu: React.FC<StageActionMenuProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStart = async () => {
+    // Check QA approval if required
+    if (stage.qa_approval_required && stage.qa_approval_status !== 'approved') {
+      if (stage.qa_approval_status === 'pending') {
+        toast.error('Waiting for QA Manager approval');
+      } else if (stage.qa_approval_status === 'rejected') {
+        toast.error(`Stage rejected by QA: ${stage.qa_rejection_reason}`);
+      }
+      return;
+    }
+
     if (!operatorId || !machine) {
       toast.error('Operator and machine must be assigned');
       return;
@@ -197,14 +208,34 @@ const StageActionMenu: React.FC<StageActionMenuProps> = ({
             {/* Actions */}
             <div className="space-y-3">
               {stage.status === 'pending' && (
-                <button
-                  onClick={handleStart}
-                  disabled={isLoading || !operatorId || !machine}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
-                >
-                  <Play className="w-5 h-5" />
-                  Start Stage
-                </button>
+                <>
+                  {stage.qa_approval_required && stage.qa_approval_status === 'pending' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm text-purple-700">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield className="w-4 h-4" />
+                        <span className="font-semibold">Awaiting QA Approval</span>
+                      </div>
+                      <p className="text-xs">QA Manager must approve this stage before production can start.</p>
+                    </div>
+                  )}
+                  {stage.qa_approval_required && stage.qa_approval_status === 'rejected' && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="font-semibold">QA Rejected</span>
+                      </div>
+                      <p className="text-xs">{stage.qa_rejection_reason}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleStart}
+                    disabled={isLoading || !operatorId || !machine || (stage.qa_approval_required && stage.qa_approval_status !== 'approved')}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    <Play className="w-5 h-5" />
+                    Start Stage
+                  </button>
+                </>
               )}
 
               {stage.status === 'in_progress' && (
@@ -353,6 +384,9 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
   const [loading, setLoading] = useState(true);
   const [selectedStageId, setSelectedStageId] = useState<number | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showQAModal, setShowQAModal] = useState(false);
+  const [selectedApproval, setSelectedApproval] = useState<any>(null);
+  const [approvals, setApprovals] = useState<{ [stageId: number]: any }>({});
 
   useEffect(() => {
     fetchWorkflow();
@@ -364,6 +398,32 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
     try {
       const data = await workflowService.getWorkflowStages(jobId);
       setWorkflow(data);
+
+      // Fetch approvals for all stages
+      try {
+        const approvalsData = await workflowService.getJobApprovals(jobId);
+        console.log('Raw approvals data from API:', approvalsData);
+        const approvalsMap: { [stageId: number]: any } = {};
+        if (Array.isArray(approvalsData)) {
+          console.log('Approvals is array, length:', approvalsData.length);
+          approvalsData.forEach((approval: any) => {
+            console.log('Processing approval:', {
+              id: approval.id,
+              inline_item_id: approval.inline_item_id,
+              status: approval.status,
+            });
+            approvalsMap[approval.inline_item_id] = approval;
+          });
+        } else {
+          console.log('Approvals data is not an array, type:', typeof approvalsData);
+          console.log('Approvals data structure:', approvalsData);
+        }
+        console.log('Final approvals map:', approvalsMap);
+        setApprovals(approvalsMap);
+      } catch (error) {
+        console.error('Failed to fetch approvals:', error);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch workflow:', error);
@@ -496,6 +556,13 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
             const isPending = stage.status === 'pending';
             const isLocked = isPending && index > 0 && !workflow.stages[index - 1]?.status.includes('completed');
 
+            // QA approval status
+            const qaApprovalRequired = stage.qa_approval_required;
+            const qaStatus = stage.qa_approval_status;
+            const isQAPending = qaApprovalRequired && qaStatus === 'pending';
+            const isQAApproved = qaApprovalRequired && qaStatus === 'approved';
+            const isQARejected = qaApprovalRequired && qaStatus === 'rejected';
+
             return (
               <div
                 key={stage.id}
@@ -503,11 +570,20 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
                   stageColors[stage.status]
                 } ${isActive ? 'ring-2 ring-offset-2 ring-green-400 shadow-lg' : ''} ${
                   isPaused ? 'ring-2 ring-offset-2 ring-orange-400 shadow-lg' : ''
-                }`}
+                } ${isQAPending ? 'ring-2 ring-offset-2 ring-purple-400 shadow-lg' : ''}`}
                 onClick={() => {
                   if (!isLocked) {
-                    setSelectedStageId(stage.id);
-                    setShowActionMenu(true);
+                    // Check current approval status from stage data, not cached state
+                    const currentQAPending = stage.qa_approval_required && stage.qa_approval_status === 'pending';
+                    if (currentQAPending) {
+                      // Show QA approval modal
+                      setSelectedStageId(stage.id);
+                      setSelectedApproval(approvals[stage.id]);
+                      setShowQAModal(true);
+                    } else {
+                      setSelectedStageId(stage.id);
+                      setShowActionMenu(true);
+                    }
                   }
                 }}
               >
@@ -515,6 +591,30 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
                 {isLocked && (
                   <div className="absolute top-2 right-2">
                     <Lock className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
+
+                {/* QA Approval Badge */}
+                {qaApprovalRequired && (
+                  <div className="absolute top-2 right-2">
+                    {isQAPending && (
+                      <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        <Shield className="w-3 h-3" />
+                        QA Pending
+                      </div>
+                    )}
+                    {isQAApproved && (
+                      <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        <CheckCircle className="w-3 h-3" />
+                        QA OK
+                      </div>
+                    )}
+                    {isQARejected && (
+                      <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        <AlertCircle className="w-3 h-3" />
+                        QA Rejected
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -577,6 +677,13 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
                     {stage.pause_reason}
                   </div>
                 )}
+
+                {/* QA Rejection Reason */}
+                {isQARejected && stage.qa_rejection_reason && (
+                  <div className="mt-3 pt-3 border-t border-red-300 text-xs text-red-700 italic">
+                    {stage.qa_rejection_reason}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -596,6 +703,31 @@ export const ProductionWorkflowLevels: React.FC<ProductionWorkflowLevelsProps> =
             setShowActionMenu(false);
             setSelectedStageId(null);
           }}
+        />
+      )}
+
+      {/* QA Approval Modal */}
+      {selectedStage && (
+        <QAApprovalModal
+          stage={selectedStage}
+          approval={selectedApproval}
+          isOpen={showQAModal}
+          onClose={() => {
+            setShowQAModal(false);
+            setSelectedStageId(null);
+            setSelectedApproval(null);
+          }}
+          onApprovalComplete={() => {
+            fetchWorkflow();
+            // Close modal and reset state after approval
+            setShowQAModal(false);
+            setSelectedStageId(null);
+            setSelectedApproval(null);
+          }}
+          userRole={(() => {
+            const user = localStorage.getItem('user');
+            return user ? JSON.parse(user).role : '';
+          })()}
         />
       )}
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
 import api from '../../services/api';
+import costingService from '../../services/costing.service';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -78,8 +79,7 @@ export default function Costing() {
     queryKey: ['job-costs', selectedJobId],
     queryFn: async () => {
       if (!selectedJobId) return { data: [] };
-      const response = await api.get(`/costing/jobs/${selectedJobId}`);
-      return response.data;
+      return costingService.getJobCosts(selectedJobId);
     },
     enabled: !!selectedJobId,
   });
@@ -88,8 +88,7 @@ export default function Costing() {
     queryKey: ['job-cost-summary', selectedJobId],
     queryFn: async () => {
       if (!selectedJobId) return null;
-      const response = await api.get(`/costing/jobs/${selectedJobId}/summary`);
-      return response.data;
+      return costingService.getJobCostSummary(selectedJobId);
     },
     enabled: !!selectedJobId,
   });
@@ -98,24 +97,22 @@ export default function Costing() {
     queryKey: ['cost-calculation', selectedJobId, prePressCost],
     queryFn: async () => {
       if (!selectedJobId) return null;
-      const payload: any = { job_id: selectedJobId };
+      const payload: any = {};
       if (prePressCost !== undefined) {
         payload.pre_press_charges = prePressCost;
       }
-      const response = await api.post('/costing/calculate', payload);
-      return response.data;
+      return costingService.calculateJobCost(selectedJobId, payload);
     },
     enabled: !!selectedJobId && showCalculation,
   });
 
   const saveCalculationMutation = useMutation({
     mutationFn: async () => {
-      const payload: any = { job_id: selectedJobId };
+      const payload: any = {};
       if (prePressCost !== undefined) {
         payload.pre_press_charges = prePressCost;
       }
-      const response = await api.post('/costing/calculate/save', payload);
-      return response.data;
+      return costingService.saveCalculatedCost(selectedJobId, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-costs'] });
@@ -128,15 +125,13 @@ export default function Costing() {
   const createMutation = useMutation({
     mutationFn: async (data: JobCostFormData) => {
       const payload = {
-        job_id: data.job_id,
         cost_type: data.cost_type,
         item_id: data.item_id || undefined,
         description: data.description,
         quantity: Number(data.quantity),
         unit_cost: Number(data.unit_cost),
       };
-      const response = await api.post(`/costing/jobs/${data.job_id}/costs`, payload);
-      return response.data;
+      return costingService.createJobCost(data.job_id, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-costs'] });
@@ -155,7 +150,7 @@ export default function Costing() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/costing/costs/${id}`);
+      return costingService.deleteJobCost(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-costs'] });

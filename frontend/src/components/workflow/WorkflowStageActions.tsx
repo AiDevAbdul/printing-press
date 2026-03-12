@@ -31,6 +31,16 @@ export function WorkflowStageActions({
   const buttonText = touchOptimized ? 'text-base' : 'text-sm';
 
   const handleStart = async () => {
+    // Check QA approval status if required
+    if (stage.qa_approval_required && stage.qa_approval_status !== 'approved') {
+      if (stage.qa_approval_status === 'pending') {
+        toast.error('Waiting for QA Manager approval');
+      } else if (stage.qa_approval_status === 'rejected') {
+        toast.error(`Stage rejected by QA: ${stage.qa_rejection_reason}`);
+      }
+      return;
+    }
+
     // Use stage's operator/machine if job doesn't have them assigned
     // If neither are available, send undefined and let backend use previous stage's values
     const effectiveOperatorId = operatorId || stage.operator?.id;

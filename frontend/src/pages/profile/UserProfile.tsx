@@ -8,6 +8,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { Alert } from '../../components/ui/Alert';
 import { User, Mail, Phone, Building2, Calendar, Edit2, ArrowLeft } from 'lucide-react';
 import api from '../../services/api';
+import activityLogService, { ActivityLog } from '../../services/activity-log.service';
 
 interface UserProfile {
   id: string;
@@ -22,15 +23,6 @@ interface UserProfile {
   partial_access: Record<string, string[]>;
   created_at: string;
   updated_at: string;
-}
-
-interface ActivityLog {
-  id: string;
-  action: string;
-  entity_type?: string;
-  entity_id?: string;
-  details?: Record<string, any>;
-  created_at: string;
 }
 
 export default function UserProfile() {
@@ -73,11 +65,10 @@ export default function UserProfile() {
 
   const fetchActivityLog = async () => {
     try {
-      const response = await api.get(`/users/${profileId}/activity-log`);
-      setActivityLog(response.data.logs || []);
+      const response = await activityLogService.getUserActivityLog(profileId, 50, 0);
+      setActivityLog(response.data || []);
     } catch (err) {
       console.error('Failed to load activity log:', err);
-      // Activity log endpoint may not exist, continue without it
       setActivityLog([]);
     }
   };

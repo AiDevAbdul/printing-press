@@ -24,6 +24,11 @@ export interface WorkflowStage {
   can_start: boolean;
   can_pause: boolean;
   can_complete: boolean;
+  qa_approval_required?: boolean;
+  qa_approval_status?: 'pending' | 'approved' | 'rejected';
+  qa_approved_by?: string;
+  qa_approved_at?: string;
+  qa_rejection_reason?: string;
 }
 
 export interface WorkflowResponse {
@@ -91,6 +96,27 @@ const workflowService = {
 
   completeStage: async (jobId: string, stageId: number, dto: CompleteWorkflowStageDto) => {
     const response = await api.post(`/production/workflow/${jobId}/stages/${stageId}/complete`, dto);
+    return response.data;
+  },
+
+  // QA Approval endpoints
+  getStageApprovalStatus: async (stageId: number) => {
+    const response = await api.get(`/approvals/stage/${stageId}`);
+    return response.data;
+  },
+
+  getJobApprovals: async (jobId: string) => {
+    const response = await api.get(`/approvals/job/${jobId}`);
+    return response.data;
+  },
+
+  approveStage: async (approvalId: string, notes?: string) => {
+    const response = await api.post(`/approvals/${approvalId}/approve`, { notes });
+    return response.data;
+  },
+
+  rejectStage: async (approvalId: string, rejectionReason: string, notes?: string) => {
+    const response = await api.post(`/approvals/${approvalId}/reject`, { rejection_reason: rejectionReason, notes });
     return response.data;
   },
 };

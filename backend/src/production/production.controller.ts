@@ -251,4 +251,10 @@ export class ProductionController {
   syncOfflineActions(@Body() dto: OfflineSyncDto, @Req() req: any) {
     return this.productionService.syncOfflineActions(dto, req.user.userId);
   }
+
+  @Post('workflow/:id/backfill-approvals')
+  @Roles(UserRole.ADMIN)
+  async backfillApprovals(@Param('id') jobId: string) {
+    return this.productionService.backfillApprovals(jobId);
+  }
 }

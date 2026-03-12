@@ -24,9 +24,10 @@ export class OrdersService {
     const order = this.ordersRepository.create({
       ...createOrderDto,
       order_number: this.generateOrderNumber(),
-      customer: { id: createOrderDto.customer_id } as any,
-      created_by: { id: userId } as any,
     });
+    // Set the foreign key IDs directly
+    (order as any).customer_id = createOrderDto.customer_id;
+    (order as any).created_by = userId;
     return this.ordersRepository.save(order);
   }
 

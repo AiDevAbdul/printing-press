@@ -389,71 +389,78 @@ export class QuotationsService {
       throw new BadRequestException('Quotation already converted to order');
     }
 
-    // Create order from quotation - map quotation fields to order fields
-    const orderData = {
-      customer_id: quotation.customer_id,
-      order_date: dto?.order_date ? new Date(dto.order_date) : new Date(),
-      delivery_date: dto?.delivery_date ? new Date(dto.delivery_date) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      product_name: quotation.product_name,
-      product_type: quotation.product_type,
-      quantity: quotation.quantity,
-      unit: quotation.unit,
-      // Map quotation dimensions to order dimensions
-      size_length: quotation.length,
-      size_width: quotation.width,
-      size_unit: quotation.dimension_unit || 'mm',
-      // Map quotation material fields to order fields
-      substrate: quotation.paper_type,
-      gsm: quotation.gsm?.toString(),
-      // Map color fields - quotation uses color_front/back, order uses CMYK + Pantone
-      colors: quotation.color_front && quotation.color_back
-        ? `${quotation.color_front}/${quotation.color_back}`
-        : undefined,
-      color_cyan: quotation.color_front ? '100' : undefined,
-      color_magenta: quotation.color_front ? '100' : undefined,
-      color_yellow: quotation.color_front ? '100' : undefined,
-      color_black: quotation.color_front ? '100' : undefined,
-      color_p1: quotation.pantone_p1_code,
-      color_p2: quotation.pantone_p2_code,
-      color_p3: quotation.pantone_p3_code,
-      color_p4: quotation.pantone_p4_code,
-      // Map finishing fields
-      varnish_type: quotation.varnish_type ? [quotation.varnish_type] : undefined,
-      lamination_type: quotation.lamination_type ? [quotation.lamination_type] : undefined,
-      uv_emboss_details: quotation.embossing_details,
-      // Map pre-press fields
-      ctp_info: quotation.ctp_details,
-      die_type: quotation.die_type as any,
-      plate_reference: quotation.plate_reference,
-      // Map product-specific fields
-      cylinder_reference: quotation.cylinder_size?.toString(),
-      thickness_micron: quotation.foil_thickness,
-      tablet_size: quotation.tablet_size,
-      punch_size: quotation.punch_size,
-      // Pricing
-      quoted_price: quotation.total_amount,
-      final_price: quotation.total_amount,
-      special_instructions: dto?.notes || quotation.notes,
-    };
+    try {
+      // Create order from quotation - map quotation fields to order fields
+      const orderData = {
+        customer_id: quotation.customer_id,
+        order_date: dto?.order_date ? new Date(dto.order_date) : new Date(),
+        delivery_date: dto?.delivery_date ? new Date(dto.delivery_date) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        product_name: quotation.product_name,
+        product_type: quotation.product_type,
+        quantity: quotation.quantity,
+        unit: quotation.unit,
+        // Map quotation dimensions to order dimensions
+        size_length: quotation.length,
+        size_width: quotation.width,
+        size_unit: quotation.dimension_unit || 'mm',
+        // Map quotation material fields to order fields
+        substrate: quotation.paper_type,
+        gsm: quotation.gsm?.toString(),
+        // Map color fields - quotation uses color_front/back, order uses CMYK + Pantone
+        colors: quotation.color_front && quotation.color_back
+          ? `${quotation.color_front}/${quotation.color_back}`
+          : undefined,
+        color_cyan: quotation.color_front ? '100' : undefined,
+        color_magenta: quotation.color_front ? '100' : undefined,
+        color_yellow: quotation.color_front ? '100' : undefined,
+        color_black: quotation.color_front ? '100' : undefined,
+        color_p1: quotation.pantone_p1_code,
+        color_p2: quotation.pantone_p2_code,
+        color_p3: quotation.pantone_p3_code,
+        color_p4: quotation.pantone_p4_code,
+        // Map finishing fields
+        varnish_type: quotation.varnish_type ? [quotation.varnish_type] : undefined,
+        lamination_type: quotation.lamination_type ? [quotation.lamination_type] : undefined,
+        uv_emboss_details: quotation.embossing_details,
+        // Map pre-press fields
+        ctp_info: quotation.ctp_details,
+        die_type: quotation.die_type as any,
+        plate_reference: quotation.plate_reference,
+        // Map product-specific fields
+        cylinder_reference: quotation.cylinder_size?.toString(),
+        thickness_micron: quotation.foil_thickness,
+        tablet_size: quotation.tablet_size,
+        punch_size: quotation.punch_size,
+        // Pricing
+        quoted_price: quotation.total_amount,
+        final_price: quotation.total_amount,
+        special_instructions: dto?.notes || quotation.notes,
+      };
 
-    const order = await this.ordersService.create(orderData, userId);
+      const order = await this.ordersService.create(orderData, userId);
 
-    // Update quotation
-    await this.createHistory(
-      id,
-      quotation.status,
-      QuotationStatus.CONVERTED,
-      userId,
-      `Converted to order ${order.order_number}`,
-    );
+      // Update quotation
+      await this.createHistory(
+        id,
+        quotation.status,
+        QuotationStatus.CONVERTED,
+        userId,
+        `Converted to order ${order.order_number}`,
+      );
 
-    quotation.status = QuotationStatus.CONVERTED;
-    quotation.converted_to_order_id = order.id;
-    quotation.converted_at = new Date();
+      quotation.status = QuotationStatus.CONVERTED;
+      quotation.converted_to_order_id = order.id;
+      quotation.converted_at = new Date();
 
-    await this.quotationRepository.save(quotation);
+      await this.quotationRepository.save(quotation);
 
-    return order;
+      return order;
+    } catch (error) {
+      console.error('Error converting quotation to order:', error);
+      throw new BadRequestException(
+        `Failed to convert quotation to order: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   async createRevision(id: string, userId: string): Promise<Quotation> {

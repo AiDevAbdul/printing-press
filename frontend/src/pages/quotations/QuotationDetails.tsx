@@ -32,8 +32,9 @@ const QuotationDetails = ({ quotation, onClose }: QuotationDetailsProps) => {
       navigate('/orders');
       onClose();
     },
-    onError: () => {
-      toast.error('Failed to convert quotation to order');
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to convert quotation to order';
+      toast.error(errorMessage);
     },
   });
 

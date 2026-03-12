@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, LogOut, Settings, ChevronDown, X, Check } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { Menu } from 'lucide-react';
+import notificationsService, { Notification } from '../../services/notifications.service';
 
 export interface HeaderProps {
   onMenuToggle?: () => void;
@@ -22,10 +23,38 @@ export function Header({
   className = '',
 }: HeaderProps) {
   const navigate = useNavigate();
-  const [showUserMenu, setShowUserMenu] = React.useState(false);
-  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch notifications on mount and when dropdown opens
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await notificationsService.getNotifications(10, 0);
+        setNotifications(response.data);
+        const count = await notificationsService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (showNotifications) {
+      fetchNotifications();
+    }
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [showNotifications]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -48,6 +77,48 @@ export function Header({
       e.preventDefault();
       callback();
     }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await notificationsService.markAsRead(notificationId);
+      setNotifications(notifications.map(n =>
+        n.id === notificationId ? { ...n, is_read: true } : n
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await notificationsService.deleteNotification(notificationId);
+      setNotifications(notifications.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsService.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
   };
 
   return (
@@ -95,33 +166,89 @@ export function Header({
               onClick={() => setShowNotifications(!showNotifications)}
               onKeyDown={(e) => handleKeyDown(e, () => setShowNotifications(!showNotifications))}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 relative"
-              aria-label="Notifications"
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
               aria-expanded={showNotifications}
               aria-haspopup="true"
             >
               <Bell className="w-5 h-5 text-gray-600" aria-hidden="true" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" aria-label="Unread notifications"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold" aria-label={`${unreadCount} unread notifications`}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Notifications dropdown */}
             {showNotifications && (
               <div
-                className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-fadeInScale"
+                className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-fadeInScale z-50"
                 role="region"
                 aria-label="Notifications panel"
               >
-                <div className="px-4 py-2 border-b border-gray-200">
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      aria-label="Mark all notifications as read"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer" role="article">
-                    <p className="text-sm text-gray-900">New order received</p>
-                    <p className="text-xs text-gray-500 mt-1">2 minutes ago</p>
-                  </div>
-                  <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer" role="article">
-                    <p className="text-sm text-gray-900">Production job completed</p>
-                    <p className="text-xs text-gray-500 mt-1">1 hour ago</p>
-                  </div>
+                  {loading ? (
+                    <div className="px-4 py-8 text-center text-gray-500">
+                      <p className="text-sm">Loading notifications...</p>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500">
+                      <p className="text-sm">No notifications</p>
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150 flex items-start gap-3 group ${
+                          !notification.is_read ? 'bg-blue-50' : ''
+                        }`}
+                        role="article"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${!notification.is_read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatTimeAgo(notification.created_at)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                          {!notification.is_read && (
+                            <button
+                              onClick={() => handleMarkAsRead(notification.id)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors duration-150"
+                              aria-label="Mark as read"
+                              title="Mark as read"
+                            >
+                              <Check className="w-4 h-4 text-gray-500" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteNotification(notification.id)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors duration-150"
+                            aria-label="Delete notification"
+                            title="Delete"
+                          >
+                            <X className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
