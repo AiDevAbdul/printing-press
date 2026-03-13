@@ -397,7 +397,7 @@ export class QuotationsService {
         delivery_date: dto?.delivery_date ? new Date(dto.delivery_date) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         product_name: quotation.product_name,
         product_type: quotation.product_type,
-        quantity: quotation.quantity,
+        quantity: Math.round(Number(quotation.quantity)),
         unit: quotation.unit,
         // Map quotation dimensions to order dimensions
         size_length: quotation.length,
@@ -428,7 +428,7 @@ export class QuotationsService {
         plate_reference: quotation.plate_reference,
         // Map product-specific fields
         cylinder_reference: quotation.cylinder_size?.toString(),
-        thickness_micron: quotation.foil_thickness,
+        thickness_micron: quotation.foil_thickness ? Number(quotation.foil_thickness) : undefined,
         tablet_size: quotation.tablet_size,
         punch_size: quotation.punch_size,
         // Pricing

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Grid3x3, Kanban } from 'lucide-react';
+import { Grid3x3, Kanban, Menu, X, List } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SortButton } from '../../components/ui/SortButton';
@@ -109,7 +108,7 @@ interface OrderFormData {
 }
 
 export default function Orders() {
-  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'kanban'>('grid');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [productTypeFilter, setProductTypeFilter] = useState('');
@@ -117,6 +116,7 @@ export default function Orders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -238,136 +238,199 @@ export default function Orders() {
   const { sortedItems, sortConfig, toggleSort } = useSorting(transformedOrders, 'order_date');
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="text-gray-600 mt-1">Manage customer orders and track progress</p>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar Filters */}
+      <div className={`${sidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 overflow-hidden bg-white border-r border-gray-200 flex flex-col`}>
+        <div className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold text-gray-900">Filters</h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Search */}
+          <div>
+            <Input
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Status</p>
+            <div className="space-y-2">
+              {['pending', 'approved', 'in_production', 'completed', 'delivered', 'cancelled'].map((status) => (
+                <Button
+                  key={status}
+                  variant={statusFilter === status ? 'primary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Product Type Filter */}
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Product Type</p>
+            <div className="space-y-2">
+              {['', 'cpp_carton', 'silvo_blister', 'bent_foil', 'alu_alu'].map((type) => (
+                <Button
+                  key={type}
+                  variant={productTypeFilter === type ? 'primary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setProductTypeFilter(type)}
+                >
+                  {type === '' ? 'All' : type === 'cpp_carton' ? 'CPP Carton' : type === 'silvo_blister' ? 'Silvo/Blister' : type === 'bent_foil' ? 'Bent Foil' : 'Alu-Alu'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Priority Filter */}
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Priority</p>
+            <div className="space-y-2">
+              {['low', 'normal', 'high', 'urgent'].map((priority) => (
+                <Button
+                  key={priority}
+                  variant={priorityFilter === priority ? 'primary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setPriorityFilter(priority)}
+                >
+                  {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* View Toggle & Sort */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<Grid3x3 className="w-4 h-4" />}
-            onClick={() => setViewMode('grid')}
-          >
-            Grid
-          </Button>
-          <Button
-            variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<Kanban className="w-4 h-4" />}
-            onClick={() => setViewMode('kanban')}
-          >
-            Kanban
-          </Button>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={sidebarOpen ? 'primary' : 'outline'}
+                size="sm"
+                icon={sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                Filters
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'primary' : 'outline'}
+                size="sm"
+                icon={<Grid3x3 className="w-4 h-4" />}
+                onClick={() => setViewMode('grid')}
+              />
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'outline'}
+                size="sm"
+                icon={<List className="w-4 h-4" />}
+                onClick={() => setViewMode('list')}
+              />
+              <Button
+                variant={viewMode === 'kanban' ? 'primary' : 'outline'}
+                size="sm"
+                icon={<Kanban className="w-4 h-4" />}
+                onClick={() => setViewMode('kanban')}
+              />
+
+              <div className="w-px h-6 bg-gray-200" />
+
+              <SortButton
+                label="Latest"
+                isActive={sortConfig.key === 'order_date'}
+                sortOrder={sortConfig.order}
+                onClick={() => toggleSort('order_date')}
+              />
+              <SortButton
+                label="Delivery Date"
+                isActive={sortConfig.key === 'delivery_date'}
+                sortOrder={sortConfig.order}
+                onClick={() => toggleSort('delivery_date')}
+              />
+              <SortButton
+                label="Amount"
+                isActive={sortConfig.key === 'amount'}
+                sortOrder={sortConfig.order}
+                onClick={() => toggleSort('amount')}
+              />
+
+              <div className="w-px h-6 bg-gray-200" />
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+              >
+                New Order
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <SortButton
-            label="Latest"
-            isActive={sortConfig.key === 'order_date'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('order_date')}
-          />
-          <SortButton
-            label="Delivery Date"
-            isActive={sortConfig.key === 'delivery_date'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('delivery_date')}
-          />
-          <SortButton
-            label="Amount"
-            isActive={sortConfig.key === 'amount'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('amount')}
-          />
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto p-6">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Skeleton variant="card" />
+              <Skeleton variant="card" />
+              <Skeleton variant="card" />
+            </div>
+          ) : error ? (
+            <EmptyState
+              icon="AlertCircle"
+              title="Error loading orders"
+              description="There was an error loading the orders. Please try again."
+            />
+          ) : sortedItems.length === 0 ? (
+            <EmptyState
+              icon="Package"
+              title="No orders found"
+              description="Get started by creating your first order."
+              action={{
+                label: 'Add Order',
+                onClick: () => setIsModalOpen(true),
+              }}
+            />
+          ) : viewMode === 'grid' ? (
+            <OrdersGrid
+              orders={sortedItems}
+              viewMode="grid"
+              onCreateOrder={() => setIsModalOpen(true)}
+              onViewOrder={handleViewOrder}
+              onApproveOrder={handleApproveOrder}
+            />
+          ) : viewMode === 'list' ? (
+            <OrdersGrid
+              orders={sortedItems}
+              viewMode="list"
+              onCreateOrder={() => setIsModalOpen(true)}
+              onViewOrder={handleViewOrder}
+              onApproveOrder={handleApproveOrder}
+            />
+          ) : (
+            <OrdersKanban
+              orders={sortedItems}
+              onCreateOrder={() => setIsModalOpen(true)}
+              onViewOrder={handleViewOrder}
+            />
+          )}
         </div>
       </div>
-
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Input
-          placeholder="Search orders..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Select
-          options={[
-            { value: '', label: 'All Statuses' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'approved', label: 'Approved' },
-            { value: 'in_production', label: 'In Production' },
-            { value: 'completed', label: 'Completed' },
-            { value: 'delivered', label: 'Delivered' },
-            { value: 'cancelled', label: 'Cancelled' },
-          ]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-        <Select
-          options={[
-            { value: '', label: 'All Product Types' },
-            { value: 'cpp_carton', label: 'CPP Carton' },
-            { value: 'silvo_blister', label: 'Silvo/Blister' },
-            { value: 'bent_foil', label: 'Bent Foil' },
-            { value: 'alu_alu', label: 'Alu-Alu' },
-          ]}
-          value={productTypeFilter}
-          onChange={(e) => setProductTypeFilter(e.target.value)}
-        />
-        <Select
-          options={[
-            { value: '', label: 'All Priorities' },
-            { value: 'low', label: 'Low' },
-            { value: 'normal', label: 'Normal' },
-            { value: 'high', label: 'High' },
-            { value: 'urgent', label: 'Urgent' },
-          ]}
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-        />
-      </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Skeleton variant="card" />
-          <Skeleton variant="card" />
-          <Skeleton variant="card" />
-        </div>
-      ) : error ? (
-        <EmptyState
-          icon="AlertCircle"
-          title="Error loading orders"
-          description="There was an error loading the orders. Please try again."
-        />
-      ) : sortedItems.length === 0 ? (
-        <EmptyState
-          icon="Package"
-          title="No orders found"
-          description="Get started by creating your first order."
-          action={{
-            label: 'Add Order',
-            onClick: () => setIsModalOpen(true),
-          }}
-        />
-      ) : viewMode === 'grid' ? (
-        <OrdersGrid
-          orders={sortedItems}
-          onCreateOrder={() => setIsModalOpen(true)}
-          onViewOrder={handleViewOrder}
-          onApproveOrder={handleApproveOrder}
-        />
-      ) : (
-        <OrdersKanban
-          orders={sortedItems}
-          onCreateOrder={() => setIsModalOpen(true)}
-          onViewOrder={handleViewOrder}
-        />
-      )}
 
       <OrderFormModal
         isOpen={isModalOpen}

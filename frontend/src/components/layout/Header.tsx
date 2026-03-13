@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, Settings, ChevronDown, X, Check } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, X, Check } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { Menu } from 'lucide-react';
 import notificationsService, { Notification } from '../../services/notifications.service';
@@ -37,7 +37,7 @@ export function Header({
       try {
         setLoading(true);
         const response = await notificationsService.getNotifications(10, 0);
-        setNotifications(response.data);
+        setNotifications(response.data || []);
         const count = await notificationsService.getUnreadCount();
         setUnreadCount(count);
       } catch (error) {
@@ -142,19 +142,6 @@ export function Header({
           {/* Breadcrumb - hidden on mobile */}
           <div className="hidden md:block">
             <Breadcrumb />
-          </div>
-        </div>
-
-        {/* Center: Search bar */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Search..."
-              aria-label="Search"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            />
           </div>
         </div>
 
@@ -321,19 +308,6 @@ export function Header({
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Mobile search bar */}
-      <div className="md:hidden px-4 pb-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Search..."
-            aria-label="Search"
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
         </div>
       </div>
     </header>

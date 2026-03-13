@@ -10,6 +10,7 @@ import { Package } from 'lucide-react';
 
 export interface OrdersGridProps {
   orders: any[];
+  viewMode?: 'grid' | 'list';
   isLoading?: boolean;
   onCreateOrder?: () => void;
   onViewOrder?: (orderId: string) => void;
@@ -18,12 +19,12 @@ export interface OrdersGridProps {
 
 export function OrdersGrid({
   orders,
+  viewMode = 'grid',
   isLoading = false,
   onCreateOrder,
   onViewOrder,
   onApproveOrder,
 }: OrdersGridProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -70,71 +71,6 @@ export function OrdersGrid({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<Grid className="w-4 h-4" />}
-            onClick={() => setViewMode('grid')}
-          >
-            Grid
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<List className="w-4 h-4" />}
-            onClick={() => setViewMode('list')}
-          >
-            List
-          </Button>
-        </div>
-
-        <Button
-          variant="primary"
-          size="sm"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={onCreateOrder}
-        >
-          New Order
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Input
-          placeholder="Search by order #, customer, or product..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          leftIcon={<Filter className="w-4 h-4" />}
-        />
-        <Select
-          options={[
-            { value: 'all', label: 'All Status' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'approved', label: 'Approved' },
-            { value: 'in_progress', label: 'In Progress' },
-            { value: 'completed', label: 'Completed' },
-            { value: 'delivered', label: 'Delivered' },
-            { value: 'cancelled', label: 'Cancelled' },
-          ]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-        <Select
-          options={[
-            { value: 'all', label: 'All Priority' },
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
-            { value: 'urgent', label: 'Urgent' },
-          ]}
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-        />
-      </div>
-
       {/* Grid View */}
       {viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -214,7 +214,7 @@ export default function Planning() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900">{order.order_number}</h3>
-                    <p className="text-sm text-gray-600">{order.customer.name}</p>
+                    <p className="text-sm text-gray-600">{order.customer?.name || 'Unknown Customer'}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs rounded-full font-medium ${priorityColors[order.priority]}`}>
                     {order.priority}
@@ -283,7 +283,7 @@ export default function Planning() {
                 label="Assigned Operator"
                 options={[
                   { value: '', label: 'Select Operator' },
-                  ...(usersResponse?.users?.map((user: User) => ({
+                  ...(usersResponse?.users?.filter((user: User) => user && user.id).map((user: User) => ({
                     value: user.id,
                     label: user.full_name,
                   })) || []),
