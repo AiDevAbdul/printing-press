@@ -740,34 +740,6 @@ export default function OrderFormModal({
                 </div>
               </div>
             </div>
-                  label="Color Matching Standard"
-                  options={[
-                    { value: 'pantone', label: 'Pantone' },
-                    { value: 'cmyk', label: 'CMYK' },
-                    { value: 'custom', label: 'Custom' },
-                    { value: 'none', label: 'None' },
-                  ]}
-                  value={formData.color_matching_standard || 'none'}
-                  onChange={(e) => setFormData({ ...formData, color_matching_standard: e.target.value })}
-                />
-                <Input
-                  label="Approved By"
-                  value={formData.approved_by || ''}
-                  onChange={(e) => setFormData({ ...formData, approved_by: e.target.value })}
-                  placeholder="Name or ID"
-                />
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quality Check Notes</label>
-                  <textarea
-                    value={formData.quality_check_notes || ''}
-                    onChange={(e) => setFormData({ ...formData, quality_check_notes: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Quality observations and notes"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Production Setup */}
             <div className="space-y-4">
