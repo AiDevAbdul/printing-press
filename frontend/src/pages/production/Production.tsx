@@ -352,7 +352,7 @@ export default function Production() {
                 label="Assigned Operator"
                 options={[
                   { value: '', label: 'Select Operator' },
-                  ...(usersResponse?.map((user: User) => ({
+                  ...(usersResponse?.users?.filter((user: User) => user && user.id).map((user: User) => ({
                     value: user.id,
                     label: user.full_name,
                   })) || []),
