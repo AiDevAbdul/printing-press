@@ -1,10 +1,7 @@
-import { useState } from 'react';
-import { Plus, Filter, Grid, List } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Package } from 'lucide-react';
 
@@ -25,22 +22,8 @@ export function OrdersGrid({
   onViewOrder,
   onApproveOrder,
 }: OrdersGridProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-
   // Filter orders
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.product_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || order.priority === priorityFilter;
-
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+  const filteredOrders = orders;
 
   if (isLoading) {
     return (

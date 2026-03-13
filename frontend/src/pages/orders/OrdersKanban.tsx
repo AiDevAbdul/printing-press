@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
-import { Plus } from 'lucide-react';
 
 export interface OrdersKanbanProps {
   orders: any[];
@@ -25,7 +23,6 @@ const STATUSES = [
 export function OrdersKanban({
   orders,
   isLoading = false,
-  onCreateOrder,
   onViewOrder,
   onStatusChange,
 }: OrdersKanbanProps) {
