@@ -11,23 +11,24 @@ export class CustomersService {
     private customersRepository: Repository<Customer>,
   ) {}
 
-  async create(createCustomerDto: CreateCustomerDto, userId: string): Promise<Customer> {
+  async create(createCustomerDto: CreateCustomerDto, userId: string, companyId: string): Promise<Customer> {
     const customer = this.customersRepository.create({
       ...createCustomerDto,
       created_by: { id: userId } as any,
-    });
-    return this.customersRepository.save(customer);
+      company_id: companyId,
+    } as any);
+    return this.customersRepository.save(customer as any);
   }
 
-  async findAll(search?: string, page = 1, limit = 10): Promise<{ data: Customer[]; total: number }> {
+  async findAll(companyId: string, search?: string, page = 1, limit = 10): Promise<{ data: Customer[]; total: number }> {
     const skip = (page - 1) * limit;
     const where = search
       ? [
-          { name: Like(`%${search}%`) },
-          { company_name: Like(`%${search}%`) },
-          { email: Like(`%${search}%`) },
+          { company_id: companyId, name: Like(`%${search}%`) },
+          { company_id: companyId, company_name: Like(`%${search}%`) },
+          { company_id: companyId, email: Like(`%${search}%`) },
         ]
-      : {};
+      : { company_id: companyId };
 
     const [data, total] = await this.customersRepository.findAndCount({
       where,
@@ -40,9 +41,9 @@ export class CustomersService {
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Customer> {
+  async findOne(id: string, companyId: string): Promise<Customer> {
     const customer = await this.customersRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['created_by'],
     });
 
@@ -53,14 +54,14 @@ export class CustomersService {
     return customer;
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
-    const customer = await this.findOne(id);
+  async update(id: string, companyId: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
+    const customer = await this.findOne(id, companyId);
     Object.assign(customer, updateCustomerDto);
     return this.customersRepository.save(customer);
   }
 
-  async remove(id: string): Promise<void> {
-    const customer = await this.findOne(id);
+  async remove(id: string, companyId: string): Promise<void> {
+    const customer = await this.findOne(id, companyId);
     customer.is_active = false;
     await this.customersRepository.save(customer);
   }

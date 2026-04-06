@@ -16,75 +16,75 @@ export class InventoryController {
 
   @Post('items')
   @Roles(UserRole.ADMIN, UserRole.INVENTORY)
-  createItem(@Body() createInventoryItemDto: CreateInventoryItemDto) {
-    return this.inventoryService.createItem(createInventoryItemDto);
+  createItem(@Body() createInventoryItemDto: CreateInventoryItemDto, @CurrentUser() user: any) {
+    return this.inventoryService.createItem(createInventoryItemDto, user.company_id);
   }
 
   @Get('items')
-  findAllItems(@Query() queryDto: QueryInventoryDto) {
-    return this.inventoryService.findAllItems(queryDto);
+  findAllItems(@Query() queryDto: QueryInventoryDto, @CurrentUser() user: any) {
+    return this.inventoryService.findAllItems(user.company_id, queryDto);
   }
 
   @Get('filters/brands')
-  getBrands(@Query('main_category') mainCategory?: string) {
-    return this.inventoryService.getDistinctBrands(mainCategory);
+  getBrands(@CurrentUser() user: any, @Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctBrands(user.company_id, mainCategory);
   }
 
   @Get('filters/colors')
-  getColors(@Query('main_category') mainCategory?: string) {
-    return this.inventoryService.getDistinctColors(mainCategory);
+  getColors(@CurrentUser() user: any, @Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctColors(user.company_id, mainCategory);
   }
 
   @Get('filters/sizes')
-  getSizes() {
-    return this.inventoryService.getDistinctSizes();
+  getSizes(@CurrentUser() user: any) {
+    return this.inventoryService.getDistinctSizes(user.company_id);
   }
 
   @Get('filters/gsm-values')
-  getGSMValues() {
-    return this.inventoryService.getDistinctGSMValues();
+  getGSMValues(@CurrentUser() user: any) {
+    return this.inventoryService.getDistinctGSMValues(user.company_id);
   }
 
   @Get('filters/material-types')
-  getMaterialTypes(@Query('main_category') mainCategory?: string) {
-    return this.inventoryService.getDistinctMaterialTypes(mainCategory);
+  getMaterialTypes(@CurrentUser() user: any, @Query('main_category') mainCategory?: string) {
+    return this.inventoryService.getDistinctMaterialTypes(user.company_id, mainCategory);
   }
 
   @Get('items/low-stock')
-  getLowStockItems() {
-    return this.inventoryService.getLowStockItems();
+  getLowStockItems(@CurrentUser() user: any) {
+    return this.inventoryService.getLowStockItems(user.company_id);
   }
 
   @Get('items/:id')
-  findOneItem(@Param('id') id: string) {
-    return this.inventoryService.findOneItem(id);
+  findOneItem(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.inventoryService.findOneItem(id, user.company_id);
   }
 
   @Patch('items/:id')
   @Roles(UserRole.ADMIN, UserRole.INVENTORY)
-  updateItem(@Param('id') id: string, @Body() updateInventoryItemDto: UpdateInventoryItemDto) {
-    return this.inventoryService.updateItem(id, updateInventoryItemDto);
+  updateItem(@Param('id') id: string, @Body() updateInventoryItemDto: UpdateInventoryItemDto, @CurrentUser() user: any) {
+    return this.inventoryService.updateItem(id, user.company_id, updateInventoryItemDto);
   }
 
   @Delete('items/:id')
   @Roles(UserRole.ADMIN, UserRole.INVENTORY)
-  removeItem(@Param('id') id: string) {
-    return this.inventoryService.removeItem(id);
+  removeItem(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.inventoryService.removeItem(id, user.company_id);
   }
 
   @Post('transactions')
   @Roles(UserRole.ADMIN, UserRole.INVENTORY, UserRole.PLANNER)
   createTransaction(@Body() createStockTransactionDto: CreateStockTransactionDto, @CurrentUser() user: any) {
-    return this.inventoryService.createTransaction(createStockTransactionDto, user.id);
+    return this.inventoryService.createTransaction(createStockTransactionDto, user.id, user.company_id);
   }
 
   @Get('transactions')
-  findAllTransactions(@Query('itemId') itemId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.inventoryService.findAllTransactions(itemId, page, limit);
+  findAllTransactions(@CurrentUser() user: any, @Query('itemId') itemId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.inventoryService.findAllTransactions(user.company_id, itemId, page, limit);
   }
 
   @Get('items/:id/transactions')
-  getItemTransactions(@Param('id') id: string) {
-    return this.inventoryService.getItemTransactions(id);
+  getItemTransactions(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.inventoryService.getItemTransactions(id, user.company_id);
   }
 }

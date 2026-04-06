@@ -435,6 +435,9 @@ export class Order {
   @JoinColumn({ name: 'created_by' })
   created_by: User;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

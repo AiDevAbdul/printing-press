@@ -6,12 +6,15 @@ import { User } from './entities/user.entity';
 import { CreateUserDto, UpdateUserDto, UserResponseDto, UpdateUserProfileDto, UpdateUserPermissionsDto } from './dto/user.dto';
 import { PermissionsService } from './permissions.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { Company } from '../companies/entities/company.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Company)
+    private companiesRepository: Repository<Company>,
     private permissionsService: PermissionsService,
     private activityLogService: ActivityLogService,
   ) {}
@@ -58,6 +61,25 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { id } });
+  }
+
+  async getUserCompanies(userId: string): Promise<Company[]> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['company'],
+    });
+
+    if (!user) {
+      return [];
+    }
+
+    // For now, return the user's company
+    // In the future, this could return multiple companies if a user can access multiple
+    return user.company ? [user.company] : [];
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {

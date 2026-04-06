@@ -65,6 +65,9 @@ export class QualityRejection {
   @Column({ type: 'uuid' })
   rejected_by_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

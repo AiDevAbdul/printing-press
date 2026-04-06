@@ -84,6 +84,9 @@ export class InventoryItem {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

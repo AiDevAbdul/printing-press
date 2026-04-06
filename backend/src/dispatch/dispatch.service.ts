@@ -29,15 +29,16 @@ export class DispatchService {
   ) {}
 
   // Deliveries
-  async createDelivery(dto: CreateDeliveryDto, userId: string): Promise<Delivery> {
+  async createDelivery(dto: CreateDeliveryDto, userId: string, companyId: string): Promise<Delivery> {
     const deliveryNumber = await this.generateDeliveryNumber();
 
     const delivery = this.deliveryRepository.create({
       ...dto,
       delivery_number: deliveryNumber,
       created_by_id: userId,
+      company_id: companyId,
       scheduled_date: new Date(dto.scheduled_date),
-    });
+    } as any);
 
     const savedDelivery = await this.deliveryRepository.save(delivery);
 
@@ -46,7 +47,7 @@ export class DispatchService {
       const packingListItems = dto.packing_list.map((item) =>
         this.packingListRepository.create({
           ...item,
-          delivery_id: savedDelivery.id,
+          delivery_id: (savedDelivery as any).id,
         }),
       );
       await this.packingListRepository.save(packingListItems);
@@ -54,15 +55,16 @@ export class DispatchService {
 
     // Create initial tracking entry
     await this.addTrackingUpdate(
-      savedDelivery.id,
+      (savedDelivery as any).id,
       { status: 'Delivery Created', notes: 'Delivery scheduled' },
       userId,
+      companyId,
     );
 
-    return this.findOne(savedDelivery.id);
+    return this.findOne((savedDelivery as any).id, companyId);
   }
 
-  async findAll(filters?: {
+  async findAll(companyId: string, filters?: {
     status?: DeliveryStatus;
     customer_id?: string;
     from_date?: string;
@@ -72,7 +74,8 @@ export class DispatchService {
       .leftJoinAndSelect('delivery.job', 'job')
       .leftJoinAndSelect('delivery.customer', 'customer')
       .leftJoinAndSelect('delivery.created_by', 'created_by')
-      .leftJoinAndSelect('delivery.packing_lists', 'packing_lists');
+      .leftJoinAndSelect('delivery.packing_lists', 'packing_lists')
+      .where('delivery.company_id = :companyId', { companyId });
 
     if (filters?.status) {
       query.andWhere('delivery.delivery_status = :status', { status: filters.status });
@@ -95,9 +98,9 @@ export class DispatchService {
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Delivery> {
+  async findOne(id: string, companyId: string): Promise<Delivery> {
     const delivery = await this.deliveryRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId as any },
       relations: ['job', 'customer', 'created_by', 'packing_lists', 'tracking_history', 'tracking_history.updated_by'],
     });
 
@@ -108,8 +111,8 @@ export class DispatchService {
     return delivery;
   }
 
-  async update(id: string, dto: UpdateDeliveryDto): Promise<Delivery> {
-    const delivery = await this.findOne(id);
+  async update(id: string, companyId: string, dto: UpdateDeliveryDto): Promise<Delivery> {
+    const delivery = await this.findOne(id, companyId);
 
     if (dto.scheduled_date) {
       delivery.scheduled_date = new Date(dto.scheduled_date);
@@ -119,11 +122,11 @@ export class DispatchService {
     Object.assign(delivery, dto);
     await this.deliveryRepository.save(delivery);
 
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
-  async markAsPacked(id: string, dto: MarkAsPackedDto, userId: string): Promise<Delivery> {
-    const delivery = await this.findOne(id);
+  async markAsPacked(id: string, companyId: string, dto: MarkAsPackedDto, userId: string): Promise<Delivery> {
+    const delivery = await this.findOne(id, companyId);
 
     if (delivery.delivery_status !== DeliveryStatus.PENDING) {
       throw new BadRequestException('Only pending deliveries can be marked as packed');
@@ -149,13 +152,14 @@ export class DispatchService {
       id,
       { status: 'Packed', notes: `Packed into ${dto.packing_list.length} boxes` },
       userId,
+      companyId,
     );
 
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
-  async dispatch(id: string, dto: DispatchDeliveryDto, userId: string): Promise<Delivery> {
-    const delivery = await this.findOne(id);
+  async dispatch(id: string, companyId: string, dto: DispatchDeliveryDto, userId: string): Promise<Delivery> {
+    const delivery = await this.findOne(id, companyId);
 
     if (delivery.delivery_status !== DeliveryStatus.PACKED) {
       throw new BadRequestException('Only packed deliveries can be dispatched');
@@ -176,18 +180,20 @@ export class DispatchService {
       id,
       { status: 'Dispatched', notes: trackingNotes },
       userId,
+      companyId,
     );
 
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
   async markAsDelivered(
     id: string,
+    companyId: string,
     dto: MarkAsDeliveredDto,
     userId: string,
     podPhoto?: Express.Multer.File,
   ): Promise<Delivery> {
-    const delivery = await this.findOne(id);
+    const delivery = await this.findOne(id, companyId);
 
     if (![DeliveryStatus.DISPATCHED, DeliveryStatus.IN_TRANSIT].includes(delivery.delivery_status)) {
       throw new BadRequestException('Only dispatched or in-transit deliveries can be marked as delivered');
@@ -208,16 +214,17 @@ export class DispatchService {
       id,
       { status: 'Delivered', notes: `Received by ${dto.received_by_name}${dto.notes ? ` - ${dto.notes}` : ''}` },
       userId,
+      companyId,
     );
 
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
-  async uploadPOD(id: string, file: Express.Multer.File): Promise<Delivery> {
-    const delivery = await this.findOne(id);
+  async uploadPOD(id: string, companyId: string, file: Express.Multer.File): Promise<Delivery> {
+    const delivery = await this.findOne(id, companyId);
     delivery.pod_photo_url = `/uploads/pod/${file.filename}`;
     await this.deliveryRepository.save(delivery);
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
   // Tracking
@@ -225,54 +232,58 @@ export class DispatchService {
     deliveryId: string,
     dto: AddTrackingUpdateDto,
     userId: string,
+    companyId: string,
   ): Promise<DeliveryTracking> {
     const tracking = this.trackingRepository.create({
       delivery_id: deliveryId,
+      company_id: companyId,
       status: dto.status,
       location: dto.location,
       notes: dto.notes,
       updated_by_id: userId,
-    });
+    } as any);
 
-    return this.trackingRepository.save(tracking);
+    return this.trackingRepository.save(tracking as any);
   }
 
-  async getTrackingHistory(deliveryId: string): Promise<DeliveryTracking[]> {
+  async getTrackingHistory(deliveryId: string, companyId: string): Promise<DeliveryTracking[]> {
     return this.trackingRepository.find({
-      where: { delivery_id: deliveryId },
+      where: { delivery_id: deliveryId, company_id: companyId as any },
       relations: ['updated_by'],
       order: { created_at: 'ASC' },
     });
   }
 
   // Challan
-  async generateChallan(deliveryId: string, dto: GenerateChallanDto, userId: string): Promise<Challan> {
-    const delivery = await this.findOne(deliveryId);
+  async generateChallan(deliveryId: string, companyId: string, dto: GenerateChallanDto, userId: string): Promise<Challan> {
+    const delivery = await this.findOne(deliveryId, companyId);
 
     const challanNumber = await this.generateChallanNumber();
 
     const challan = this.challanRepository.create({
       challan_number: challanNumber,
       delivery_id: deliveryId,
+      company_id: companyId,
       challan_date: new Date(),
       terms_and_conditions: dto.terms_and_conditions,
       notes: dto.notes,
       generated_by_id: userId,
-    });
+    } as any);
 
-    return this.challanRepository.save(challan);
+    return this.challanRepository.save(challan as any);
   }
 
-  async getChallan(deliveryId: string): Promise<Challan | null> {
+  async getChallan(deliveryId: string, companyId: string): Promise<Challan | null> {
     return this.challanRepository.findOne({
-      where: { delivery_id: deliveryId },
+      where: { delivery_id: deliveryId, company_id: companyId as any },
       relations: ['delivery', 'delivery.customer', 'delivery.job', 'delivery.packing_lists', 'generated_by'],
     });
   }
 
   // Metrics
-  async getDeliveryMetrics(startDate?: Date, endDate?: Date): Promise<any> {
-    const query = this.deliveryRepository.createQueryBuilder('delivery');
+  async getDeliveryMetrics(companyId: string, startDate?: Date, endDate?: Date): Promise<any> {
+    const query = this.deliveryRepository.createQueryBuilder('delivery')
+      .where('delivery.company_id = :companyId', { companyId });
 
     if (startDate && endDate) {
       query.andWhere('delivery.scheduled_date BETWEEN :startDate AND :endDate', {
@@ -290,7 +301,8 @@ export class DispatchService {
     // On-time delivery rate
     const onTimeDeliveries = await this.deliveryRepository
       .createQueryBuilder('delivery')
-      .where('delivery.delivery_status = :status', { status: DeliveryStatus.DELIVERED })
+      .where('delivery.company_id = :companyId', { companyId })
+      .andWhere('delivery.delivery_status = :status', { status: DeliveryStatus.DELIVERED })
       .andWhere('delivery.delivered_at <= delivery.scheduled_date')
       .getCount();
 
@@ -299,7 +311,8 @@ export class DispatchService {
     // Average delivery time
     const deliveredWithTimes = await this.deliveryRepository
       .createQueryBuilder('delivery')
-      .where('delivery.delivery_status = :status', { status: DeliveryStatus.DELIVERED })
+      .where('delivery.company_id = :companyId', { companyId })
+      .andWhere('delivery.delivery_status = :status', { status: DeliveryStatus.DELIVERED })
       .andWhere('delivery.dispatched_at IS NOT NULL')
       .andWhere('delivery.delivered_at IS NOT NULL')
       .getMany();

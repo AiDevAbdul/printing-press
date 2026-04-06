@@ -73,6 +73,9 @@ export class QualityDefect {
   @Column({ type: 'uuid' })
   logged_by_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

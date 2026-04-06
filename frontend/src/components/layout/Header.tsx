@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Settings, ChevronDown, X, Check } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
+import { CompanySwitcher } from './CompanySwitcher';
 import { Menu } from 'lucide-react';
 import notificationsService, { Notification } from '../../services/notifications.service';
 
@@ -147,6 +148,9 @@ export function Header({
 
         {/* Right: Notifications + User menu */}
         <div className="flex items-center gap-3">
+          {/* Company Switcher */}
+          <CompanySwitcher />
+
           {/* Notifications */}
           <div className="relative" ref={notificationsRef}>
             <button

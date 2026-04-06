@@ -20,6 +20,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { QuotationStatus } from './entities/quotation.entity';
 
@@ -30,8 +31,8 @@ export class QuotationsController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SALES)
-  create(@Body() createQuotationDto: CreateQuotationDto, @Request() req) {
-    return this.quotationsService.create(createQuotationDto, req.user.userId);
+  create(@Body() createQuotationDto: CreateQuotationDto, @CurrentUser() user: any) {
+    return this.quotationsService.create(createQuotationDto, user.id, user.company_id);
   }
 
   @Post('calculate')
@@ -47,8 +48,9 @@ export class QuotationsController {
     @Query('search') search?: string,
     @Query('from_date') from_date?: string,
     @Query('to_date') to_date?: string,
+    @CurrentUser() user?: any,
   ) {
-    return this.quotationsService.findAll({
+    return this.quotationsService.findAll(user.company_id, {
       status,
       customer_id,
       search,
@@ -58,8 +60,8 @@ export class QuotationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quotationsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.quotationsService.findOne(id, user.company_id);
   }
 
   @Patch(':id')
@@ -67,26 +69,27 @@ export class QuotationsController {
   update(
     @Param('id') id: string,
     @Body() updateQuotationDto: UpdateQuotationDto,
+    @CurrentUser() user: any,
   ) {
-    return this.quotationsService.update(id, updateQuotationDto);
+    return this.quotationsService.update(id, user.company_id, updateQuotationDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SALES)
-  remove(@Param('id') id: string) {
-    return this.quotationsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.quotationsService.remove(id, user.company_id);
   }
 
   @Post(':id/send')
   @Roles(UserRole.ADMIN, UserRole.SALES)
   send(@Param('id') id: string, @Request() req) {
-    return this.quotationsService.send(id, req.user.userId);
+    return this.quotationsService.send(id, req.user.company_id, req.user.userId);
   }
 
   @Post(':id/approve')
   @Roles(UserRole.ADMIN, UserRole.SALES)
   approve(@Param('id') id: string, @Request() req) {
-    return this.quotationsService.approve(id, req.user.userId);
+    return this.quotationsService.approve(id, req.user.company_id, req.user.userId);
   }
 
   @Post(':id/reject')
@@ -96,7 +99,7 @@ export class QuotationsController {
     @Body('reason') reason: string,
     @Request() req,
   ) {
-    return this.quotationsService.reject(id, req.user.userId, reason);
+    return this.quotationsService.reject(id, req.user.company_id, req.user.userId, reason);
   }
 
   @Post(':id/convert-to-order')
@@ -108,6 +111,7 @@ export class QuotationsController {
   ) {
     return this.quotationsService.convertToOrder(
       id,
+      req.user.company_id,
       req.user.userId,
       convertToOrderDto,
     );
@@ -116,7 +120,7 @@ export class QuotationsController {
   @Post(':id/revise')
   @Roles(UserRole.ADMIN, UserRole.SALES)
   createRevision(@Param('id') id: string, @Request() req) {
-    return this.quotationsService.createRevision(id, req.user.userId);
+    return this.quotationsService.createRevision(id, req.user.company_id, req.user.userId);
   }
 
   @Get(':id/history')

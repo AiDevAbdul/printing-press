@@ -27,6 +27,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { DeliveryStatus } from './entities/delivery.entity';
 
@@ -47,8 +48,8 @@ export class DispatchController {
   // Deliveries
   @Post('deliveries')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  createDelivery(@Body() dto: CreateDeliveryDto, @Req() req: any) {
-    return this.dispatchService.createDelivery(dto, req.user.userId);
+  createDelivery(@Body() dto: CreateDeliveryDto, @CurrentUser() user: any) {
+    return this.dispatchService.createDelivery(dto, user.id, user.company_id);
   }
 
   @Get('deliveries')
@@ -57,8 +58,9 @@ export class DispatchController {
     @Query('customer_id') customerId?: string,
     @Query('from_date') fromDate?: string,
     @Query('to_date') toDate?: string,
+    @CurrentUser() user?: any,
   ) {
-    return this.dispatchService.findAll({
+    return this.dispatchService.findAll(user.company_id, {
       status,
       customer_id: customerId,
       from_date: fromDate,
@@ -67,26 +69,26 @@ export class DispatchController {
   }
 
   @Get('deliveries/:id')
-  findOneDelivery(@Param('id') id: string) {
-    return this.dispatchService.findOne(id);
+  findOneDelivery(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.dispatchService.findOne(id, user.company_id);
   }
 
   @Patch('deliveries/:id')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  updateDelivery(@Param('id') id: string, @Body() dto: UpdateDeliveryDto) {
-    return this.dispatchService.update(id, dto);
+  updateDelivery(@Param('id') id: string, @Body() dto: UpdateDeliveryDto, @CurrentUser() user: any) {
+    return this.dispatchService.update(id, user.company_id, dto);
   }
 
   @Post('deliveries/:id/pack')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  markAsPacked(@Param('id') id: string, @Body() dto: MarkAsPackedDto, @Req() req: any) {
-    return this.dispatchService.markAsPacked(id, dto, req.user.userId);
+  markAsPacked(@Param('id') id: string, @Body() dto: MarkAsPackedDto, @CurrentUser() user: any) {
+    return this.dispatchService.markAsPacked(id, user.company_id, dto, user.id);
   }
 
   @Post('deliveries/:id/dispatch')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  dispatchDelivery(@Param('id') id: string, @Body() dto: DispatchDeliveryDto, @Req() req: any) {
-    return this.dispatchService.dispatch(id, dto, req.user.userId);
+  dispatchDelivery(@Param('id') id: string, @Body() dto: DispatchDeliveryDto, @CurrentUser() user: any) {
+    return this.dispatchService.dispatch(id, user.company_id, dto, user.id);
   }
 
   @Post('deliveries/:id/deliver')
@@ -94,16 +96,16 @@ export class DispatchController {
   markAsDelivered(
     @Param('id') id: string,
     @Body() dto: MarkAsDeliveredDto,
-    @Req() req: any,
+    @CurrentUser() user: any,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.dispatchService.markAsDelivered(id, dto, req.user.userId, file);
+    return this.dispatchService.markAsDelivered(id, user.company_id, dto, user.id, file);
   }
 
   @Post('deliveries/:id/upload-pod')
   @UseInterceptors(FileInterceptor('pod_photo', { storage: podStorage }))
-  uploadPOD(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
-    return this.dispatchService.uploadPOD(id, file);
+  uploadPOD(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
+    return this.dispatchService.uploadPOD(id, user.company_id, file);
   }
 
   // Tracking
@@ -111,14 +113,14 @@ export class DispatchController {
   addTrackingUpdate(
     @Param('id') id: string,
     @Body() dto: AddTrackingUpdateDto,
-    @Req() req: any,
+    @CurrentUser() user: any,
   ) {
-    return this.dispatchService.addTrackingUpdate(id, dto, req.user.userId);
+    return this.dispatchService.addTrackingUpdate(id, dto, user.id, user.company_id);
   }
 
   @Get('deliveries/:id/tracking-history')
-  getTrackingHistory(@Param('id') id: string) {
-    return this.dispatchService.getTrackingHistory(id);
+  getTrackingHistory(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.dispatchService.getTrackingHistory(id, user.company_id);
   }
 
   // Challan
@@ -127,21 +129,21 @@ export class DispatchController {
   generateChallan(
     @Param('id') id: string,
     @Body() dto: GenerateChallanDto,
-    @Req() req: any,
+    @CurrentUser() user: any,
   ) {
-    return this.dispatchService.generateChallan(id, dto, req.user.userId);
+    return this.dispatchService.generateChallan(id, user.company_id, dto, user.id);
   }
 
   @Get('deliveries/:id/challan')
-  getChallan(@Param('id') id: string) {
-    return this.dispatchService.getChallan(id);
+  getChallan(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.dispatchService.getChallan(id, user.company_id);
   }
 
   // Metrics
   @Get('metrics')
-  getDeliveryMetrics(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+  getDeliveryMetrics(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string, @CurrentUser() user?: any) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.dispatchService.getDeliveryMetrics(start, end);
+    return this.dispatchService.getDeliveryMetrics(user.company_id, start, end);
   }
 }

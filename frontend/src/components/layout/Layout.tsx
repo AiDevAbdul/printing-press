@@ -44,6 +44,7 @@ export default function Layout({ children }: LayoutProps) {
       label: 'Production',
       icon: 'production',
       children: [
+        { id: 'prepress', label: 'Pre-Press', icon: 'production', href: '/prepress' },
         { id: 'planning', label: 'Planning', icon: 'planning', href: '/planning' },
         { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
         { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },

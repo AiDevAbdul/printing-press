@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
+import { companyService, Company } from '../services/company.service';
 
 export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   useEffect(() => {
     const storedUser = authService.getStoredUser();
@@ -12,27 +15,42 @@ export const useAuth = () => {
       setUser(storedUser);
       setIsAuthenticated(true);
     }
+
+    const stored = companyService.getSelectedCompany();
+    if (stored) {
+      setSelectedCompany(stored);
+    }
+
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await authService.login(email, password);
-    setUser(response.user);
+  const login = (userData: any) => {
+    setUser(userData);
     setIsAuthenticated(true);
-    return response;
+    authService.storeUser(userData);
   };
 
   const logout = async () => {
     await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
+    setSelectedCompany(null);
+    companyService.clearSelectedCompany();
+  };
+
+  const selectCompany = (company: Company) => {
+    setSelectedCompany(company);
+    companyService.setSelectedCompany(company);
   };
 
   return {
     user,
     isAuthenticated,
     isLoading,
+    companies,
+    selectedCompany,
     login,
     logout,
+    selectCompany,
   };
 };

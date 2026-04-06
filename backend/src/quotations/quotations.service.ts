@@ -24,7 +24,7 @@ export class QuotationsService {
     private ordersService: OrdersService,
   ) {}
 
-  async create(createQuotationDto: CreateQuotationDto, userId: string): Promise<Quotation> {
+  async create(createQuotationDto: CreateQuotationDto, userId: string, companyId: string): Promise<Quotation> {
     // Generate quotation number
     const quotationNumber = await this.generateQuotationNumber();
 
@@ -59,6 +59,7 @@ export class QuotationsService {
       ...createQuotationDto,
       quotation_number: quotationNumber,
       created_by_id: userId,
+      company_id: companyId,
       ...pricing,
     });
 
@@ -69,17 +70,18 @@ export class QuotationsService {
       const items = createQuotationDto.items.map((item) =>
         this.quotationItemRepository.create({
           ...item,
-          quotation_id: savedQuotation.id,
+          quotation_id: (savedQuotation as any).id,
+          company_id: companyId,
           total_price: item.quantity * item.unit_price,
-        }),
+        } as any),
       );
-      await this.quotationItemRepository.save(items);
+      await this.quotationItemRepository.save(items as any);
     }
 
-    return this.findOne(savedQuotation.id);
+    return this.findOne((savedQuotation as any).id, companyId);
   }
 
-  async findAll(filters?: {
+  async findAll(companyId: string, filters?: {
     status?: QuotationStatus;
     customer_id?: string;
     search?: string;
@@ -89,7 +91,8 @@ export class QuotationsService {
     const query = this.quotationRepository.createQueryBuilder('quotation')
       .leftJoinAndSelect('quotation.customer', 'customer')
       .leftJoinAndSelect('quotation.created_by', 'created_by')
-      .leftJoinAndSelect('quotation.items', 'items');
+      .leftJoinAndSelect('quotation.items', 'items')
+      .where('quotation.company_id = :companyId', { companyId });
 
     if (filters?.status) {
       query.andWhere('quotation.status = :status', { status: filters.status });
@@ -122,9 +125,9 @@ export class QuotationsService {
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Quotation> {
+  async findOne(id: string, companyId: string): Promise<Quotation> {
     const quotation = await this.quotationRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId as any },
       relations: ['customer', 'created_by', 'items', 'converted_to_order'],
     });
 
@@ -135,8 +138,8 @@ export class QuotationsService {
     return quotation;
   }
 
-  async update(id: string, updateQuotationDto: UpdateQuotationDto): Promise<Quotation> {
-    const quotation = await this.findOne(id);
+  async update(id: string, companyId: string, updateQuotationDto: UpdateQuotationDto): Promise<Quotation> {
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status !== QuotationStatus.DRAFT) {
       throw new BadRequestException('Only draft quotations can be updated');
@@ -202,11 +205,11 @@ export class QuotationsService {
       await this.quotationItemRepository.save(items);
     }
 
-    return this.findOne(id);
+    return this.findOne(id, companyId);
   }
 
-  async remove(id: string): Promise<void> {
-    const quotation = await this.findOne(id);
+  async remove(id: string, companyId: string): Promise<void> {
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status === QuotationStatus.CONVERTED) {
       throw new BadRequestException('Cannot delete converted quotations');
@@ -311,8 +314,8 @@ export class QuotationsService {
     };
   }
 
-  async send(id: string, userId: string): Promise<Quotation> {
-    const quotation = await this.findOne(id);
+  async send(id: string, companyId: string, userId: string): Promise<Quotation> {
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status !== QuotationStatus.DRAFT) {
       throw new BadRequestException('Only draft quotations can be sent');
@@ -332,8 +335,8 @@ export class QuotationsService {
     return this.quotationRepository.save(quotation);
   }
 
-  async approve(id: string, userId: string): Promise<Quotation> {
-    const quotation = await this.findOne(id);
+  async approve(id: string, companyId: string, userId: string): Promise<Quotation> {
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status !== QuotationStatus.SENT) {
       throw new BadRequestException('Only sent quotations can be approved');
@@ -353,8 +356,8 @@ export class QuotationsService {
     return this.quotationRepository.save(quotation);
   }
 
-  async reject(id: string, userId: string, reason?: string): Promise<Quotation> {
-    const quotation = await this.findOne(id);
+  async reject(id: string, companyId: string, userId: string, reason?: string): Promise<Quotation> {
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status !== QuotationStatus.SENT) {
       throw new BadRequestException('Only sent quotations can be rejected');
@@ -376,10 +379,11 @@ export class QuotationsService {
 
   async convertToOrder(
     id: string,
+    companyId: string,
     userId: string,
     dto?: ConvertToOrderDto,
   ): Promise<any> {
-    const quotation = await this.findOne(id);
+    const quotation = await this.findOne(id, companyId);
 
     if (quotation.status !== QuotationStatus.APPROVED) {
       throw new BadRequestException('Only approved quotations can be converted to orders');
@@ -437,7 +441,7 @@ export class QuotationsService {
         special_instructions: dto?.notes || quotation.notes,
       };
 
-      const order = await this.ordersService.create(orderData, userId);
+      const order = await this.ordersService.create(orderData as any, userId, companyId);
 
       // Update quotation
       await this.createHistory(
@@ -463,8 +467,8 @@ export class QuotationsService {
     }
   }
 
-  async createRevision(id: string, userId: string): Promise<Quotation> {
-    const parentQuotation = await this.findOne(id);
+  async createRevision(id: string, companyId: string, userId: string): Promise<Quotation> {
+    const parentQuotation = await this.findOne(id, companyId);
 
     // Generate new quotation number with incremented version
     const newVersion = parentQuotation.version + 1;
@@ -502,7 +506,7 @@ export class QuotationsService {
       await this.quotationItemRepository.save(items);
     }
 
-    return this.findOne(savedRevision.id);
+    return this.findOne((savedRevision as any).id, companyId);
   }
 
   async getHistory(id: string): Promise<QuotationHistory[]> {

@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Jo
 import { ProductionJob } from '../../production/entities/production-job.entity';
 import { InventoryItem } from '../../inventory/entities/inventory-item.entity';
 import { Order } from '../../orders/entities/order.entity';
+import { Company } from '../../companies/entities/company.entity';
 
 export enum CostType {
   MATERIAL = 'material',
@@ -14,6 +15,13 @@ export enum CostType {
 export class JobCost {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  company_id: string;
+
+  @ManyToOne(() => Company, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 
   @ManyToOne(() => ProductionJob)
   @JoinColumn({ name: 'job_id' })

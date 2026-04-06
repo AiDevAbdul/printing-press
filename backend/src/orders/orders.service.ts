@@ -20,18 +20,20 @@ export class OrdersService {
     return `ORD-${year}${month}${day}-${random}`;
   }
 
-  async create(createOrderDto: CreateOrderDto, userId: string): Promise<Order> {
+  async create(createOrderDto: CreateOrderDto, userId: string, companyId: string): Promise<Order> {
     const order = this.ordersRepository.create({
       ...createOrderDto,
       order_number: this.generateOrderNumber(),
-    });
+      company_id: companyId,
+    } as any);
     // Set the foreign key IDs directly
     (order as any).customer_id = createOrderDto.customer_id;
     (order as any).created_by = userId;
-    return this.ordersRepository.save(order);
+    return this.ordersRepository.save(order as any);
   }
 
   async findAll(
+    companyId: string,
     status?: OrderStatus,
     customerId?: string,
     startDate?: Date,
@@ -46,7 +48,8 @@ export class OrdersService {
     const queryBuilder = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.customer', 'customer')
-      .leftJoinAndSelect('order.created_by', 'created_by');
+      .leftJoinAndSelect('order.created_by', 'created_by')
+      .where('order.company_id = :companyId', { companyId });
 
     if (status) {
       queryBuilder.andWhere('order.status = :status', { status });
@@ -95,9 +98,9 @@ export class OrdersService {
     return { data, total };
   }
 
-  async findOne(id: string): Promise<Order> {
+  async findOne(id: string, companyId: string): Promise<Order> {
     const order = await this.ordersRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId as any },
       relations: ['customer', 'created_by'],
     });
 
@@ -108,8 +111,8 @@ export class OrdersService {
     return order;
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
-    const order = await this.findOne(id);
+  async update(id: string, companyId: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
+    const order = await this.findOne(id, companyId);
 
     if (updateOrderDto.customer_id) {
       order.customer = { id: updateOrderDto.customer_id } as any;
@@ -120,20 +123,20 @@ export class OrdersService {
     return this.ordersRepository.save(order);
   }
 
-  async updateStatus(id: string, updateOrderStatusDto: UpdateOrderStatusDto): Promise<Order> {
-    const order = await this.findOne(id);
+  async updateStatus(id: string, companyId: string, updateOrderStatusDto: UpdateOrderStatusDto): Promise<Order> {
+    const order = await this.findOne(id, companyId);
     order.status = updateOrderStatusDto.status;
     return this.ordersRepository.save(order);
   }
 
-  async remove(id: string): Promise<Order> {
-    const order = await this.findOne(id);
+  async remove(id: string, companyId: string): Promise<Order> {
+    const order = await this.findOne(id, companyId);
     order.status = OrderStatus.CANCELLED;
     return this.ordersRepository.save(order);
   }
 
-  async createRepeatOrder(originalOrderId: string, updates: Partial<CreateOrderDto>, userId: string): Promise<Order> {
-    const originalOrder = await this.findOne(originalOrderId);
+  async createRepeatOrder(originalOrderId: string, companyId: string, updates: Partial<CreateOrderDto>, userId: string): Promise<Order> {
+    const originalOrder = await this.findOne(originalOrderId, companyId);
 
     const repeatOrder = this.ordersRepository.create({
       ...originalOrder,
@@ -142,21 +145,22 @@ export class OrdersService {
       is_repeat_order: true,
       previous_order_id: originalOrderId,
       status: OrderStatus.PENDING,
+      company_id: companyId,
       created_by: { id: userId } as any,
       created_at: undefined,
       updated_at: undefined,
       ...updates,
-    });
+    } as any);
 
-    return this.ordersRepository.save(repeatOrder);
+    return this.ordersRepository.save(repeatOrder as any);
   }
 
-  async getOrderSpecifications(id: string): Promise<Order> {
-    return this.findOne(id);
+  async getOrderSpecifications(id: string, companyId: string): Promise<Order> {
+    return this.findOne(id, companyId);
   }
 
-  async updateDesignApproval(id: string, approvedBy: string): Promise<Order> {
-    const order = await this.findOne(id);
+  async updateDesignApproval(id: string, companyId: string, approvedBy: string): Promise<Order> {
+    const order = await this.findOne(id, companyId);
     order.design_approved_by = approvedBy;
     order.design_approved_at = new Date();
     return this.ordersRepository.save(order);

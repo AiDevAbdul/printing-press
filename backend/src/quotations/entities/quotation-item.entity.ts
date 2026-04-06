@@ -38,4 +38,7 @@ export class QuotationItem {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  @Column({ type: 'uuid' })
+  company_id: string;
 }

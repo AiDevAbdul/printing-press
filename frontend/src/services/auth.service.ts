@@ -1,14 +1,25 @@
 import api from './api';
 import { AuthResponse } from '../types';
 
-export const authService = {
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/login', { email, password });
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: any;
+  companies: Array<{ id: string; name: string }>;
+  selected_company?: { id: string; name: string };
+}
 
-    // Store tokens
-    localStorage.setItem('access_token', response.data.access_token);
-    localStorage.setItem('refresh_token', response.data.refresh_token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+export const authService = {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>('/auth/login', { email, password });
+
+    // Store temporary access token for company selection
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
+    }
+
+    // Store companies list for selector
+    localStorage.setItem('login_companies', JSON.stringify(response.data.companies));
 
     return response.data;
   },
@@ -17,6 +28,8 @@ export const authService = {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('login_companies');
+    localStorage.removeItem('selectedCompany');
   },
 
   async getCurrentUser(): Promise<any> {
@@ -35,7 +48,20 @@ export const authService = {
     return user ? JSON.parse(user) : null;
   },
 
+  storeUser(user: any): void {
+    localStorage.setItem('user', JSON.stringify(user));
+  },
+
   isAuthenticated(): boolean {
     return !!localStorage.getItem('access_token');
+  },
+
+  getLoginCompanies(): Array<{ id: string; name: string }> {
+    const companies = localStorage.getItem('login_companies');
+    return companies ? JSON.parse(companies) : [];
+  },
+
+  clearLoginCompanies(): void {
+    localStorage.removeItem('login_companies');
   },
 };

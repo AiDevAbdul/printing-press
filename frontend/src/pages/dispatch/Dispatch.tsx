@@ -36,22 +36,6 @@ const Dispatch = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dispatch & Delivery</h1>
-          <p className="text-gray-600 mt-1">Track and manage deliveries</p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setShowForm(true)}
-        >
-          New Delivery
-        </Button>
-      </div>
-
       {/* Toolbar */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
@@ -85,6 +69,14 @@ const Dispatch = () => {
             sortOrder={sortConfig.order}
             onClick={() => toggleSort('delivery_status')}
           />
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => setShowForm(true)}
+          >
+            New Delivery
+          </Button>
         </div>
       </div>
 

@@ -1,0 +1,12 @@
+- generic [ref=e17]:
+  - generic [ref=e18]:
+    - heading "Select Your Company" [level=1] [ref=e19]
+    - paragraph [ref=e20]: Choose which company you'd like to access
+  - button "Capital Packages Click to access this company's dashboard Select Company" [ref=e22]:
+    - generic [ref=e24]:
+      - heading "Capital Packages" [level=2] [ref=e26]
+      - paragraph [ref=e27]: Click to access this company's dashboard
+      - generic [ref=e28]:
+        - text: Select Company
+        - img [ref=e29]
+  - button "Back to Login" [ref=e32]

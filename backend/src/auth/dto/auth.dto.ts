@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsUUID } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -9,6 +9,29 @@ export class LoginDto {
   password: string;
 }
 
+export class SelectCompanyDto {
+  @IsUUID()
+  company_id: string;
+}
+
+export class CompanyInfo {
+  id: string;
+  name: string;
+}
+
+export class LoginResponseDto {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string;
+    full_name: string;
+    role: string;
+  };
+  companies: CompanyInfo[];
+  selected_company?: CompanyInfo;
+}
+
 export class AuthResponseDto {
   access_token: string;
   refresh_token: string;
@@ -17,5 +40,6 @@ export class AuthResponseDto {
     email: string;
     full_name: string;
     role: string;
+    company_id: string;
   };
 }

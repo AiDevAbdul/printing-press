@@ -33,10 +33,6 @@ const WastageAnalytics = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Wastage Analytics</h1>
-          <p className="text-gray-600 mt-1">Track and analyze production wastage</p>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Skeleton variant="card" />
           <Skeleton variant="card" />
@@ -50,10 +46,6 @@ const WastageAnalytics = () => {
   if (!analytics) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Wastage Analytics</h1>
-          <p className="text-gray-600 mt-1">Track and analyze production wastage</p>
-        </div>
         <Card variant="outlined" className="p-8 text-center">
           <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">No data available</p>
@@ -69,28 +61,6 @@ const WastageAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Wastage Analytics</h1>
-          <p className="text-gray-600 mt-1">Track and analyze production wastage</p>
-        </div>
-        <Button
-          variant="primary"
-          size="md"
-          icon={<Download className="w-4 h-4" />}
-          onClick={() => {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-            window.open(
-              `${apiUrl}/export/wastage-analytics?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
-              '_blank'
-            );
-          }}
-        >
-          Export Excel
-        </Button>
-      </div>
-
       {/* Date Range Filter */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
         <div className="flex-1">
@@ -109,6 +79,20 @@ const WastageAnalytics = () => {
             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
           />
         </div>
+        <Button
+          variant="primary"
+          size="md"
+          icon={<Download className="w-4 h-4" />}
+          onClick={() => {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+            window.open(
+              `${apiUrl}/export/wastage-analytics?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`,
+              '_blank'
+            );
+          }}
+        >
+          Export Excel
+        </Button>
       </div>
 
       {/* Summary Cards */}

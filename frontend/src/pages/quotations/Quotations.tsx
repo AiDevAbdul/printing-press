@@ -90,27 +90,8 @@ const Quotations = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quotations</h1>
-          <p className="text-gray-600 mt-1">Create and manage customer quotations</p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => {
-            setSelectedQuotation(null);
-            setShowForm(true);
-          }}
-        >
-          New Quotation
-        </Button>
-      </div>
-
       {/* Search & Sort */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1">
           <Input
             placeholder="Search by quotation number, product, or customer..."
@@ -131,6 +112,17 @@ const Quotations = () => {
             sortOrder={sortConfig.order}
             onClick={() => toggleSort('total_amount')}
           />
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              setSelectedQuotation(null);
+              setShowForm(true);
+            }}
+          >
+            New Quotation
+          </Button>
         </div>
       </div>
 

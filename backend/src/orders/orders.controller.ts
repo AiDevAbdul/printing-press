@@ -16,11 +16,12 @@ export class OrdersController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SALES)
   create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: any) {
-    return this.ordersService.create(createOrderDto, user.id);
+    return this.ordersService.create(createOrderDto, user.id, user.company_id);
   }
 
   @Get()
   findAll(
+    @CurrentUser() user: any,
     @Query('status') status?: OrderStatus,
     @Query('customerId') customerId?: string,
     @Query('startDate') startDate?: string,
@@ -33,29 +34,29 @@ export class OrdersController {
   ) {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.ordersService.findAll(status, customerId, start, end, page, limit, search, productType, priority);
+    return this.ordersService.findAll(user.company_id, status, customerId, start, end, page, limit, search, productType, priority);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.findOne(id, user.company_id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.PLANNER)
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(id, updateOrderDto);
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @CurrentUser() user: any) {
+    return this.ordersService.update(id, user.company_id, updateOrderDto);
   }
 
   @Patch(':id/status')
   @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.PLANNER)
-  updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto) {
-    return this.ordersService.updateStatus(id, updateOrderStatusDto);
+  updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto, @CurrentUser() user: any) {
+    return this.ordersService.updateStatus(id, user.company_id, updateOrderStatusDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SALES)
-  remove(@Param('id') id: string) {
-    return this.ordersService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.remove(id, user.company_id);
   }
 }

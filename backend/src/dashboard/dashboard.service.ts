@@ -19,12 +19,13 @@ export class DashboardService {
     private invoicesRepository: Repository<Invoice>,
   ) {}
 
-  async getStats(): Promise<any> {
+  async getStats(companyId: string): Promise<any> {
     // Order counts by status
     const orderCounts = await this.ordersRepository
       .createQueryBuilder('order')
       .select('order.status', 'status')
       .addSelect('COUNT(*)', 'count')
+      .where('order.company_id = :companyId', { companyId })
       .groupBy('order.status')
       .getRawMany();
 
@@ -47,6 +48,7 @@ export class DashboardService {
       .createQueryBuilder('job')
       .select('job.status', 'status')
       .addSelect('COUNT(*)', 'count')
+      .where('job.company_id = :companyId', { companyId })
       .groupBy('job.status')
       .getRawMany();
 
@@ -68,6 +70,7 @@ export class DashboardService {
       .createQueryBuilder('item')
       .where('item.current_stock <= item.reorder_level')
       .andWhere('item.is_active = :isActive', { isActive: true })
+      .andWhere('item.company_id = :companyId', { companyId })
       .getCount();
 
     // Pending invoices amount
@@ -77,6 +80,7 @@ export class DashboardService {
       .where('invoice.status IN (:...statuses)', {
         statuses: [InvoiceStatus.SENT, InvoiceStatus.OVERDUE],
       })
+      .andWhere('invoice.company_id = :companyId', { companyId })
       .getRawOne();
 
     return {
@@ -87,18 +91,19 @@ export class DashboardService {
     };
   }
 
-  async getProductionStatus(): Promise<any> {
+  async getProductionStatus(companyId: string): Promise<any> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const inProgress = await this.productionJobsRepository.count({
-      where: { status: ProductionJobStatus.IN_PROGRESS },
+      where: { status: ProductionJobStatus.IN_PROGRESS, company_id: companyId },
     });
 
     const scheduledToday = await this.productionJobsRepository.count({
       where: {
         status: ProductionJobStatus.QUEUED,
         scheduled_start_date: today,
+        company_id: companyId,
       },
     });
 
@@ -108,6 +113,7 @@ export class DashboardService {
         statuses: [ProductionJobStatus.QUEUED, ProductionJobStatus.IN_PROGRESS],
       })
       .andWhere('job.scheduled_end_date < :today', { today })
+      .andWhere('job.company_id = :companyId', { companyId })
       .getCount();
 
     return {
@@ -117,7 +123,7 @@ export class DashboardService {
     };
   }
 
-  async getPendingDeliveries(): Promise<Order[]> {
+  async getPendingDeliveries(companyId: string): Promise<Order[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -125,13 +131,14 @@ export class DashboardService {
       .createQueryBuilder('order')
       .where('order.status = :status', { status: OrderStatus.COMPLETED })
       .andWhere('order.delivery_date >= :today', { today })
+      .andWhere('order.company_id = :companyId', { companyId })
       .orderBy('order.delivery_date', 'ASC')
       .take(10)
       .leftJoinAndSelect('order.customer', 'customer')
       .getMany();
   }
 
-  async getRevenueTrend(): Promise<{ date: string; revenue: number }[]> {
+  async getRevenueTrend(companyId: string): Promise<{ date: string; revenue: number }[]> {
     const today = new Date();
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 6);
@@ -144,6 +151,7 @@ export class DashboardService {
       .addSelect('SUM(invoice.total_amount)', 'revenue')
       .where('invoice.invoice_date >= :startDate', { startDate: sevenDaysAgo })
       .andWhere('invoice.status != :status', { status: InvoiceStatus.CANCELLED })
+      .andWhere('invoice.company_id = :companyId', { companyId })
       .groupBy('DATE(invoice.invoice_date)')
       .orderBy('DATE(invoice.invoice_date)', 'ASC')
       .getRawMany();

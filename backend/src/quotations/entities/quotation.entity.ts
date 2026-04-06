@@ -288,6 +288,9 @@ export class Quotation {
   @Column({ type: 'uuid' })
   created_by_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @Column({ type: 'timestamp', nullable: true })
   sent_at: Date;
 

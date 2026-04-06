@@ -55,6 +55,9 @@ export class QualityCheckpoint {
   @Column({ type: 'int', default: 0 })
   sequence_order: number;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Grid3x3, Kanban } from 'lucide-react';
+import { Grid3x3, Kanban, List } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { SortButton } from '../../components/ui/SortButton';
 import { ProductionGrid } from './ProductionGrid';
 import { ProductionKanban } from './ProductionKanban';
+import { ProductionList } from './ProductionList';
 import ProductionWorkflowLevels from '../../components/ProductionWorkflowLevels';
 import { useSorting } from '../../hooks/useSorting';
 
@@ -66,9 +67,18 @@ interface ProductionFormData {
   notes: string;
 }
 
+const statusColors: Record<string, string> = {
+  queued: 'bg-gray-100 text-gray-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  paused: 'bg-orange-100 text-orange-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+
 export default function Production() {
-  const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'kanban'>('grid');
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showWorkflowModal, setShowWorkflowModal] = useState(false);
@@ -85,11 +95,12 @@ export default function Production() {
   const queryClient = useQueryClient();
 
   const { data: response, isLoading, error } = useQuery({
-    queryKey: ['production', statusFilter],
+    queryKey: ['production', statusFilter, searchTerm],
     queryFn: async () => {
-      const response = await api.get('/production/jobs', {
-        params: statusFilter ? { status: statusFilter } : {},
-      });
+      const params: any = {};
+      if (statusFilter) params.status = statusFilter;
+      if (searchTerm) params.search = searchTerm;
+      const response = await api.get('/production/jobs', { params });
       return response.data;
     },
   });
@@ -198,57 +209,57 @@ export default function Production() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Production</h1>
-        <p className="text-gray-600 mt-1">Track production jobs and schedules</p>
-      </div>
-
-      {/* View Toggle & Sort */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2">
+      {/* Search, Status Tabs, View Toggle & Sort - Single Row */}
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="flex-1 min-w-64">
+            <Input
+              placeholder="Search by job #, order #, product..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {['queued', 'in_progress', 'paused', 'completed', 'cancelled'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status === statusFilter ? '' : status)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  statusFilter === status
+                    ? statusColors[status]
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
           <Button
-            variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+            variant="ghost"
             size="sm"
-            icon={<Grid3x3 className="w-4 h-4" />}
-            onClick={() => setViewMode('grid')}
+            icon={viewMode === 'grid' ? <Grid3x3 className="w-4 h-4" /> : viewMode === 'list' ? <List className="w-4 h-4" /> : <Kanban className="w-4 h-4" />}
+            onClick={() => {
+              if (viewMode === 'grid') setViewMode('list');
+              else if (viewMode === 'list') setViewMode('kanban');
+              else setViewMode('grid');
+            }}
           >
-            Grid
+            {viewMode === 'grid' ? 'Grid' : viewMode === 'list' ? 'List' : 'Kanban'}
           </Button>
-          <Button
-            variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
-            size="sm"
-            icon={<Kanban className="w-4 h-4" />}
-            onClick={() => setViewMode('kanban')}
-          >
-            Kanban
-          </Button>
-        </div>
-        <div className="flex gap-2 items-center">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="queued">Queued</option>
-            <option value="in_progress">In Progress</option>
-            <option value="paused">Paused</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <SortButton
-            label="Latest"
-            isActive={sortConfig.key === 'scheduled_start_date'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('scheduled_start_date')}
-          />
-          <SortButton
-            label="Progress"
-            isActive={sortConfig.key === 'progress'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('progress')}
-          />
+          <div className="flex gap-2">
+            <SortButton
+              label="Latest"
+              isActive={sortConfig.key === 'scheduled_start_date'}
+              sortOrder={sortConfig.order}
+              onClick={() => toggleSort('scheduled_start_date')}
+            />
+            <SortButton
+              label="Progress"
+              isActive={sortConfig.key === 'progress'}
+              sortOrder={sortConfig.order}
+              onClick={() => toggleSort('progress')}
+            />
+          </div>
         </div>
       </div>
 
@@ -277,6 +288,17 @@ export default function Production() {
         />
       ) : viewMode === 'grid' ? (
         <ProductionGrid
+          jobs={sortedItems}
+          onCreateJob={() => setIsModalOpen(true)}
+          onViewWorkflow={(jobId) => {
+            setSelectedJobId(jobId);
+            setShowWorkflowModal(true);
+          }}
+          onPauseJob={(jobId) => pauseJobMutation.mutate(jobId)}
+          onResumeJob={(jobId) => resumeJobMutation.mutate(jobId)}
+        />
+      ) : viewMode === 'list' ? (
+        <ProductionList
           jobs={sortedItems}
           onCreateJob={() => setIsModalOpen(true)}
           onViewWorkflow={(jobId) => {

@@ -106,13 +106,16 @@ const Quality = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quality Control</h1>
-          <p className="text-gray-600 mt-1">Manage inspections, rejections, and complaints</p>
-        </div>
-        <div className="flex gap-2">
+      {/* Search Bar (for non-metrics tabs) */}
+      {activeTab !== 'metrics' && (
+        <div className="flex gap-2 items-center">
+          <div className="flex-1">
+            <Input
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           {activeTab === 'inspections' && (
             <Button
               variant="primary"
@@ -144,15 +147,6 @@ const Quality = () => {
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Search Bar (for non-metrics tabs) */}
-      {activeTab !== 'metrics' && (
-        <Input
-          placeholder={`Search ${activeTab}...`}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       )}
 
       {/* Tabs */}

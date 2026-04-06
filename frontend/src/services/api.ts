@@ -9,13 +9,27 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and company_id
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add company_id to request headers if available
+    const selectedCompany = localStorage.getItem('selectedCompany');
+    if (selectedCompany) {
+      try {
+        const company = JSON.parse(selectedCompany);
+        if (company.id) {
+          config.headers['X-Company-ID'] = company.id;
+        }
+      } catch (e) {
+        console.error('Failed to parse selected company:', e);
+      }
+    }
+
     return config;
   },
   (error) => {

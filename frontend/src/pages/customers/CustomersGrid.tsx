@@ -1,8 +1,9 @@
-import { Users, Mail, Phone, MapPin, CreditCard } from 'lucide-react';
+import { Users, Mail, Phone, MapPin, CreditCard, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { Button } from '../../components/ui/Button';
 
 export interface CustomersGridProps {
   customers: any[];
@@ -43,7 +44,6 @@ export function CustomersGrid({
           variant="elevated"
           padding="md"
           hover
-          onClick={() => onViewCustomer?.(customer.id)}
         >
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -105,6 +105,16 @@ export function CustomersGrid({
                 GSTIN: {customer.gstin}
               </div>
             )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Edit2 className="w-4 h-4" />}
+              onClick={() => onViewCustomer?.(customer.id)}
+              className="w-full mt-2"
+            >
+              Edit Profile
+            </Button>
           </CardContent>
         </Card>
       ))}

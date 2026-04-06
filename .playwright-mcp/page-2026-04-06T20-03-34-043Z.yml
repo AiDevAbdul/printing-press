@@ -1,0 +1,35 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "Select Your Company" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Choose which company you'd like to access
+  - generic [ref=e47]: Failed to select company. Please try again.
+  - generic [ref=e8]:
+    - button "Capital Packages Click to access this company's dashboard Select Company" [ref=e9]:
+      - generic [ref=e11]:
+        - heading "Capital Packages" [level=2] [ref=e13]
+        - paragraph [ref=e14]: Click to access this company's dashboard
+        - generic [ref=e15]:
+          - text: Select Company
+          - img [ref=e16]
+    - button "CPP Pre Press Click to access this company's dashboard Select Company" [ref=e18]:
+      - generic [ref=e20]:
+        - heading "CPP Pre Press" [level=2] [ref=e22]
+        - paragraph [ref=e23]: Click to access this company's dashboard
+        - generic [ref=e24]:
+          - text: Select Company
+          - img [ref=e25]
+    - button "BEST FOIL Click to access this company's dashboard Select Company" [ref=e27]:
+      - generic [ref=e29]:
+        - heading "BEST FOIL" [level=2] [ref=e31]
+        - paragraph [ref=e32]: Click to access this company's dashboard
+        - generic [ref=e33]:
+          - text: Select Company
+          - img [ref=e34]
+    - button "SILVO Enterprises Click to access this company's dashboard Select Company" [ref=e36]:
+      - generic [ref=e38]:
+        - heading "SILVO Enterprises" [level=2] [ref=e40]
+        - paragraph [ref=e41]: Click to access this company's dashboard
+        - generic [ref=e42]:
+          - text: Select Company
+          - img [ref=e43]
+  - button "Back to Login" [ref=e46]

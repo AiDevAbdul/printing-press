@@ -30,6 +30,7 @@ interface Order {
   product_type?: string;
   strength?: string;
   specifications?: string;
+  dimensions?: string;
 }
 
 interface User {
@@ -144,47 +145,47 @@ export default function Planning() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Planning</h1>
-          <p className="text-gray-600 mt-1">Create production jobs from approved orders</p>
-        </div>
-      </div>
-
-      {/* Filters & Sort */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Input
-            placeholder="Search by order #, customer, product..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Select
-            options={[
-              { value: '', label: 'All Priorities' },
-              { value: 'low', label: 'Low' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'high', label: 'High' },
-              { value: 'urgent', label: 'Urgent' },
-            ]}
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <SortButton
-            label="Latest"
-            isActive={sortConfig.key === 'order_date'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('order_date')}
-          />
-          <SortButton
-            label="Delivery"
-            isActive={sortConfig.key === 'delivery_date'}
-            sortOrder={sortConfig.order}
-            onClick={() => toggleSort('delivery_date')}
-          />
+      {/* Search, Priority Tabs & Sort - Single Row */}
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="flex-1 min-w-64">
+            <Input
+              placeholder="Search by order #, customer, product..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {['', 'low', 'normal', 'high', 'urgent'].map((priority) => (
+              <button
+                key={priority}
+                onClick={() => setPriorityFilter(priority)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  priorityFilter === priority
+                    ? priority === ''
+                      ? 'bg-gray-900 text-white'
+                      : priorityColors[priority]
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {priority === '' ? 'All' : priority.charAt(0).toUpperCase() + priority.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <SortButton
+              label="Latest"
+              isActive={sortConfig.key === 'order_date'}
+              sortOrder={sortConfig.order}
+              onClick={() => toggleSort('order_date')}
+            />
+            <SortButton
+              label="Delivery"
+              isActive={sortConfig.key === 'delivery_date'}
+              sortOrder={sortConfig.order}
+              onClick={() => toggleSort('delivery_date')}
+            />
+          </div>
         </div>
       </div>
 
@@ -223,6 +224,9 @@ export default function Planning() {
 
                 <div className="space-y-1 text-sm">
                   <p className="text-gray-700"><span className="font-medium">Product:</span> {order.product_name}</p>
+                  {order.dimensions && (
+                    <p className="text-gray-600"><span className="font-medium">Size:</span> {order.dimensions}</p>
+                  )}
                   <p className="text-gray-600"><span className="font-medium">Qty:</span> {order.quantity} {order.unit}</p>
                   <p className="text-gray-600"><span className="font-medium">Delivery:</span> {new Date(order.delivery_date).toLocaleDateString()}</p>
                 </div>

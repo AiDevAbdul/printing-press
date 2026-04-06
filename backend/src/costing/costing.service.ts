@@ -28,12 +28,13 @@ export class CostingService {
   ) {}
 
   // Job Costing Methods
-  async createJobCost(createJobCostDto: CreateJobCostDto): Promise<JobCost> {
+  async createJobCost(createJobCostDto: CreateJobCostDto, companyId: string): Promise<JobCost> {
     const total_cost = createJobCostDto.quantity * createJobCostDto.unit_cost;
 
     const jobCost = this.jobCostsRepository.create({
       ...createJobCostDto,
       total_cost,
+      company_id: companyId,
       job: { id: createJobCostDto.job_id } as any,
       item: createJobCostDto.item_id ? { id: createJobCostDto.item_id } as any : null,
     });
@@ -41,16 +42,16 @@ export class CostingService {
     return this.jobCostsRepository.save(jobCost);
   }
 
-  async getJobCosts(jobId: string): Promise<JobCost[]> {
+  async getJobCosts(jobId: string, companyId: string): Promise<JobCost[]> {
     return this.jobCostsRepository.find({
-      where: { job: { id: jobId } },
+      where: { job: { id: jobId }, company_id: companyId as any },
       relations: ['item'],
       order: { created_at: 'DESC' },
     });
   }
 
-  async updateJobCost(id: string, updateJobCostDto: UpdateJobCostDto): Promise<JobCost> {
-    const jobCost = await this.jobCostsRepository.findOne({ where: { id } });
+  async updateJobCost(id: string, companyId: string, updateJobCostDto: UpdateJobCostDto): Promise<JobCost> {
+    const jobCost = await this.jobCostsRepository.findOne({ where: { id, company_id: companyId as any } });
     if (!jobCost) {
       throw new NotFoundException('Job cost not found');
     }
@@ -68,15 +69,15 @@ export class CostingService {
     return this.jobCostsRepository.save(jobCost);
   }
 
-  async deleteJobCost(id: string): Promise<void> {
-    const result = await this.jobCostsRepository.delete(id);
+  async deleteJobCost(id: string, companyId: string): Promise<void> {
+    const result = await this.jobCostsRepository.delete({ id, company_id: companyId as any });
     if (result.affected === 0) {
       throw new NotFoundException('Job cost not found');
     }
   }
 
-  async getJobCostSummary(jobId: string): Promise<any> {
-    const costs = await this.getJobCosts(jobId);
+  async getJobCostSummary(jobId: string, companyId: string): Promise<any> {
+    const costs = await this.getJobCosts(jobId, companyId);
 
     const summary = {
       material: 0,
@@ -96,15 +97,16 @@ export class CostingService {
   }
 
   // Auto-Calculation Methods
-  private async getCostingConfig(): Promise<CostingConfig> {
+  private async getCostingConfig(companyId: string): Promise<CostingConfig> {
     let config = await this.costingConfigRepository.findOne({
-      where: { is_active: true },
+      where: { is_active: true, company_id: companyId as any },
       order: { updated_at: 'DESC' },
     });
 
     if (!config) {
       // Create default config if none exists
       config = this.costingConfigRepository.create({
+        company_id: companyId,
         paper_rate_per_kg: 150,
         gsm_rate_factor: 0.0001,
         cmyk_base_rate: 2000,
@@ -117,8 +119,8 @@ export class CostingService {
         pre_press_medium: 3500,
         pre_press_complex: 5000,
         pre_press_rush: 8000,
-      });
-      config = await this.costingConfigRepository.save(config);
+      } as any) as any;
+      config = await this.costingConfigRepository.save(config as any);
     }
 
     return config;
@@ -179,10 +181,10 @@ export class CostingService {
     };
   }
 
-  async calculateJobCost(calculateCostDto: CalculateCostDto): Promise<any> {
+  async calculateJobCost(calculateCostDto: CalculateCostDto, companyId: string): Promise<any> {
     // Get production job with order
     const job = await this.productionJobsRepository.findOne({
-      where: { id: calculateCostDto.job_id },
+      where: { id: calculateCostDto.job_id, company_id: companyId as any },
       relations: ['order', 'order.customer'],
     });
 
@@ -191,7 +193,7 @@ export class CostingService {
     }
 
     const order = job.order;
-    const config = await this.getCostingConfig();
+    const config = await this.getCostingConfig(companyId);
 
     // Extract specifications from order
     const length = Number(order.size_length) || 0;
@@ -295,10 +297,11 @@ export class CostingService {
     };
   }
 
-  async saveCalculatedCost(calculateCostDto: CalculateCostDto): Promise<JobCost> {
-    const calculation = await this.calculateJobCost(calculateCostDto);
+  async saveCalculatedCost(calculateCostDto: CalculateCostDto, companyId: string): Promise<JobCost> {
+    const calculation = await this.calculateJobCost(calculateCostDto, companyId);
 
     const jobCost = this.jobCostsRepository.create({
+      company_id: companyId,
       job: { id: calculateCostDto.job_id } as any,
       order: { id: calculation.order_id } as any,
       cost_type: 'material' as any,
@@ -328,18 +331,18 @@ export class CostingService {
       pre_press_charges: calculation.cost_breakdown.pre_press_charges,
       total_processing_cost: calculation.cost_breakdown.total_processing_cost,
       cost_per_unit: calculation.cost_breakdown.cost_per_unit,
-    });
+    } as any);
 
-    return this.jobCostsRepository.save(jobCost);
+    return this.jobCostsRepository.save(jobCost as any);
   }
 
   // Costing Configuration Methods
-  async getCostingConfiguration(): Promise<CostingConfig> {
-    return this.getCostingConfig();
+  async getCostingConfiguration(companyId: string): Promise<CostingConfig> {
+    return this.getCostingConfig(companyId);
   }
 
-  async updateCostingConfiguration(updateDto: UpdateCostingConfigDto): Promise<CostingConfig> {
-    const config = await this.getCostingConfig();
+  async updateCostingConfiguration(companyId: string, updateDto: UpdateCostingConfigDto): Promise<CostingConfig> {
+    const config = await this.getCostingConfig(companyId);
     Object.assign(config, updateDto);
     return this.costingConfigRepository.save(config);
   }
@@ -354,13 +357,14 @@ export class CostingService {
     return `INV-${year}${month}${day}-${random}`;
   }
 
-  async createInvoice(createInvoiceDto: CreateInvoiceDto, userId: string): Promise<Invoice> {
+  async createInvoice(createInvoiceDto: CreateInvoiceDto, userId: string, companyId: string): Promise<Invoice> {
     const tax_rate = createInvoiceDto.tax_rate || 0;
     const tax_amount = (createInvoiceDto.subtotal * tax_rate) / 100;
     const total_amount = createInvoiceDto.subtotal + tax_amount;
 
     const invoice = this.invoicesRepository.create({
       invoice_number: this.generateInvoiceNumber(),
+      company_id: companyId,
       order: { id: createInvoiceDto.order_id } as any,
       customer: { id: createInvoiceDto.customer_id } as any,
       invoice_date: createInvoiceDto.invoice_date,
@@ -373,7 +377,7 @@ export class CostingService {
       payment_terms: createInvoiceDto.payment_terms,
       notes: createInvoiceDto.notes,
       created_by: { id: userId } as any,
-    });
+    } as any);
 
     const savedInvoice = await this.invoicesRepository.save(invoice);
 
@@ -386,21 +390,22 @@ export class CostingService {
         quantity: itemDto.quantity,
         unit_price: itemDto.unit_price,
         total_price,
-      });
+      } as any);
       await this.invoiceItemsRepository.save(invoiceItem);
     }
 
-    return this.findOneInvoice(savedInvoice.id);
+    return this.findOneInvoice((savedInvoice as any).id, companyId);
   }
 
   async findAllInvoices(
+    companyId: string,
     status?: InvoiceStatus,
     customerId?: string,
     page = 1,
     limit = 10,
   ): Promise<{ data: Invoice[]; total: number }> {
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: any = { company_id: companyId };
 
     if (status) {
       where.status = status;
@@ -421,9 +426,9 @@ export class CostingService {
     return { data, total };
   }
 
-  async findOneInvoice(id: string): Promise<Invoice> {
+  async findOneInvoice(id: string, companyId: string): Promise<Invoice> {
     const invoice = await this.invoicesRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId as any },
       relations: ['order', 'customer', 'created_by'],
     });
 
@@ -434,8 +439,8 @@ export class CostingService {
     return invoice;
   }
 
-  async updateInvoice(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
-    const invoice = await this.findOneInvoice(id);
+  async updateInvoice(id: string, companyId: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(id, companyId);
 
     Object.assign(invoice, updateInvoiceDto);
 
@@ -450,14 +455,14 @@ export class CostingService {
     return this.invoicesRepository.save(invoice);
   }
 
-  async deleteInvoice(id: string): Promise<Invoice> {
-    const invoice = await this.findOneInvoice(id);
+  async deleteInvoice(id: string, companyId: string): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(id, companyId);
     invoice.status = InvoiceStatus.CANCELLED;
     return this.invoicesRepository.save(invoice);
   }
 
-  async recordPayment(id: string, recordPaymentDto: RecordPaymentDto): Promise<Invoice> {
-    const invoice = await this.findOneInvoice(id);
+  async recordPayment(id: string, companyId: string, recordPaymentDto: RecordPaymentDto): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(id, companyId);
 
     invoice.paid_amount = Number(invoice.paid_amount) + Number(recordPaymentDto.amount);
     invoice.balance_amount = Number(invoice.total_amount) - Number(invoice.paid_amount);
@@ -469,8 +474,8 @@ export class CostingService {
     return this.invoicesRepository.save(invoice);
   }
 
-  async markInvoiceAsPaid(id: string): Promise<Invoice> {
-    const invoice = await this.findOneInvoice(id);
+  async markInvoiceAsPaid(id: string, companyId: string): Promise<Invoice> {
+    const invoice = await this.findOneInvoice(id, companyId);
 
     invoice.paid_amount = invoice.total_amount;
     invoice.balance_amount = 0;
@@ -479,9 +484,9 @@ export class CostingService {
     return this.invoicesRepository.save(invoice);
   }
 
-  async getInvoiceItems(invoiceId: string): Promise<InvoiceItem[]> {
+  async getInvoiceItems(invoiceId: string, companyId: string): Promise<InvoiceItem[]> {
     return this.invoiceItemsRepository.find({
-      where: { invoice: { id: invoiceId } },
+      where: { invoice: { id: invoiceId, company_id: companyId as any } },
       order: { created_at: 'ASC' },
     });
   }

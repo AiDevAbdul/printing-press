@@ -38,13 +38,16 @@ export class QualityService {
   ) {}
 
   // Quality Checkpoints
-  async createCheckpoint(dto: CreateCheckpointDto): Promise<QualityCheckpoint> {
-    const checkpoint = this.checkpointRepository.create(dto);
+  async createCheckpoint(dto: CreateCheckpointDto, companyId: string): Promise<QualityCheckpoint> {
+    const checkpoint = this.checkpointRepository.create({
+      ...dto,
+      company_id: companyId,
+    });
     return this.checkpointRepository.save(checkpoint);
   }
 
-  async findAllCheckpoints(stage?: string, isActive?: boolean): Promise<QualityCheckpoint[]> {
-    const where: any = {};
+  async findAllCheckpoints(companyId: string, stage?: string, isActive?: boolean): Promise<QualityCheckpoint[]> {
+    const where: any = { company_id: companyId };
     if (stage) where.stage = stage;
     if (isActive !== undefined) where.is_active = isActive;
 
@@ -54,40 +57,41 @@ export class QualityService {
     });
   }
 
-  async findCheckpoint(id: string): Promise<QualityCheckpoint> {
-    const checkpoint = await this.checkpointRepository.findOne({ where: { id } });
+  async findCheckpoint(id: string, companyId: string): Promise<QualityCheckpoint> {
+    const checkpoint = await this.checkpointRepository.findOne({ where: { id, company_id: companyId } });
     if (!checkpoint) {
       throw new NotFoundException('Checkpoint not found');
     }
     return checkpoint;
   }
 
-  async updateCheckpoint(id: string, dto: UpdateCheckpointDto): Promise<QualityCheckpoint> {
-    const checkpoint = await this.findCheckpoint(id);
+  async updateCheckpoint(id: string, companyId: string, dto: UpdateCheckpointDto): Promise<QualityCheckpoint> {
+    const checkpoint = await this.findCheckpoint(id, companyId);
     Object.assign(checkpoint, dto);
     return this.checkpointRepository.save(checkpoint);
   }
 
-  async deleteCheckpoint(id: string): Promise<void> {
-    const checkpoint = await this.findCheckpoint(id);
+  async deleteCheckpoint(id: string, companyId: string): Promise<void> {
+    const checkpoint = await this.findCheckpoint(id, companyId);
     await this.checkpointRepository.remove(checkpoint);
   }
 
   // Quality Inspections
-  async createInspection(dto: CreateInspectionDto, inspectorId: string): Promise<QualityInspection> {
+  async createInspection(dto: CreateInspectionDto, inspectorId: string, companyId: string): Promise<QualityInspection> {
     const inspectionNumber = await this.generateInspectionNumber();
 
     const inspection = this.inspectionRepository.create({
       ...dto,
       inspection_number: inspectionNumber,
       inspector_id: inspectorId,
+      company_id: companyId,
       status: InspectionStatus.PENDING,
     });
 
     return this.inspectionRepository.save(inspection);
   }
 
-  async findAllInspections(filters?: {
+  async findAllInspections(companyId: string, filters?: {
     job_id?: string;
     status?: InspectionStatus;
     checkpoint_id?: string;
@@ -96,7 +100,8 @@ export class QualityService {
       .leftJoinAndSelect('inspection.job', 'job')
       .leftJoinAndSelect('inspection.checkpoint', 'checkpoint')
       .leftJoinAndSelect('inspection.inspector', 'inspector')
-      .leftJoinAndSelect('inspection.defects', 'defects');
+      .leftJoinAndSelect('inspection.defects', 'defects')
+      .where('inspection.company_id = :companyId', { companyId });
 
     if (filters?.job_id) {
       query.andWhere('inspection.job_id = :job_id', { job_id: filters.job_id });
@@ -116,9 +121,9 @@ export class QualityService {
     return { data, total };
   }
 
-  async findInspection(id: string): Promise<QualityInspection> {
+  async findInspection(id: string, companyId: string): Promise<QualityInspection> {
     const inspection = await this.inspectionRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['job', 'checkpoint', 'inspector', 'defects', 'defects.logged_by'],
     });
 
@@ -129,14 +134,14 @@ export class QualityService {
     return inspection;
   }
 
-  async updateInspection(id: string, dto: UpdateInspectionDto): Promise<QualityInspection> {
-    const inspection = await this.findInspection(id);
+  async updateInspection(id: string, companyId: string, dto: UpdateInspectionDto): Promise<QualityInspection> {
+    const inspection = await this.findInspection(id, companyId);
     Object.assign(inspection, dto);
     return this.inspectionRepository.save(inspection);
   }
 
-  async passInspection(id: string, dto: PassInspectionDto): Promise<QualityInspection> {
-    const inspection = await this.findInspection(id);
+  async passInspection(id: string, companyId: string, dto: PassInspectionDto): Promise<QualityInspection> {
+    const inspection = await this.findInspection(id, companyId);
 
     if (inspection.status === InspectionStatus.PASSED) {
       throw new BadRequestException('Inspection already passed');
@@ -151,8 +156,8 @@ export class QualityService {
     return this.inspectionRepository.save(inspection);
   }
 
-  async failInspection(id: string, dto: FailInspectionDto): Promise<QualityInspection> {
-    const inspection = await this.findInspection(id);
+  async failInspection(id: string, companyId: string, dto: FailInspectionDto): Promise<QualityInspection> {
+    const inspection = await this.findInspection(id, companyId);
 
     if (inspection.status === InspectionStatus.FAILED) {
       throw new BadRequestException('Inspection already failed');
@@ -169,18 +174,19 @@ export class QualityService {
   }
 
   // Quality Defects
-  async createDefect(dto: CreateDefectDto, userId: string, file?: Express.Multer.File): Promise<QualityDefect> {
+  async createDefect(dto: CreateDefectDto, userId: string, companyId: string, file?: Express.Multer.File): Promise<QualityDefect> {
     const defect = this.defectRepository.create({
       ...dto,
       logged_by_id: userId,
+      company_id: companyId,
       photo_url: file ? `/uploads/quality/defects/${file.filename}` : undefined,
     });
 
     return this.defectRepository.save(defect);
   }
 
-  async findAllDefects(inspectionId?: string): Promise<QualityDefect[]> {
-    const where: any = {};
+  async findAllDefects(companyId: string, inspectionId?: string): Promise<QualityDefect[]> {
+    const where: any = { company_id: companyId };
     if (inspectionId) where.inspection_id = inspectionId;
 
     return this.defectRepository.find({
@@ -190,9 +196,9 @@ export class QualityService {
     });
   }
 
-  async findDefect(id: string): Promise<QualityDefect> {
+  async findDefect(id: string, companyId: string): Promise<QualityDefect> {
     const defect = await this.defectRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['inspection', 'logged_by'],
     });
 
@@ -203,35 +209,37 @@ export class QualityService {
     return defect;
   }
 
-  async updateDefect(id: string, dto: UpdateDefectDto): Promise<QualityDefect> {
-    const defect = await this.findDefect(id);
+  async updateDefect(id: string, companyId: string, dto: UpdateDefectDto): Promise<QualityDefect> {
+    const defect = await this.findDefect(id, companyId);
     Object.assign(defect, dto);
     return this.defectRepository.save(defect);
   }
 
-  async uploadDefectPhoto(id: string, file: Express.Multer.File): Promise<QualityDefect> {
-    const defect = await this.findDefect(id);
+  async uploadDefectPhoto(id: string, companyId: string, file: Express.Multer.File): Promise<QualityDefect> {
+    const defect = await this.findDefect(id, companyId);
     defect.photo_url = `/uploads/quality/defects/${file.filename}`;
     return this.defectRepository.save(defect);
   }
 
   // Quality Rejections
-  async createRejection(dto: CreateRejectionDto, userId: string): Promise<QualityRejection> {
+  async createRejection(dto: CreateRejectionDto, userId: string, companyId: string): Promise<QualityRejection> {
     const rejectionNumber = await this.generateRejectionNumber();
 
     const rejection = this.rejectionRepository.create({
       ...dto,
       rejection_number: rejectionNumber,
       rejected_by_id: userId,
+      company_id: companyId,
     });
 
     return this.rejectionRepository.save(rejection);
   }
 
-  async findAllRejections(jobId?: string): Promise<{ data: QualityRejection[]; total: number }> {
+  async findAllRejections(companyId: string, jobId?: string): Promise<{ data: QualityRejection[]; total: number }> {
     const query = this.rejectionRepository.createQueryBuilder('rejection')
       .leftJoinAndSelect('rejection.job', 'job')
-      .leftJoinAndSelect('rejection.rejected_by', 'rejected_by');
+      .leftJoinAndSelect('rejection.rejected_by', 'rejected_by')
+      .where('rejection.company_id = :companyId', { companyId });
 
     if (jobId) {
       query.andWhere('rejection.job_id = :job_id', { job_id: jobId });
@@ -243,9 +251,9 @@ export class QualityService {
     return { data, total };
   }
 
-  async findRejection(id: string): Promise<QualityRejection> {
+  async findRejection(id: string, companyId: string): Promise<QualityRejection> {
     const rejection = await this.rejectionRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['job', 'rejected_by'],
     });
 
@@ -256,8 +264,8 @@ export class QualityService {
     return rejection;
   }
 
-  async updateRejection(id: string, dto: UpdateRejectionDto): Promise<QualityRejection> {
-    const rejection = await this.findRejection(id);
+  async updateRejection(id: string, companyId: string, dto: UpdateRejectionDto): Promise<QualityRejection> {
+    const rejection = await this.findRejection(id, companyId);
     Object.assign(rejection, dto);
 
     if (dto.is_resolved && !rejection.resolved_at) {
@@ -268,20 +276,21 @@ export class QualityService {
   }
 
   // Customer Complaints
-  async createComplaint(dto: CreateComplaintDto, userId: string, file?: Express.Multer.File): Promise<CustomerComplaint> {
+  async createComplaint(dto: CreateComplaintDto, userId: string, companyId: string, file?: Express.Multer.File): Promise<CustomerComplaint> {
     const complaintNumber = await this.generateComplaintNumber();
 
     const complaint = this.complaintRepository.create({
       ...dto,
       complaint_number: complaintNumber,
       created_by_id: userId,
+      company_id: companyId,
       photo_url: file ? `/uploads/quality/complaints/${file.filename}` : undefined,
     });
 
     return this.complaintRepository.save(complaint);
   }
 
-  async findAllComplaints(filters?: {
+  async findAllComplaints(companyId: string, filters?: {
     customer_id?: string;
     status?: ComplaintStatus;
     severity?: string;
@@ -290,7 +299,8 @@ export class QualityService {
       .leftJoinAndSelect('complaint.customer', 'customer')
       .leftJoinAndSelect('complaint.job', 'job')
       .leftJoinAndSelect('complaint.assigned_to', 'assigned_to')
-      .leftJoinAndSelect('complaint.created_by', 'created_by');
+      .leftJoinAndSelect('complaint.created_by', 'created_by')
+      .where('complaint.company_id = :companyId', { companyId });
 
     if (filters?.customer_id) {
       query.andWhere('complaint.customer_id = :customer_id', { customer_id: filters.customer_id });
@@ -310,9 +320,9 @@ export class QualityService {
     return { data, total };
   }
 
-  async findComplaint(id: string): Promise<CustomerComplaint> {
+  async findComplaint(id: string, companyId: string): Promise<CustomerComplaint> {
     const complaint = await this.complaintRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['customer', 'job', 'assigned_to', 'created_by'],
     });
 
@@ -323,14 +333,14 @@ export class QualityService {
     return complaint;
   }
 
-  async updateComplaint(id: string, dto: UpdateComplaintDto): Promise<CustomerComplaint> {
-    const complaint = await this.findComplaint(id);
+  async updateComplaint(id: string, companyId: string, dto: UpdateComplaintDto): Promise<CustomerComplaint> {
+    const complaint = await this.findComplaint(id, companyId);
     Object.assign(complaint, dto);
     return this.complaintRepository.save(complaint);
   }
 
-  async resolveComplaint(id: string, dto: ResolveComplaintDto): Promise<CustomerComplaint> {
-    const complaint = await this.findComplaint(id);
+  async resolveComplaint(id: string, companyId: string, dto: ResolveComplaintDto): Promise<CustomerComplaint> {
+    const complaint = await this.findComplaint(id, companyId);
 
     complaint.status = ComplaintStatus.RESOLVED;
     complaint.resolution_notes = dto.resolution_notes;
@@ -341,15 +351,16 @@ export class QualityService {
     return this.complaintRepository.save(complaint);
   }
 
-  async uploadComplaintPhoto(id: string, file: Express.Multer.File): Promise<CustomerComplaint> {
-    const complaint = await this.findComplaint(id);
+  async uploadComplaintPhoto(id: string, companyId: string, file: Express.Multer.File): Promise<CustomerComplaint> {
+    const complaint = await this.findComplaint(id, companyId);
     complaint.photo_url = `/uploads/quality/complaints/${file.filename}`;
     return this.complaintRepository.save(complaint);
   }
 
   // Quality Metrics
-  async getQualityMetrics(startDate?: Date, endDate?: Date): Promise<any> {
-    const query = this.inspectionRepository.createQueryBuilder('inspection');
+  async getQualityMetrics(companyId: string, startDate?: Date, endDate?: Date): Promise<any> {
+    const query = this.inspectionRepository.createQueryBuilder('inspection')
+      .where('inspection.company_id = :companyId', { companyId });
 
     if (startDate && endDate) {
       query.andWhere('inspection.created_at BETWEEN :startDate AND :endDate', {
@@ -369,16 +380,17 @@ export class QualityService {
       .createQueryBuilder('defect')
       .select('defect.category', 'category')
       .addSelect('COUNT(*)', 'count')
+      .where('defect.company_id = :companyId', { companyId })
       .groupBy('defect.category')
       .getRawMany();
 
     // Rejection rate
-    const totalRejections = await this.rejectionRepository.count();
+    const totalRejections = await this.rejectionRepository.count({ where: { company_id: companyId } });
     const rejectionRate = totalInspections > 0 ? (totalRejections / totalInspections) * 100 : 0;
 
     // Customer complaints
-    const openComplaints = await this.complaintRepository.count({ where: { status: ComplaintStatus.OPEN } });
-    const totalComplaints = await this.complaintRepository.count();
+    const openComplaints = await this.complaintRepository.count({ where: { company_id: companyId, status: ComplaintStatus.OPEN } });
+    const totalComplaints = await this.complaintRepository.count({ where: { company_id: companyId } });
 
     return {
       first_pass_yield: Math.round(firstPassYield * 100) / 100,

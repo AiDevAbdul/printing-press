@@ -81,6 +81,9 @@ export class QualityInspection {
   @Column({ type: 'timestamp', nullable: true })
   inspected_at: Date;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @OneToMany(() => QualityDefect, (defect) => defect.inspection)
   defects: QualityDefect[];
 

@@ -40,6 +40,9 @@ export class Challan {
   @Column({ type: 'uuid' })
   generated_by_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

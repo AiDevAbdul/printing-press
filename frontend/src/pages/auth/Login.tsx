@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { authService } from '../../services/auth.service';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -16,8 +17,28 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      // Call the auth service login endpoint
+      const response = await authService.login(email, password);
+
+      // Store the temporary access token
+      if (response.access_token) {
+        localStorage.setItem('access_token', response.access_token);
+      }
+
+      // Store companies for company selector
+      if (response.companies) {
+        localStorage.setItem('login_companies', JSON.stringify(response.companies));
+      }
+
+      // If user belongs to only one company, auto-select it
+      if (response.selected_company) {
+        const selectResponse = await authService.login(email, password);
+        // Auto-select the company
+        navigate('/company-selector');
+      } else {
+        // Show company selector
+        navigate('/company-selector');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {

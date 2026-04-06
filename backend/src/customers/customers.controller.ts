@@ -15,28 +15,28 @@ export class CustomersController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SALES)
   create(@Body() createCustomerDto: CreateCustomerDto, @CurrentUser() user: any) {
-    return this.customersService.create(createCustomerDto, user.id);
+    return this.customersService.create(createCustomerDto, user.id, user.company_id);
   }
 
   @Get()
-  findAll(@Query('search') search?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.customersService.findAll(search, page, limit);
+  findAll(@CurrentUser() user: any, @Query('search') search?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.customersService.findAll(user.company_id, search, page, limit);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.customersService.findOne(id, user.company_id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.SALES)
-  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
-    return this.customersService.update(id, updateCustomerDto);
+  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto, @CurrentUser() user: any) {
+    return this.customersService.update(id, user.company_id, updateCustomerDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SALES)
-  remove(@Param('id') id: string) {
-    return this.customersService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.customersService.remove(id, user.company_id);
   }
 }

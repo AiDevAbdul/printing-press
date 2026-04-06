@@ -159,11 +159,9 @@ export default function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-gray-600 mt-1">Manage stock levels and materials</p>
-        </div>
+      <CategoryTabs activeCategory={filters.main_category || 'paper'} onCategoryChange={handleCategoryChange} />
+
+      <div className="flex gap-2 justify-end">
         <Button
           variant="primary"
           size="md"
@@ -177,8 +175,6 @@ export default function Inventory() {
           Add Item
         </Button>
       </div>
-
-      <CategoryTabs activeCategory={filters.main_category || 'paper'} onCategoryChange={handleCategoryChange} />
 
       <CommonFilters filters={filters} onFilterChange={handleFilterChange} onClearFilters={handleClearFilters} />
 

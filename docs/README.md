@@ -1,7 +1,7 @@
 # Printing Press Management System - Documentation
 
-**Last Updated:** March 10, 2026
-**System Status:** ✅ Production Ready (100% Complete)
+**Last Updated:** April 6, 2026
+**System Status:** ✅ Production Ready (100% Complete) + Multi-Company System ✅
 
 ---
 
@@ -11,6 +11,11 @@
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture, data flow, and module dependencies
 - **[deployment-guide.md](deployment-guide.md)** - Complete deployment instructions and troubleshooting
 - **[CLIENT_REQ.md](CLIENT_REQ.md)** - Original client requirements and specifications
+
+### Multi-Company System (NEW - April 2026)
+- **[MULTI_COMPANY_IMPLEMENTATION.md](MULTI_COMPANY_IMPLEMENTATION.md)** - Complete multi-company implementation details, architecture, and data flow
+- **[MULTI_COMPANY_STATUS.md](MULTI_COMPANY_STATUS.md)** - Implementation status, testing checklist, and deployment steps
+- **[MULTI_COMPANY_QUICK_REFERENCE.md](MULTI_COMPANY_QUICK_REFERENCE.md)** - Quick start guide, common issues, and troubleshooting
 
 ### Development Guides
 - **[api-conventions.md](api-conventions.md)** - API response structures, type coercion, field naming conventions
@@ -31,13 +36,20 @@
 
 ### For Developers
 1. Start here: [ARCHITECTURE.md](ARCHITECTURE.md)
-2. API conventions: [api-conventions.md](api-conventions.md)
-3. Workflow logic: [workflow-guide.md](workflow-guide.md)
-4. Common issues: [troubleshooting.md](troubleshooting.md)
+2. Multi-company setup: [MULTI_COMPANY_IMPLEMENTATION.md](MULTI_COMPANY_IMPLEMENTATION.md)
+3. API conventions: [api-conventions.md](api-conventions.md)
+4. Workflow logic: [workflow-guide.md](workflow-guide.md)
+5. Common issues: [troubleshooting.md](troubleshooting.md)
 
 ### For Deployment
 1. Deployment guide: [deployment-guide.md](deployment-guide.md)
-2. Implementation status: [implementation-guide.md](implementation-guide.md)
+2. Multi-company deployment: [MULTI_COMPANY_STATUS.md](MULTI_COMPANY_STATUS.md)
+3. Implementation status: [implementation-guide.md](implementation-guide.md)
+
+### For Multi-Company Setup
+1. Quick reference: [MULTI_COMPANY_QUICK_REFERENCE.md](MULTI_COMPANY_QUICK_REFERENCE.md)
+2. Full implementation: [MULTI_COMPANY_IMPLEMENTATION.md](MULTI_COMPANY_IMPLEMENTATION.md)
+3. Testing checklist: [MULTI_COMPANY_STATUS.md](MULTI_COMPANY_STATUS.md)
 
 ### For Product/Business
 1. Client requirements: [CLIENT_REQ.md](CLIENT_REQ.md)
@@ -49,7 +61,7 @@
 ## 📊 System Overview
 
 ### Completed Modules (12/12 - 100%)
-1. ✅ Authentication & User Management
+1. ✅ Authentication & User Management (+ Multi-Company)
 2. ✅ Customer Relationship Management (CRM)
 3. ✅ Quotation Management
 4. ✅ Order Management
@@ -62,6 +74,21 @@
 11. ✅ Billing & Invoicing
 12. ✅ Dashboard & Analytics
 
+### Multi-Company System (NEW)
+✅ **Complete multi-tenant architecture** serving 4 companies:
+- Capital Packages
+- CPP Pre Press
+- BEST FOIL
+- SILVO Enterprises
+
+**Features**:
+- Single admin account can access any company
+- Complete data isolation at database level
+- Company selector page after login
+- Company switcher in header
+- JWT includes company_id for secure filtering
+- All 9+ backend services updated with company filtering
+
 ### Technology Stack
 - **Backend:** NestJS + TypeORM + PostgreSQL
 - **Frontend:** React 18 + TypeScript + Tailwind CSS v4
@@ -73,10 +100,21 @@
 - **Frontend Pages:** 30+
 - **UI Components:** 36+
 - **Lines of Code:** ~75,000+
+- **Multi-Company Migrations:** 4
+- **Services Updated:** 9+
+- **Controllers Updated:** 9+
 
 ---
 
 ## 🔄 Recent Updates
+
+### April 6, 2026
+- ✅ Multi-company system implementation complete
+- ✅ 4 database migrations created
+- ✅ 9+ backend services updated with company_id filtering
+- ✅ Frontend company selector and switcher implemented
+- ✅ Complete data isolation at database level
+- ✅ Documentation created and organized
 
 ### March 10, 2026
 - ✅ UI/UX redesign Phase 1-6 complete
@@ -107,6 +145,9 @@ docs/
 ├── troubleshooting.md - Common issues
 ├── CLIENT_REQ.md - Requirements
 ├── PLAN.md - Historical implementation plan
+├── MULTI_COMPANY_IMPLEMENTATION.md - Multi-company technical details
+├── MULTI_COMPANY_STATUS.md - Multi-company status and testing
+├── MULTI_COMPANY_QUICK_REFERENCE.md - Multi-company quick reference
 └── archive/ - Archived documentation
 ```
 
@@ -124,7 +165,7 @@ docs/
 # Backend
 cd backend
 npm install
-npm run migration:run
+npm run typeorm migration:run
 npm run start:dev
 
 # Frontend
@@ -137,6 +178,30 @@ npm run dev
 - Email: `admin@printingpress.com`
 - Password: `admin123`
 
+### Multi-Company Setup
+After running migrations, the system will have 4 companies pre-loaded:
+1. Capital Packages
+2. CPP Pre Press
+3. BEST FOIL
+4. SILVO Enterprises
+
+Login with admin credentials and select a company from the company selector page.
+
+---
+
+## 🔐 Multi-Company Architecture
+
+**Key Features**:
+- ✅ Single admin account can access any company
+- ✅ Users belong to exactly one company
+- ✅ All data filtered by company_id at database level
+- ✅ Company selector page after login
+- ✅ Company switcher in header for seamless switching
+- ✅ JWT payload includes company_id for secure filtering
+- ✅ Complete data isolation between companies
+
+**For detailed information**, see [MULTI_COMPANY_IMPLEMENTATION.md](MULTI_COMPANY_IMPLEMENTATION.md)
+
 ---
 
 ## 📞 Support
@@ -145,7 +210,9 @@ For issues or questions:
 1. Check [troubleshooting.md](troubleshooting.md)
 2. Review [workflow-guide.md](workflow-guide.md)
 3. Consult [api-conventions.md](api-conventions.md)
+4. For multi-company issues: [MULTI_COMPANY_QUICK_REFERENCE.md](MULTI_COMPANY_QUICK_REFERENCE.md)
 
 ---
 
 **Built with ❤️ using NestJS, React, PostgreSQL, and Claude Opus 4.6**
+

@@ -37,6 +37,9 @@ export class DeliveryTracking {
   @Column({ type: 'uuid' })
   updated_by_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

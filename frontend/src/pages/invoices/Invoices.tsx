@@ -261,22 +261,6 @@ export default function Invoices() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-          <p className="text-gray-600 mt-1">Manage invoices and payments</p>
-        </div>
-        <Button
-          variant="primary"
-          size="md"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add Invoice
-        </Button>
-      </div>
-
       {/* Filters & Sort */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
         <div className="flex-1">

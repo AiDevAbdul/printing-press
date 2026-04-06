@@ -1,0 +1,50 @@
+- generic [ref=e33]:
+  - complementary "Main navigation" [ref=e35]:
+    - generic [ref=e36]:
+      - heading "Menu" [level=1] [ref=e37]
+      - button "Collapse sidebar" [expanded] [ref=e38]:
+        - img [ref=e39]
+    - navigation "Sidebar navigation" [ref=e42]:
+      - button "Dashboard" [ref=e44]:
+        - img [ref=e45]
+        - generic [ref=e48]: Dashboard
+      - button "Sales, submenu" [ref=e50]:
+        - img [ref=e51]
+        - generic [ref=e55]: Sales
+        - img [ref=e56]
+      - button "Production, submenu" [ref=e59]:
+        - img [ref=e60]
+        - generic [ref=e62]: Production
+        - img [ref=e63]
+      - button "Logistics, submenu" [ref=e66]:
+        - img [ref=e67]
+        - generic [ref=e72]: Logistics
+        - img [ref=e73]
+      - button "Finance, submenu" [ref=e76]:
+        - img [ref=e77]
+        - generic [ref=e79]: Finance
+        - img [ref=e80]
+      - button "System, submenu" [ref=e83]:
+        - img [ref=e84]
+        - generic [ref=e89]: System
+        - img [ref=e90]
+    - paragraph [ref=e93]: © 2026 Printing Press
+  - generic [ref=e94]:
+    - banner [ref=e95]:
+      - generic [ref=e96]:
+        - navigation "Breadcrumb" [ref=e99]:
+          - link "Home" [ref=e100] [cursor=pointer]:
+            - /url: /
+            - img [ref=e101]
+          - img [ref=e104]
+          - generic [ref=e106]: Dashboard
+        - generic [ref=e107]:
+          - button "Capital Packages" [ref=e109]:
+            - text: Capital Packages
+            - img [ref=e111]
+          - button "Notifications" [ref=e114]:
+            - img [ref=e115]
+          - button "User menu for System Admin" [ref=e119]:
+            - generic [ref=e120]: S
+            - img [ref=e121]
+    - main [ref=e123]

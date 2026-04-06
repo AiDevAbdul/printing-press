@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { dataSourceOptions } from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { CompaniesModule } from './companies/companies.module';
 import { CustomersModule } from './customers/customers.module';
 import { OrdersModule } from './orders/orders.module';
 import { ProductionModule } from './production/production.module';
@@ -17,6 +18,7 @@ import { ExportModule } from './export/export.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { ApprovalsModule } from './approvals/approvals.module';
+import { PrepressModule } from './prepress/prepress.module';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
     TypeOrmModule.forRoot(dataSourceOptions),
     AuthModule,
     UsersModule,
+    CompaniesModule,
     CustomersModule,
     OrdersModule,
     QuotationsModule,
@@ -39,6 +42,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
     NotificationsModule,
     ActivityLogModule,
     ApprovalsModule,
+    PrepressModule,
   ],
 })
 export class AppModule {}

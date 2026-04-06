@@ -2,8 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
+import { CompanyProvider } from './context/CompanyContext';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
+import { CompanySelector } from './pages/auth/CompanySelector';
 import Dashboard from './pages/dashboard/Dashboard';
 
 // Lazy load pages for code splitting
@@ -28,6 +30,7 @@ const WorkflowPage = lazy(() => import('./pages/workflow/WorkflowPage'));
 const UserProfile = lazy(() => import('./pages/profile/UserProfile'));
 const UserManagement = lazy(() => import('./pages/users/UserManagement'));
 const QAApproval = lazy(() => import('./pages/qa/QAApproval'));
+const Prepress = lazy(() => import('./pages/prepress/Prepress'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +42,7 @@ const queryClient = new QueryClient({
 });
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, selectedCompany } = useAuth();
 
   if (isLoading) {
     return (
@@ -49,7 +52,16 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return isAuthenticated ? (
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  // If authenticated but no company selected, redirect to company selector
+  if (!selectedCompany) {
+    return <Navigate to="/company-selector" />;
+  }
+
+  return (
     <Layout>
       <Suspense
         fallback={
@@ -61,25 +73,25 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
         {children}
       </Suspense>
     </Layout>
-  ) : (
-    <Navigate to="/login" />
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
+      <CompanyProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/company-selector" element={<CompanySelector />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
           <Route
             path="/customers"
             element={
@@ -256,9 +268,18 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/prepress"
+            element={
+              <PrivateRoute>
+                <Prepress />
+              </PrivateRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
+      </CompanyProvider>
     </QueryClientProvider>
   );
 }
