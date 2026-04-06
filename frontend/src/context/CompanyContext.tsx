@@ -17,8 +17,6 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
   // Load selected company from localStorage on mount
   useEffect(() => {
@@ -43,8 +41,8 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const value: CompanyContextType = {
     selectedCompany,
-    availableCompanies,
-    isLoadingCompanies,
+    availableCompanies: [],
+    isLoadingCompanies: false,
     selectCompany,
     getSelectedCompany,
   };

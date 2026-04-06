@@ -1,5 +1,4 @@
 import api from './api';
-import { AuthResponse } from '../types';
 
 export interface LoginResponse {
   access_token: string;

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../services/auth.service';
 
 export default function Login() {
@@ -8,7 +7,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,15 +28,8 @@ export default function Login() {
         localStorage.setItem('login_companies', JSON.stringify(response.companies));
       }
 
-      // If user belongs to only one company, auto-select it
-      if (response.selected_company) {
-        const selectResponse = await authService.login(email, password);
-        // Auto-select the company
-        navigate('/company-selector');
-      } else {
-        // Show company selector
-        navigate('/company-selector');
-      }
+      // Show company selector
+      navigate('/company-selector');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {

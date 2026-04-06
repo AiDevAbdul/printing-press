@@ -7,7 +7,6 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { CustomersGrid } from './CustomersGrid';
 import { CustomersList } from './CustomersList';
-import { CustomerProfile } from './CustomerProfile';
 
 interface Customer {
   id: string;
@@ -17,6 +16,9 @@ interface Customer {
   phone: string;
   city: string;
   state: string;
+  address?: string;
+  postal_code?: string;
+  gstin?: string;
   credit_limit: number;
   is_active: boolean;
   created_at: string;

@@ -1,31 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wifi, WifiOff, Grid3x3, Users } from 'lucide-react';
 import { shopFloorService } from '../../services/shop-floor.service';
-import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
 import { SortButton } from '../../components/ui/SortButton';
-import api from '../../services/api';
 import { useSorting } from '../../hooks/useSorting';
+import api from '../../services/api';
 
 const ShopFloor = () => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showAllJobs, setShowAllJobs] = useState(false);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   const { data: myJobs, isLoading: myJobsLoading, error: myJobsError } = useQuery({
     queryKey: ['my-active-jobs'],

@@ -6,7 +6,6 @@ export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   useEffect(() => {
@@ -47,7 +46,6 @@ export const useAuth = () => {
     user,
     isAuthenticated,
     isLoading,
-    companies,
     selectedCompany,
     login,
     logout,

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { companyService, Company } from '../../services/company.service';
 
 export const CompanySwitcher: React.FC = () => {
-  const navigate = useNavigate();
   const { selectedCompany } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
