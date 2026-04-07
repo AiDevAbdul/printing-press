@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DesignStatus, DesignType, ProductCategory } from './entities/design.entity';
 
-@Controller('api/prepress')
+@Controller('prepress')
 @UseGuards(JwtAuthGuard)
 export class PrepressController {
   constructor(private readonly prepressService: PrepressService) {}
