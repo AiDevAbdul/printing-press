@@ -28,13 +28,37 @@ export default function Login() {
         localStorage.setItem('login_companies', JSON.stringify(response.companies));
       }
 
-      // Show company selector
-      navigate('/company-selector');
+      // Check if user is super-admin
+      const isSuperAdmin = response.user?.is_super_admin;
+
+      if (isSuperAdmin) {
+        // Super-admin goes to company selector
+        navigate('/company-selector');
+      } else {
+        // Regular user goes directly to role-based dashboard
+        const dashboardRoute = getDashboardRoute(response.user?.role);
+        navigate(dashboardRoute);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getDashboardRoute = (role: string): string => {
+    const roleRoutes: Record<string, string> = {
+      prepress: '/dashboard/prepress',
+      operator: '/dashboard/production',
+      planner: '/dashboard/production',
+      qa_manager: '/dashboard/quality',
+      sales: '/dashboard/sales',
+      analyst: '/dashboard/analytics',
+      accounts: '/dashboard/finance',
+      inventory: '/dashboard/inventory',
+      admin: '/dashboard',
+    };
+    return roleRoutes[role] || '/dashboard';
   };
 
   return (

@@ -12,7 +12,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -22,68 +22,91 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   // Define navigation items based on user role
-  const navigationItems: SidebarItem[] = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: 'dashboard',
-      href: '/dashboard',
-    },
-    {
-      id: 'sales',
-      label: 'Sales',
-      icon: 'orders',
-      children: [
-        { id: 'customers', label: 'Customers', icon: 'customers', href: '/customers' },
-        { id: 'quotations', label: 'Quotations', icon: 'quotations', href: '/quotations' },
-        { id: 'orders', label: 'Orders', icon: 'orders', href: '/orders' },
-      ],
-    },
-    {
-      id: 'production',
-      label: 'Production',
-      icon: 'production',
-      children: [
-        { id: 'prepress', label: 'Pre-Press', icon: 'production', href: '/prepress' },
-        { id: 'specifications', label: 'Specifications', icon: 'production', href: '/specifications' },
-        { id: 'planning', label: 'Planning', icon: 'planning', href: '/planning' },
-        { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
-        { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },
-        { id: 'quality', label: 'Quality', icon: 'quality', href: '/quality' },
-        { id: 'wastage', label: 'Wastage', icon: 'wastage', href: '/wastage-analytics' },
-      ],
-    },
-    {
-      id: 'logistics',
-      label: 'Logistics',
-      icon: 'dispatch',
-      children: [
-        { id: 'dispatch', label: 'Dispatch', icon: 'dispatch', href: '/dispatch' },
-        { id: 'inventory', label: 'Inventory', icon: 'inventory', href: '/inventory' },
-      ],
-    },
-    {
-      id: 'finance',
-      label: 'Finance',
-      icon: 'costing',
-      children: [
-        { id: 'costing', label: 'Costing', icon: 'costing', href: '/costing' },
-        { id: 'invoices', label: 'Invoices', icon: 'invoices', href: '/invoices' },
-      ],
-    },
-  ];
+  const getNavigationItems = (): SidebarItem[] => {
+    const allItems: SidebarItem[] = [
+      {
+        id: 'dashboard',
+        label: 'Dashboard',
+        icon: 'dashboard',
+        href: '/dashboard',
+      },
+      {
+        id: 'sales',
+        label: 'Sales',
+        icon: 'orders',
+        children: [
+          { id: 'customers', label: 'Customers', icon: 'customers', href: '/customers' },
+          { id: 'quotations', label: 'Quotations', icon: 'quotations', href: '/quotations' },
+          { id: 'orders', label: 'Orders', icon: 'orders', href: '/orders' },
+        ],
+      },
+      {
+        id: 'production',
+        label: 'Production',
+        icon: 'production',
+        children: [
+          { id: 'prepress', label: 'Pre-Press', icon: 'production', href: '/prepress' },
+          { id: 'specifications', label: 'Specifications', icon: 'production', href: '/specifications' },
+          { id: 'planning', label: 'Planning', icon: 'planning', href: '/planning' },
+          { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
+          { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },
+          { id: 'quality', label: 'Quality', icon: 'quality', href: '/quality' },
+          { id: 'wastage', label: 'Wastage', icon: 'wastage', href: '/wastage-analytics' },
+        ],
+      },
+      {
+        id: 'logistics',
+        label: 'Logistics',
+        icon: 'dispatch',
+        children: [
+          { id: 'dispatch', label: 'Dispatch', icon: 'dispatch', href: '/dispatch' },
+          { id: 'inventory', label: 'Inventory', icon: 'inventory', href: '/inventory' },
+        ],
+      },
+      {
+        id: 'finance',
+        label: 'Finance',
+        icon: 'costing',
+        children: [
+          { id: 'costing', label: 'Costing', icon: 'costing', href: '/costing' },
+          { id: 'invoices', label: 'Invoices', icon: 'invoices', href: '/invoices' },
+        ],
+      },
+    ];
 
-  // Add users menu for admin
-  if (user?.role === 'admin') {
-    navigationItems.push({
-      id: 'system',
-      label: 'System',
-      icon: 'users',
-      children: [
-        { id: 'user-management', label: 'Users', icon: 'users', href: '/user-management' },
-      ],
-    });
-  }
+    // Filter navigation based on role
+    const roleNavigation: Record<string, string[]> = {
+      prepress: ['dashboard', 'production'],
+      operator: ['dashboard', 'production'],
+      planner: ['dashboard', 'production'],
+      qa_manager: ['dashboard', 'production'],
+      sales: ['dashboard', 'sales'],
+      analyst: ['dashboard', 'finance'],
+      accounts: ['dashboard', 'finance'],
+      inventory: ['dashboard', 'logistics'],
+      admin: ['dashboard', 'sales', 'production', 'logistics', 'finance', 'system'],
+    };
+
+    const allowedSections = roleNavigation[user?.role] || ['dashboard'];
+
+    // For super-admin, show all items
+    if (isSuperAdmin || user?.role === 'admin') {
+      const items = allItems.filter(item => allowedSections.includes(item.id));
+      items.push({
+        id: 'system',
+        label: 'System',
+        icon: 'users',
+        children: [
+          { id: 'user-management', label: 'Users', icon: 'users', href: '/user-management' },
+        ],
+      });
+      return items;
+    }
+
+    return allItems.filter(item => allowedSections.includes(item.id));
+  };
+
+  const navigationItems = getNavigationItems();
 
   // Get active item from current path
   const getActiveItem = () => {

@@ -20,6 +20,11 @@ export const authService = {
     // Store companies list for selector
     localStorage.setItem('login_companies', JSON.stringify(response.data.companies));
 
+    // Store is_super_admin flag
+    if (response.data.user?.is_super_admin) {
+      localStorage.setItem('is_super_admin', 'true');
+    }
+
     return response.data;
   },
 
@@ -29,6 +34,7 @@ export const authService = {
     localStorage.removeItem('user');
     localStorage.removeItem('login_companies');
     localStorage.removeItem('selectedCompany');
+    localStorage.removeItem('is_super_admin');
   },
 
   async getCurrentUser(): Promise<any> {
@@ -53,6 +59,10 @@ export const authService = {
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem('access_token');
+  },
+
+  isSuperAdmin(): boolean {
+    return localStorage.getItem('is_super_admin') === 'true';
   },
 
   getLoginCompanies(): Array<{ id: string; name: string }> {

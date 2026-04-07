@@ -32,6 +32,13 @@ const UserManagement = lazy(() => import('./pages/users/UserManagement'));
 const QAApproval = lazy(() => import('./pages/qa/QAApproval'));
 const Prepress = lazy(() => import('./pages/prepress/Prepress'));
 const Specifications = lazy(() => import('./pages/prepress/Specifications'));
+const PrePressDashboard = lazy(() => import('./pages/dashboards/PrePressDashboard'));
+const ProductionDashboard = lazy(() => import('./pages/dashboards/ProductionDashboard'));
+const QualityDashboard = lazy(() => import('./pages/dashboards/QualityDashboard'));
+const SalesDashboard = lazy(() => import('./pages/dashboards/SalesDashboard'));
+const FinanceDashboard = lazy(() => import('./pages/dashboards/FinanceDashboard'));
+const InventoryDashboard = lazy(() => import('./pages/dashboards/InventoryDashboard'));
+const AnalyticsDashboard = lazy(() => import('./pages/dashboards/AnalyticsDashboard'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -282,6 +289,62 @@ function App() {
             element={
               <PrivateRoute>
                 <Specifications />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/prepress"
+            element={
+              <PrivateRoute>
+                <PrePressDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/production"
+            element={
+              <PrivateRoute>
+                <ProductionDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/quality"
+            element={
+              <PrivateRoute>
+                <QualityDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sales"
+            element={
+              <PrivateRoute>
+                <SalesDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/finance"
+            element={
+              <PrivateRoute>
+                <FinanceDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/inventory"
+            element={
+              <PrivateRoute>
+                <InventoryDashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard/analytics"
+            element={
+              <PrivateRoute>
+                <AnalyticsDashboard />
               </PrivateRoute>
             }
           />

@@ -77,6 +77,11 @@ export class UsersService {
       return [];
     }
 
+    // Super-admin users can access all companies
+    if (user.is_super_admin) {
+      return await this.companiesRepository.find();
+    }
+
     // Admin users can access all companies
     if (user.role === 'admin') {
       return await this.companiesRepository.find();

@@ -7,6 +7,7 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const storedUser = authService.getStoredUser();
@@ -20,12 +21,16 @@ export const useAuth = () => {
       setSelectedCompany(stored);
     }
 
+    const superAdmin = authService.isSuperAdmin();
+    setIsSuperAdmin(superAdmin);
+
     setIsLoading(false);
   }, []);
 
   const login = (userData: any) => {
     setUser(userData);
     setIsAuthenticated(true);
+    setIsSuperAdmin(userData.is_super_admin || false);
     authService.storeUser(userData);
   };
 
@@ -34,6 +39,7 @@ export const useAuth = () => {
     setUser(null);
     setIsAuthenticated(false);
     setSelectedCompany(null);
+    setIsSuperAdmin(false);
     companyService.clearSelectedCompany();
   };
 
@@ -47,6 +53,7 @@ export const useAuth = () => {
     isAuthenticated,
     isLoading,
     selectedCompany,
+    isSuperAdmin,
     login,
     logout,
     selectCompany,

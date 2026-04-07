@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { companyService, Company } from '../../services/company.service';
 
 export const CompanySwitcher: React.FC = () => {
-  const { selectedCompany } = useAuth();
+  const { selectedCompany, isSuperAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -44,6 +44,16 @@ export const CompanySwitcher: React.FC = () => {
 
   if (!selectedCompany) {
     return null;
+  }
+
+  // Only show company switcher for super-admin users
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700">
+        <div className="w-2 h-2 rounded-full bg-blue-400" />
+        {selectedCompany.name}
+      </div>
+    );
   }
 
   return (

@@ -27,6 +27,7 @@ export class LoginResponseDto {
     email: string;
     full_name: string;
     role: string;
+    is_super_admin: boolean;
   };
   companies: CompanyInfo[];
   selected_company?: CompanyInfo;
@@ -41,5 +42,6 @@ export class AuthResponseDto {
     full_name: string;
     role: string;
     company_id: string;
+    is_super_admin: boolean;
   };
 }

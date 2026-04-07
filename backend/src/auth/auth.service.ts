@@ -49,6 +49,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      is_super_admin: user.is_super_admin,
     };
     const access_token = this.jwtService.sign(tempPayload, { expiresIn: '1h' });
 
@@ -60,6 +61,7 @@ export class AuthService {
         email: user.email,
         full_name: user.full_name,
         role: user.role,
+        is_super_admin: user.is_super_admin,
       },
       companies,
       selected_company: selectedCompany,
@@ -73,7 +75,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    // Verify user belongs to this company
+    // Verify company exists
     const company = await this.companiesRepository.findOne({
       where: { id: selectCompanyDto.company_id },
     });
@@ -82,12 +84,15 @@ export class AuthService {
       throw new BadRequestException('Company not found');
     }
 
-    // Verify user belongs to this company
-    const userCompanies = await this.usersService.getUserCompanies(user.id);
-    const belongsToCompany = userCompanies.some(c => c.id === selectCompanyDto.company_id);
+    // For super-admin, allow access to any company
+    // For regular users, verify they belong to this company
+    if (!user.is_super_admin) {
+      const userCompanies = await this.usersService.getUserCompanies(user.id);
+      const belongsToCompany = userCompanies.some(c => c.id === selectCompanyDto.company_id);
 
-    if (!belongsToCompany) {
-      throw new UnauthorizedException('User does not belong to this company');
+      if (!belongsToCompany) {
+        throw new UnauthorizedException('User does not belong to this company');
+      }
     }
 
     // Generate JWT with company_id
@@ -96,6 +101,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       company_id: selectCompanyDto.company_id,
+      is_super_admin: user.is_super_admin,
     };
 
     const access_token = this.jwtService.sign(payload, { expiresIn: '1h' });
@@ -110,6 +116,7 @@ export class AuthService {
         full_name: user.full_name,
         role: user.role,
         company_id: selectCompanyDto.company_id,
+        is_super_admin: user.is_super_admin,
       },
     };
   }
@@ -128,6 +135,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       company_id: user.company_id,
+      is_super_admin: user.is_super_admin,
     };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: '1h' }),

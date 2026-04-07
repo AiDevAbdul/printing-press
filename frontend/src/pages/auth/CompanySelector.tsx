@@ -10,7 +10,7 @@ interface CompanyWithMeta extends Company {
   icon?: React.ReactNode;
 }
 
-const COMPANY_META: Record<string, Omit<CompanyWithMeta, 'id'>> = {
+const COMPANY_META: Record<string, Omit<CompanyWithMeta, 'id' | 'name'>> = {
   'Capital Packages': {
     description: 'Premium packaging solutions',
     accentColor: 'from-amber-500 to-orange-600',
@@ -36,10 +36,9 @@ const COMPANY_META: Record<string, Omit<CompanyWithMeta, 'id'>> = {
 export const CompanySelector: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [companies, setCompanies] = useState<CompanyWithMeta[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<CompanyWithMeta[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const loginCompanies = authService.getLoginCompanies();
@@ -58,10 +57,9 @@ export const CompanySelector: React.FC = () => {
     setCompanies(enrichedCompanies);
   }, []);
 
-  const handleSelectCompany = async (company: CompanyWithMeta, index: number) => {
+  const handleSelectCompany = async (company: CompanyWithMeta) => {
     try {
       setLoading(company.id);
-      setSelectedIndex(index);
       setError(null);
 
       const response = await companyService.selectCompany(company.id);
@@ -77,7 +75,6 @@ export const CompanySelector: React.FC = () => {
       setError('Failed to select company. Please try again.');
       console.error('Company selection error:', err);
       setLoading(null);
-      setSelectedIndex(null);
     }
   };
 
@@ -122,7 +119,7 @@ export const CompanySelector: React.FC = () => {
             {companies.map((company, index) => (
               <button
                 key={company.id}
-                onClick={() => handleSelectCompany(company, index)}
+                onClick={() => handleSelectCompany(company)}
                 disabled={loading !== null}
                 className="group relative text-left transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
