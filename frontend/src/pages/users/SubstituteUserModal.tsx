@@ -20,7 +20,7 @@ interface SubstituteUserModalProps {
   userName: string;
 }
 
-export function SubstituteUserModal({ isOpen, onClose, userId, userName }: SubstituteUserModalProps) {
+export default function SubstituteUserModal({ isOpen, onClose, userId, userName }: SubstituteUserModalProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState({
     substitute_user_id: '',

@@ -11,7 +11,7 @@ interface AddUserModalProps {
   onSubmit: (userData: any) => Promise<void>;
 }
 
-export function AddUserModal({ isOpen, onClose, onSubmit }: AddUserModalProps) {
+export default function AddUserModal({ isOpen, onClose, onSubmit }: AddUserModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',

@@ -21,7 +21,7 @@ interface EditUserModalProps {
   onSubmit: (userData: any) => Promise<void>;
 }
 
-export function EditUserModal({ isOpen, onClose, user, onSubmit }: EditUserModalProps) {
+export default function EditUserModal({ isOpen, onClose, user, onSubmit }: EditUserModalProps) {
   const [formData, setFormData] = useState({
     full_name: user.full_name,
     role: user.role,
