@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto } from './dto/order.dto';
+import { Customer } from '../customers/entities/customer.entity';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>,
+    @InjectRepository(Customer)
+    private customersRepository: Repository<Customer>,
   ) {}
 
   private generateOrderNumber(): string {
@@ -21,14 +24,23 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto, userId: string, companyId: string): Promise<Order> {
+    // Validate customer exists and belongs to the same company
+    const customer = await this.customersRepository.findOne({
+      where: { id: createOrderDto.customer_id, company_id: companyId },
+    });
+
+    if (!customer) {
+      throw new BadRequestException('Customer not found or does not belong to your company');
+    }
+
     const order = this.ordersRepository.create({
       ...createOrderDto,
       order_number: this.generateOrderNumber(),
       company_id: companyId,
+      created_by: { id: userId } as any,
     } as any);
     // Set the foreign key IDs directly
     (order as any).customer_id = createOrderDto.customer_id;
-    (order as any).created_by = userId;
     return this.ordersRepository.save(order as any);
   }
 

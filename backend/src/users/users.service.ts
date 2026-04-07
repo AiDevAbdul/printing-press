@@ -77,8 +77,12 @@ export class UsersService {
       return [];
     }
 
-    // For now, return the user's company
-    // In the future, this could return multiple companies if a user can access multiple
+    // Admin users can access all companies
+    if (user.role === 'admin') {
+      return await this.companiesRepository.find();
+    }
+
+    // Regular users can only access their own company
     return user.company ? [user.company] : [];
   }
 

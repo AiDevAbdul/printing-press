@@ -1,17 +1,20 @@
-import { IsString, IsDate, IsEnum, IsNumber, IsOptional, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsDate, IsEnum, IsNumber, IsOptional, IsUUID, IsBoolean, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderStatus, OrderPriority, PrintingType, ProductType, VarnishType, LaminationType, DieType, DesignFileStatus, ColorSeparationType, PlateMaterial, PlateCondition, PlateApprovalStatus, ProofStatus, ColorMatchingStandard } from '../entities/order.entity';
 
 export class CreateOrderDto {
   @IsUUID()
+  @IsNotEmpty()
   customer_id: string;
 
   @IsDate()
   @Type(() => Date)
+  @IsNotEmpty()
   order_date: Date;
 
   @IsDate()
   @Type(() => Date)
+  @IsNotEmpty()
   delivery_date: Date;
 
   @IsOptional()
@@ -23,12 +26,15 @@ export class CreateOrderDto {
   priority?: OrderPriority;
 
   @IsString()
+  @IsNotEmpty()
   product_name: string;
 
   @IsNumber()
+  @IsNotEmpty()
   quantity: number;
 
   @IsString()
+  @IsNotEmpty()
   unit: string;
 
   @IsOptional()

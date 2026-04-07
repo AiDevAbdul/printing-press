@@ -153,6 +153,10 @@ export default function OrderFormModal({
       toast.error('Please enter a valid quantity');
       return false;
     }
+    if (formData.final_price === undefined || formData.final_price === null || formData.final_price < 0) {
+      toast.error('Please enter a valid final price');
+      return false;
+    }
     return true;
   };
 
@@ -172,6 +176,8 @@ export default function OrderFormModal({
       // Convert arrays to comma-separated strings for backend
       const submitData = {
         ...formData,
+        varnish_type: (formData.varnish_type || []).join(','),
+        lamination_type: (formData.lamination_type || []).join(','),
         design_file_formats: (formData.design_file_formats || []).join(','),
         proof_type_required: (formData.proof_type_required || []).join(','),
         preferred_machines: (formData.preferred_machines || []).join(','),
@@ -184,27 +190,82 @@ export default function OrderFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={step === 1 ? "Create New Order" : "Additional Details (Optional)"}
+      title={step === 1 ? "NEW ORDER" : "ADDITIONAL DETAILS"}
       size="xl"
+      footer={
+        <div className="flex gap-4 justify-between w-full items-center border-t border-gray-900 pt-4">
+          <div className="flex items-baseline gap-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Total:</span>
+            <span className="text-3xl font-black text-gray-900">${formData.final_price.toFixed(2)}</span>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="text-xs font-bold uppercase tracking-widest"
+            >
+              Cancel
+            </Button>
+
+            <div className="flex gap-2">
+              {step === 2 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+                >
+                  <ChevronLeft size={16} />
+                  Back
+                </Button>
+              )}
+
+              {step === 1 ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleNext}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest bg-gray-900 hover:bg-black text-white"
+                >
+                  Next
+                  <ChevronRight size={16} />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isSubmitting}
+                  onClick={handleSubmit}
+                  className="text-xs font-bold uppercase tracking-widest bg-gray-900 hover:bg-black text-white"
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Order'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-6 pb-24">
-        {/* Step Indicator - Minimalist */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+      <form onSubmit={handleSubmit} className="space-y-0">
+        {/* Step Indicator - Brutalist */}
+        <div className="flex items-center gap-0 mb-8 border-b-2 border-gray-900 pb-6">
+          <div className={`flex items-center justify-center w-8 h-8 font-black text-sm transition-all ${step >= 1 ? 'bg-gray-900 text-white' : 'border-2 border-gray-900 text-gray-900'}`}>
             1
           </div>
-          <div className={`flex-1 h-0.5 transition-all ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+          <div className={`flex-1 h-1 transition-all ${step >= 2 ? 'bg-gray-900' : 'bg-gray-300'}`}></div>
+          <div className={`flex items-center justify-center w-8 h-8 font-black text-sm transition-all ${step >= 2 ? 'bg-gray-900 text-white' : 'border-2 border-gray-900 text-gray-900'}`}>
             2
           </div>
         </div>
 
         {step === 1 ? (
-          <div className="space-y-8">
+          <div className="space-y-0">
             {/* Customer & Product Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Customer & Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Customer & Product</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <Select
                     label="Customer"
@@ -241,9 +302,9 @@ export default function OrderFormModal({
             </div>
 
             {/* Timeline Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Timeline</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Timeline</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Order Date"
                   type="date"
@@ -261,10 +322,10 @@ export default function OrderFormModal({
               </div>
             </div>
 
-            {/* Quantity & Pricing Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Quantity & Unit</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Quantity & Unit Section */}
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Quantity & Unit</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Quantity"
                   type="number"
@@ -287,8 +348,8 @@ export default function OrderFormModal({
             </div>
 
             {/* Priority Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Priority</h3>
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Priority</h3>
               <Select
                 label="Priority Level"
                 options={[
@@ -302,10 +363,34 @@ export default function OrderFormModal({
               />
             </div>
 
+            {/* Pricing Section */}
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Pricing</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  label="Quoted Price"
+                  type="number"
+                  step="0.01"
+                  value={formData.quoted_price || ''}
+                  onChange={(e) => setFormData({ ...formData, quoted_price: Number(e.target.value) })}
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Final Price"
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.final_price}
+                  onChange={(e) => setFormData({ ...formData, final_price: Number(e.target.value) })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
             {/* Specifications Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Specifications</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Specifications</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Card Width (mm)"
                   value={formData.card_width || ''}
@@ -340,9 +425,9 @@ export default function OrderFormModal({
             </div>
 
             {/* Colors Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Colors</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Colors</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <Input
                   label="Cyan (%)"
                   value={formData.color_cyan || ''}
@@ -373,15 +458,15 @@ export default function OrderFormModal({
               <button
                 type="button"
                 onClick={() => setShowPantone(!showPantone)}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-2"
+                className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-gray-900 mt-6 pt-6 border-t-2 border-gray-900 hover:text-gray-600 transition-colors"
               >
-                {showPantone ? <Minus size={16} /> : <Plus size={16} />}
-                {showPantone ? 'Hide' : 'Add'} Pantone Colors
+                {showPantone ? <Minus size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+                {showPantone ? 'Hide' : 'Add'} Pantone
               </button>
 
               {/* Pantone Fields - Hidden by default */}
               {showPantone && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t-2 border-gray-900">
                   <Input
                     label="Pantone 1"
                     value={formData.color_p1 || ''}
@@ -407,13 +492,13 @@ export default function OrderFormModal({
             </div>
 
             {/* Finishing Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Finishing</h3>
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Finishing</h3>
 
               {/* Varnish - 2 Column Grid */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Varnish Type</label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="mb-6">
+                <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Varnish Type</label>
+                <div className="grid grid-cols-2 gap-4">
                   {[
                     { value: 'water_base', label: 'Water Base' },
                     { value: 'duck', label: 'Duck' },
@@ -438,9 +523,9 @@ export default function OrderFormModal({
               </div>
 
               {/* Lamination - 2 Column Grid */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Lamination Type</label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Lamination Type</label>
+                <div className="grid grid-cols-2 gap-4">
                   {[
                     { value: 'shine', label: 'Shine' },
                     { value: 'matt', label: 'Matt' },
@@ -465,13 +550,13 @@ export default function OrderFormModal({
               </div>
 
               {/* Additional Finishing Options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Lamination Size"
                   value={formData.lamination_size || ''}
                   onChange={(e) => setFormData({ ...formData, lamination_size: e.target.value })}
                 />
-                <div className="flex gap-4 items-end">
+                <div className="flex gap-6 items-end">
                   <Checkbox
                     label="Back Printing"
                     checked={formData.has_back_printing || false}
@@ -488,9 +573,9 @@ export default function OrderFormModal({
 
             {/* Product-Specific Fields */}
             {formData.product_type === 'silvo_blister' && (
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Cylinder Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="py-6 border-b-2 border-gray-900">
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Cylinder Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
                     label="Cylinder Reference"
                     value={formData.cylinder_reference || ''}
@@ -507,9 +592,9 @@ export default function OrderFormModal({
             )}
 
             {(formData.product_type === 'bent_foil' || formData.product_type === 'alu_alu') && (
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Foil Specifications</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="py-6 border-b-2 border-gray-900">
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Foil Specifications</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Input
                     label="Thickness (Micron)"
                     type="number"
@@ -531,11 +616,11 @@ export default function OrderFormModal({
             )}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-0">
             {/* Design & File Management */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Design & Files</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Design & Files</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Design File Status"
                   options={[
@@ -561,8 +646,8 @@ export default function OrderFormModal({
                   onChange={(e) => setFormData({ ...formData, design_revisions_count: Number(e.target.value) })}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">File Formats</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">File Formats</label>
+                  <div className="grid grid-cols-2 gap-4">
                     {[
                       { value: 'pdf', label: 'PDF' },
                       { value: 'ai', label: 'AI' },
@@ -586,12 +671,12 @@ export default function OrderFormModal({
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Design Notes</label>
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Design Notes</label>
                   <textarea
                     value={formData.design_notes || ''}
                     onChange={(e) => setFormData({ ...formData, design_notes: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border-2 border-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-mono text-sm"
                     placeholder="Feedback, changes needed, etc."
                   />
                 </div>
@@ -599,9 +684,9 @@ export default function OrderFormModal({
             </div>
 
             {/* Plate & Separation */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Plates & Separation</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Plates & Separation</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Color Separation Type"
                   options={[
@@ -666,12 +751,12 @@ export default function OrderFormModal({
             </div>
 
             {/* Proofing & QC */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Proofing & QC</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Proofing & QC</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Proof Type Required</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Proof Type Required</label>
+                  <div className="grid grid-cols-2 gap-4">
                     {[
                       { value: 'digital_proof', label: 'Digital Proof' },
                       { value: 'physical_proof', label: 'Physical Proof' },
@@ -729,12 +814,12 @@ export default function OrderFormModal({
                   placeholder="Name or ID"
                 />
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quality Check Notes</label>
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Quality Check Notes</label>
                   <textarea
                     value={formData.quality_check_notes || ''}
                     onChange={(e) => setFormData({ ...formData, quality_check_notes: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border-2 border-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-mono text-sm"
                     placeholder="Quality observations and notes"
                   />
                 </div>
@@ -742,12 +827,12 @@ export default function OrderFormModal({
             </div>
 
             {/* Production Setup */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Production Setup</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-6 border-b-2 border-gray-900">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Production Setup</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Machines</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Preferred Machines</label>
+                  <div className="grid grid-cols-2 gap-4">
                     {[
                       { value: 'machine_a', label: 'Machine A' },
                       { value: 'machine_b', label: 'Machine B' },
@@ -781,12 +866,12 @@ export default function OrderFormModal({
                   onChange={(e) => setFormData({ ...formData, estimated_setup_time: Number(e.target.value) })}
                 />
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Setup Instructions</label>
+                  <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Setup Instructions</label>
                   <textarea
                     value={formData.setup_instructions || ''}
                     onChange={(e) => setFormData({ ...formData, setup_instructions: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border-2 border-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-mono text-sm"
                     placeholder="Detailed setup notes for production team"
                   />
                 </div>
@@ -794,15 +879,15 @@ export default function OrderFormModal({
             </div>
 
             {/* Additional Notes */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">Additional Notes</h3>
+            <div className="py-6">
+              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-6">Additional Notes</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Special Instructions</label>
                 <textarea
                   value={formData.special_instructions}
                   onChange={(e) => setFormData({ ...formData, special_instructions: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border-2 border-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 font-mono text-sm"
                   placeholder="Any additional instructions or notes"
                 />
               </div>
@@ -812,80 +897,15 @@ export default function OrderFormModal({
 
         {/* Error Message */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="p-6 bg-white border-2 border-red-900 flex items-start gap-4 mt-6">
+            <AlertCircle className="w-6 h-6 text-red-900 flex-shrink-0 mt-0.5" strokeWidth={3} />
             <div>
-              <p className="font-semibold text-red-900">Error creating order</p>
-              <p className="text-sm text-red-700">Please check all required fields are filled correctly.</p>
+              <p className="font-black text-red-900 uppercase tracking-widest text-sm">Error creating order</p>
+              <p className="text-sm text-red-800 mt-1 font-mono">Please check all required fields are filled correctly.</p>
             </div>
           </div>
         )}
       </form>
-
-      {/* Order Summary Box - Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm text-gray-600">Order Total:</span>
-            <span className="text-2xl font-bold text-gray-900">${formData.final_price.toFixed(2)}</span>
-          </div>
-          <div className="flex gap-3">
-            <Input
-              label="Final Price"
-              type="number"
-              value={formData.final_price}
-              onChange={(e) => setFormData({ ...formData, final_price: Number(e.target.value) })}
-              className="w-32"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="flex gap-3 justify-between pt-4">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onClose}
-        >
-          Cancel
-        </Button>
-
-        <div className="flex gap-3">
-          {step === 2 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft size={16} />
-              Back
-            </Button>
-          )}
-
-          {step === 1 ? (
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleNext}
-              className="flex items-center gap-2"
-            >
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting}
-              onClick={handleSubmit}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Order'}
-            </Button>
-          )}
-        </div>
-      </div>
     </Modal>
   );
 }

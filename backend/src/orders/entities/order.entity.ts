@@ -116,6 +116,9 @@ export class Order {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
+  @Column({ type: 'uuid' })
+  customer_id: string;
+
   @Column({ type: 'date' })
   order_date: Date;
 

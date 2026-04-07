@@ -13,9 +13,11 @@ import { PrepressService } from './prepress.service';
 import { CreateDesignDto, UpdateDesignDto } from './dto/design.dto';
 import { CreateDesignApprovalDto, UpdateDesignApprovalDto } from './dto/design-approval.dto';
 import { CreateDesignAttachmentDto } from './dto/design-attachment.dto';
+import { CreateProductSpecificationDto, UpdateProductSpecificationDto, CreateSpecificationApprovalDto, UpdateSpecificationApprovalDto } from './dto/product-specification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DesignStatus, DesignType, ProductCategory } from './entities/design.entity';
+import { SpecStatus } from './entities/product-specification.entity';
 
 @Controller('prepress')
 @UseGuards(JwtAuthGuard)
@@ -169,5 +171,116 @@ export class PrepressController {
   @Get('stats/overview')
   async getDesignStats(@CurrentUser() user: any) {
     return this.prepressService.getDesignStats(user.company_id);
+  }
+
+  // Product Specification Endpoints
+  @Post('specifications')
+  async createSpecification(
+    @CurrentUser() user: any,
+    @Body() createSpecDto: CreateProductSpecificationDto,
+  ) {
+    return this.prepressService.createSpecification(user.company_id, createSpecDto);
+  }
+
+  @Get('specifications')
+  async getAllSpecifications(@CurrentUser() user: any) {
+    return this.prepressService.getAllSpecifications(user.company_id);
+  }
+
+  @Get('specifications/status/:status')
+  async getSpecificationsByStatus(
+    @CurrentUser() user: any,
+    @Param('status') status: SpecStatus,
+  ) {
+    return this.prepressService.getSpecificationsByStatus(user.company_id, status);
+  }
+
+  @Get('specifications/design/:designId')
+  async getSpecificationsByDesign(
+    @CurrentUser() user: any,
+    @Param('designId') designId: string,
+  ) {
+    return this.prepressService.getSpecificationsByDesign(user.company_id, designId);
+  }
+
+  @Get('specifications/search')
+  async searchSpecifications(
+    @CurrentUser() user: any,
+    @Query('q') query: string,
+  ) {
+    return this.prepressService.searchSpecifications(user.company_id, query);
+  }
+
+  @Get('specifications/:id')
+  async getSpecificationById(
+    @CurrentUser() user: any,
+    @Param('id') specId: string,
+  ) {
+    return this.prepressService.getSpecificationById(user.company_id, specId);
+  }
+
+  @Put('specifications/:id')
+  async updateSpecification(
+    @CurrentUser() user: any,
+    @Param('id') specId: string,
+    @Body() updateSpecDto: UpdateProductSpecificationDto,
+  ) {
+    return this.prepressService.updateSpecification(user.company_id, specId, updateSpecDto);
+  }
+
+  @Delete('specifications/:id')
+  async deleteSpecification(
+    @CurrentUser() user: any,
+    @Param('id') specId: string,
+  ) {
+    return this.prepressService.deleteSpecification(user.company_id, specId);
+  }
+
+  // Specification Approval Endpoints
+  @Post('spec-approvals')
+  async createSpecApproval(
+    @CurrentUser() user: any,
+    @Body() createApprovalDto: CreateSpecificationApprovalDto,
+  ) {
+    return this.prepressService.createSpecApproval(user.company_id, createApprovalDto);
+  }
+
+  @Get('spec-approvals/specification/:specId')
+  async getSpecApprovalsBySpecification(
+    @CurrentUser() user: any,
+    @Param('specId') specId: string,
+  ) {
+    return this.prepressService.getSpecApprovalsBySpecification(user.company_id, specId);
+  }
+
+  @Get('spec-approvals/:id')
+  async getSpecApprovalById(
+    @CurrentUser() user: any,
+    @Param('id') approvalId: string,
+  ) {
+    return this.prepressService.getSpecApprovalById(user.company_id, approvalId);
+  }
+
+  @Put('spec-approvals/:id')
+  async updateSpecApproval(
+    @CurrentUser() user: any,
+    @Param('id') approvalId: string,
+    @Body() updateApprovalDto: UpdateSpecificationApprovalDto,
+  ) {
+    return this.prepressService.updateSpecApproval(user.company_id, approvalId, updateApprovalDto);
+  }
+
+  @Delete('spec-approvals/:id')
+  async deleteSpecApproval(
+    @CurrentUser() user: any,
+    @Param('id') approvalId: string,
+  ) {
+    return this.prepressService.deleteSpecApproval(user.company_id, approvalId);
+  }
+
+  // Specification Statistics
+  @Get('stats/specifications')
+  async getSpecificationStats(@CurrentUser() user: any) {
+    return this.prepressService.getSpecificationStats(user.company_id);
   }
 }

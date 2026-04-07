@@ -31,6 +31,7 @@ const UserProfile = lazy(() => import('./pages/profile/UserProfile'));
 const UserManagement = lazy(() => import('./pages/users/UserManagement'));
 const QAApproval = lazy(() => import('./pages/qa/QAApproval'));
 const Prepress = lazy(() => import('./pages/prepress/Prepress'));
+const Specifications = lazy(() => import('./pages/prepress/Specifications'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -273,6 +274,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Prepress />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/specifications"
+            element={
+              <PrivateRoute>
+                <Specifications />
               </PrivateRoute>
             }
           />

@@ -163,6 +163,17 @@ export default function Orders() {
         payload.cylinder_received_date = new Date(data.cylinder_received_date).toISOString();
       }
 
+      // Convert other date fields if present
+      if (data.design_approval_date) {
+        payload.design_approval_date = new Date(data.design_approval_date).toISOString();
+      }
+      if (data.plate_approval_date) {
+        payload.plate_approval_date = new Date(data.plate_approval_date).toISOString();
+      }
+      if (data.proof_approval_date) {
+        payload.proof_approval_date = new Date(data.proof_approval_date).toISOString();
+      }
+
       // Remove empty arrays for varnish and lamination types
       if (!payload.varnish_type || payload.varnish_type.length === 0) {
         delete payload.varnish_type;
@@ -171,9 +182,10 @@ export default function Orders() {
         delete payload.lamination_type;
       }
 
-      // Remove empty optional fields
+      // Remove empty optional fields - convert empty strings to undefined
       Object.keys(payload).forEach(key => {
-        if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+        const value = payload[key];
+        if (value === '' || value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
           delete payload[key];
         }
       });

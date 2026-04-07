@@ -4,9 +4,12 @@ import { Repository } from 'typeorm';
 import { Design, DesignStatus, DesignType, ProductCategory } from './entities/design.entity';
 import { DesignApproval, ApprovalStatus } from './entities/design-approval.entity';
 import { DesignAttachment } from './entities/design-attachment.entity';
+import { ProductSpecification, SpecStatus } from './entities/product-specification.entity';
+import { SpecificationApproval, ApprovalStatus as SpecApprovalStatus } from './entities/specification-approval.entity';
 import { CreateDesignDto, UpdateDesignDto } from './dto/design.dto';
 import { CreateDesignApprovalDto, UpdateDesignApprovalDto } from './dto/design-approval.dto';
 import { CreateDesignAttachmentDto } from './dto/design-attachment.dto';
+import { CreateProductSpecificationDto, UpdateProductSpecificationDto, CreateSpecificationApprovalDto, UpdateSpecificationApprovalDto } from './dto/product-specification.dto';
 
 @Injectable()
 export class PrepressService {
@@ -17,6 +20,10 @@ export class PrepressService {
     private approvalRepository: Repository<DesignApproval>,
     @InjectRepository(DesignAttachment)
     private attachmentRepository: Repository<DesignAttachment>,
+    @InjectRepository(ProductSpecification)
+    private specificationRepository: Repository<ProductSpecification>,
+    @InjectRepository(SpecificationApproval)
+    private specApprovalRepository: Repository<SpecificationApproval>,
   ) {}
 
   // Design CRUD Operations
@@ -211,6 +218,172 @@ export class PrepressService {
       total,
       inDesign,
       waitingForData,
+      approved,
+      rejected,
+    };
+  }
+
+  // Product Specification CRUD Operations
+  async createSpecification(
+    companyId: string,
+    createSpecDto: CreateProductSpecificationDto,
+  ): Promise<ProductSpecification> {
+    const specification = this.specificationRepository.create({
+      ...createSpecDto,
+      company_id: companyId,
+    });
+    return this.specificationRepository.save(specification);
+  }
+
+  async getAllSpecifications(companyId: string): Promise<ProductSpecification[]> {
+    return this.specificationRepository.find({
+      where: { company_id: companyId },
+      relations: ['design', 'prepared_by', 'received_by', 'approvals', 'approvals.approver'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async getSpecificationById(companyId: string, specId: string): Promise<ProductSpecification> {
+    const specification = await this.specificationRepository.findOne({
+      where: { id: specId, company_id: companyId },
+      relations: ['design', 'prepared_by', 'received_by', 'approvals', 'approvals.approver'],
+    });
+
+    if (!specification) {
+      throw new NotFoundException(`Specification with ID ${specId} not found`);
+    }
+
+    return specification;
+  }
+
+  async updateSpecification(
+    companyId: string,
+    specId: string,
+    updateSpecDto: UpdateProductSpecificationDto,
+  ): Promise<ProductSpecification> {
+    const specification = await this.getSpecificationById(companyId, specId);
+    Object.assign(specification, updateSpecDto);
+    return this.specificationRepository.save(specification);
+  }
+
+  async deleteSpecification(companyId: string, specId: string): Promise<void> {
+    const specification = await this.getSpecificationById(companyId, specId);
+    await this.specificationRepository.remove(specification);
+  }
+
+  async getSpecificationsByDesign(companyId: string, designId: string): Promise<ProductSpecification[]> {
+    return this.specificationRepository.find({
+      where: { company_id: companyId, design_id: designId },
+      relations: ['prepared_by', 'received_by', 'approvals', 'approvals.approver'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async getSpecificationsByStatus(companyId: string, status: SpecStatus): Promise<ProductSpecification[]> {
+    return this.specificationRepository.find({
+      where: { company_id: companyId, status },
+      relations: ['design', 'prepared_by', 'received_by', 'approvals', 'approvals.approver'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async searchSpecifications(companyId: string, query: string): Promise<ProductSpecification[]> {
+    return this.specificationRepository
+      .createQueryBuilder('spec')
+      .where('spec.company_id = :companyId', { companyId })
+      .andWhere(
+        '(spec.product_name ILIKE :query OR spec.file_folder_name ILIKE :query OR spec.form_number ILIKE :query)',
+        { query: `%${query}%` },
+      )
+      .leftJoinAndSelect('spec.design', 'design')
+      .leftJoinAndSelect('spec.prepared_by', 'prepared_by')
+      .leftJoinAndSelect('spec.received_by', 'received_by')
+      .leftJoinAndSelect('spec.approvals', 'approvals')
+      .leftJoinAndSelect('approvals.approver', 'approver')
+      .orderBy('spec.created_at', 'DESC')
+      .getMany();
+  }
+
+  // Specification Approval Operations
+  async createSpecApproval(
+    companyId: string,
+    createApprovalDto: CreateSpecificationApprovalDto,
+  ): Promise<SpecificationApproval> {
+    // Verify specification exists
+    await this.getSpecificationById(companyId, createApprovalDto.specification_id);
+
+    const approval = this.specApprovalRepository.create({
+      ...createApprovalDto,
+      company_id: companyId,
+    });
+    return this.specApprovalRepository.save(approval);
+  }
+
+  async getSpecApprovalsBySpecification(
+    companyId: string,
+    specId: string,
+  ): Promise<SpecificationApproval[]> {
+    // Verify specification exists
+    await this.getSpecificationById(companyId, specId);
+
+    return this.specApprovalRepository.find({
+      where: { company_id: companyId, specification_id: specId },
+      relations: ['approver'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async getSpecApprovalById(companyId: string, approvalId: string): Promise<SpecificationApproval> {
+    const approval = await this.specApprovalRepository.findOne({
+      where: { id: approvalId, company_id: companyId },
+      relations: ['specification', 'approver'],
+    });
+
+    if (!approval) {
+      throw new NotFoundException(`Specification approval with ID ${approvalId} not found`);
+    }
+
+    return approval;
+  }
+
+  async updateSpecApproval(
+    companyId: string,
+    approvalId: string,
+    updateApprovalDto: UpdateSpecificationApprovalDto,
+  ): Promise<SpecificationApproval> {
+    const approval = await this.getSpecApprovalById(companyId, approvalId);
+    Object.assign(approval, updateApprovalDto);
+    if (updateApprovalDto.status === SpecApprovalStatus.APPROVED) {
+      approval.approved_at = new Date();
+    }
+    return this.specApprovalRepository.save(approval);
+  }
+
+  async deleteSpecApproval(companyId: string, approvalId: string): Promise<void> {
+    const approval = await this.getSpecApprovalById(companyId, approvalId);
+    await this.specApprovalRepository.remove(approval);
+  }
+
+  // Specification Statistics
+  async getSpecificationStats(companyId: string) {
+    const total = await this.specificationRepository.count({ where: { company_id: companyId } });
+    const draft = await this.specificationRepository.count({
+      where: { company_id: companyId, status: SpecStatus.DRAFT },
+    });
+    const pendingApproval = await this.specificationRepository.count({
+      where: { company_id: companyId, status: SpecStatus.PENDING_APPROVAL },
+    });
+    const approved = await this.specificationRepository.count({
+      where: { company_id: companyId, status: SpecStatus.APPROVED },
+    });
+    const rejected = await this.specificationRepository.count({
+      where: { company_id: companyId, status: SpecStatus.REJECTED },
+    });
+
+    return {
+      total,
+      draft,
+      pendingApproval,
       approved,
       rejected,
     };
