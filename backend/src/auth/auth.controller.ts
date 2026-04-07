@@ -19,7 +19,7 @@ export class AuthController {
     @CurrentUser() user: any,
     @Body() selectCompanyDto: SelectCompanyDto,
   ): Promise<AuthResponseDto> {
-    return this.authService.selectCompany(user.sub, selectCompanyDto);
+    return this.authService.selectCompany(user.id, selectCompanyDto);
   }
 
   @Get('me')
