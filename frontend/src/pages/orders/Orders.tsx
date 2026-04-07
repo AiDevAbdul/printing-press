@@ -105,6 +105,37 @@ interface OrderFormData {
   thickness_micron?: number;
   tablet_size?: string;
   punch_size?: string;
+
+  // Design & File Management
+  design_file_status?: string;
+  design_file_formats?: string[];
+  design_approval_date?: string;
+  design_revisions_count?: number;
+  design_notes?: string;
+
+  // Plate & Separation Details
+  color_separation_type?: string;
+  number_of_plates?: number;
+  plate_size?: string;
+  plate_material?: string;
+  plate_condition?: string;
+  plate_approval_status?: string;
+  plate_approval_date?: string;
+
+  // Proofing & Quality Control
+  proof_type_required?: string[];
+  proof_status?: string;
+  proof_approval_date?: string;
+  color_matching_standard?: string;
+  quality_check_notes?: string;
+  approved_by?: string;
+
+  // Production Setup & Machine Requirements
+  preferred_machines?: string[];
+  special_setup_required?: boolean;
+  setup_instructions?: string;
+  estimated_setup_time?: number;
+  machine_calibration_notes?: string;
 }
 
 export default function Orders() {

@@ -9,8 +9,8 @@ import { Alert } from '../../components/ui/Alert';
 import { Plus, Search, Edit2, Trash2, Users, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../services/api';
-import { AddUserModal } from './AddUserModal';
-import { EditUserModal } from './EditUserModal';
+import AddUserModal from './AddUserModal';
+import EditUserModal from './EditUserModal';
 import { DeleteUserDialog } from './DeleteUserDialog';
 import { PermissionMatrix } from './PermissionMatrix';
 

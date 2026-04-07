@@ -80,6 +80,8 @@ interface OrderFormData {
   setup_instructions?: string;
   estimated_setup_time?: number;
   machine_calibration_notes?: string;
+  // Additional fields
+  quoted_price?: number;
 }
 
 interface OrderFormModalProps {
