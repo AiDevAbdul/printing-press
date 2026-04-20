@@ -25,7 +25,7 @@ Multi-tenant NestJS + React app for 4 printing companies. See `docs/README.md` f
 - `backend/src/auth/` - JWT, company selection, super-admin logic
 - `frontend/src/pages/dashboards/` - 7 role-based dashboard pages
 - `frontend/src/utils/dashboardRouter.ts` - Role → dashboard mapping
-- `docs/MULTI_COMPANY_IMPLEMENTATION.md` - Full multi-tenant details
+- `docs/MULTI_TENANT.md` - Full multi-tenant details
 - `docs/ARCHITECTURE.md` - System design & data flow
 
 ## Common Pitfalls
@@ -33,3 +33,6 @@ Multi-tenant NestJS + React app for 4 printing companies. See `docs/README.md` f
 - ⚠️ Set auto-fields manually → breaks calculations
 - ⚠️ Wrong decorator order in DTOs → validation fails
 - ⚠️ Missing `X-Company-ID` header → 401 errors
+
+## Documentation Philosophy
+**Keep it short and to-the-point.** No huge documentation files. Each doc file should be concise, focused, and actionable. Link to other docs for details. Avoid repetition. Update docs as code changes—don't let them drift.
