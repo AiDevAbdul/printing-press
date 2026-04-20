@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, CreditCard, Edit2, Users } from 'lucide-react';
+import { Mail, Phone, CreditCard, Edit2, Users } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -43,7 +43,7 @@ export function CustomersList({
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Name</th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Company</th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Contact</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Location</th>
+            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Group</th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Credit Limit</th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Status</th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Action</th>
@@ -73,18 +73,7 @@ export function CustomersList({
                 </div>
               </td>
               <td className="px-6 py-4">
-                {(customer.city || customer.state) ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">
-                      {customer.city && customer.state
-                        ? `${customer.city}, ${customer.state}`
-                        : customer.city || customer.state}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-400">-</span>
-                )}
+                <p className="text-sm text-gray-600">{customer.customer_group || '-'}</p>
               </td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2 text-sm">

@@ -34,5 +34,12 @@
       "Bash(npm ls:*)",
       "mcp__ide__getDiagnostics"
     ]
+  },
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-chrome-devtools"]
+    }
   }
 }
+

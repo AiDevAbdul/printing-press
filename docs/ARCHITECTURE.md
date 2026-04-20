@@ -1,126 +1,87 @@
-# System Architecture Diagram
+# System Architecture
 
-## Printing Press Management System - Architecture Overview
+## Overview
+
+Multi-tenant NestJS + React application with PostgreSQL backend. All data isolated by `company_id`.
+
+## Tech Stack
+
+- **Frontend**: React 18 + TypeScript + Tailwind CSS v4 + Vite
+- **Backend**: NestJS + TypeORM + PostgreSQL 15
+- **Auth**: JWT (access: 1h, refresh: 7d)
+- **State**: TanStack Query (frontend), TypeORM (backend)
+
+## Layers
+
+### Frontend (http://localhost:5173)
+- React Router v6 (protected routes)
+- TanStack Query (server state + caching)
+- Axios HTTP client (JWT interceptors)
+- 30+ pages, 36+ components
+
+### Backend (http://localhost:3000/api)
+- API Gateway (CORS, validation, error handling)
+- JWT Authentication Middleware
+- 9 modules: Auth, Users, Customers, Orders, Production, Inventory, Costing, Dashboard, Common
+- Each module: Controller, Service, Entity, DTOs
+
+### Database (PostgreSQL 15)
+- 40+ tables with UUID primary keys
+- Foreign key constraints
+- Enum types for status fields
+- Indexed columns for performance
+
+## Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           FRONTEND (React + Vite)                        │
-│                         http://localhost:5173                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │    Login     │  │  Dashboard   │  │  Customers   │  │   Orders    │ │
-│  │     Page     │  │     Page     │  │     Page     │  │    Page     │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │ Production   │  │  Inventory   │  │   Invoices   │  │   Layout    │ │
-│  │     Page     │  │     Page     │  │     Page     │  │  Component  │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                      React Router v6                               │  │
-│  │              (Protected Routes + Authentication)                   │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                   TanStack Query (React Query)                     │  │
-│  │              (Server State Management + Caching)                   │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                        API Services Layer                          │  │
-│  │   auth.service | customer.service | order.service | etc.          │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                    Axios HTTP Client                               │  │
-│  │         (JWT Interceptors + Token Refresh)                         │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ HTTP/REST API
-                                    │ JWT Authentication
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        BACKEND (NestJS + TypeORM)                        │
-│                         http://localhost:3000/api                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                      API Gateway Layer                             │  │
-│  │              (CORS, Validation, Error Handling)                    │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                    Authentication Middleware                       │  │
-│  │         (JWT Strategy, Guards, Role-Based Access Control)          │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                        MODULES                                    │   │
-│  │                                                                   │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │   │
-│  │  │    Auth     │  │    Users    │  │  Customers  │             │   │
-│  │  │   Module    │  │   Module    │  │   Module    │             │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘             │   │
-│  │                                                                   │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │   │
-│  │  │   Orders    │  │ Production  │  │  Inventory  │             │   │
-│  │  │   Module    │  │   Module    │  │   Module    │             │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘             │   │
-│  │                                                                   │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │   │
-│  │  │   Costing   │  │  Dashboard  │  │   Common    │             │   │
-│  │  │   Module    │  │   Module    │  │   Module    │             │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘             │   │
-│  │                                                                   │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                           │
-│  Each Module Contains:                                                   │
-│  ├── Controller (HTTP endpoints)                                         │
-│  ├── Service (Business logic)                                            │
-│  ├── Entity (Database model)                                             │
-│  └── DTOs (Data validation)                                              │
-│                                                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                         TypeORM Layer                              │  │
-│  │              (ORM, Query Builder, Migrations)                      │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                           │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ SQL Queries
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      DATABASE (PostgreSQL 15)                            │
-│                         localhost:5432                                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │    users     │  │  customers   │  │    orders    │  │ production_ │ │
-│  │    table     │  │    table     │  │    table     │  │ jobs table  │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-│                                                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │ inventory_   │  │    stock_    │  │  job_costs   │  │  invoices   │ │
-│  │ items table  │  │transactions  │  │    table     │  │    table    │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-│                                                                           │
-│  ┌──────────────┐                                                        │
-│  │ invoice_     │                                                        │
-│  │ items table  │                                                        │
-│  └──────────────┘                                                        │
-│                                                                           │
-│  Features:                                                                │
-│  ├── Foreign Key Constraints                                             │
-│  ├── Indexes for Performance                                             │
-│  ├── UUID Primary Keys                                                   │
-│  └── Enum Types for Status Fields                                        │
-│                                                                           │
-└─────────────────────────────────────────────────────────────────────────┘
+User → Frontend → Axios (JWT + X-Company-ID headers)
+                    ↓
+              Backend API Gateway
+                    ↓
+         JWT Auth Middleware (validate token)
+                    ↓
+         Extract company_id from JWT
+                    ↓
+         Route to Module Controller
+                    ↓
+         Validate DTO (class-validator)
+                    ↓
+         Call Service (business logic)
+                    ↓
+         TypeORM Query (filter by company_id)
+                    ↓
+         PostgreSQL Database
+                    ↓
+         Return filtered results
+                    ↓
+         Frontend updates React Query cache
 ```
+
+## Module Dependencies
+
+```
+AppModule
+├── ConfigModule (global)
+├── TypeOrmModule (database)
+├── AuthModule → UsersModule
+├── UsersModule
+├── CustomersModule → UsersModule
+├── OrdersModule → CustomersModule, UsersModule
+├── ProductionModule → OrdersModule, UsersModule
+├── InventoryModule → UsersModule
+├── CostingModule → ProductionModule, InventoryModule
+└── DashboardModule → all modules
+```
+
+## Security Layers
+
+1. **CORS Protection** - Allowed origins configuration
+2. **JWT Authentication** - Token validation on each request
+3. **Role-Based Access Control** - 8 roles with specific permissions
+4. **Input Validation** - class-validator DTOs
+5. **Database Security** - Parameterized queries (TypeORM)
+6. **Password Security** - bcrypt hashing (10 rounds)
+7. **Multi-Tenant Isolation** - company_id filtering on all queries
 
 ## Data Flow Examples
 

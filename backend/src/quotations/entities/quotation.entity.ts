@@ -27,6 +27,14 @@ export enum ProductType {
   SILVO_BLISTER = 'silvo_blister',
   BENT_FOIL = 'bent_foil',
   ALU_ALU = 'alu_alu',
+  UNIT_CARTON = 'unit_carton',
+  LABEL = 'label',
+  LEAFLET = 'leaflet',
+  LITERATURE = 'literature',
+  BOOKLET = 'booklet',
+  STATIONARY = 'stationary',
+  STICKER = 'sticker',
+  OTHERS = 'others',
 }
 
 export enum VarnishType {
@@ -98,6 +106,9 @@ export class Quotation {
 
   @Column()
   unit: string;
+
+  @Column({ nullable: true })
+  double_sheet: string;
 
   // Dimensions
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
@@ -217,6 +228,105 @@ export class Quotation {
 
   @Column({ nullable: true })
   punch_size: string;
+
+  // New Enhanced Fields
+  @Column({ nullable: true })
+  bar_code: string;
+
+  @Column({ nullable: true })
+  dye_req: string;
+
+  @Column({ nullable: true })
+  batch_no: string;
+
+  @Column({ type: 'date', nullable: true })
+  mfg_date: Date;
+
+  @Column({ type: 'date', nullable: true })
+  exp_date: Date;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  mrp_rs: number;
+
+  @Column({ type: 'boolean', default: false })
+  four_color_process: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  inside_printing: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  cmyk_cyan: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  cmyk_magenta: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  cmyk_yellow: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  cmyk_black: boolean;
+
+  @Column({ nullable: true })
+  pantone_cmyk_1: string;
+
+  @Column({ nullable: true })
+  pantone_cmyk_2: string;
+
+  @Column({ nullable: true })
+  pantone_cmyk_3: string;
+
+  @Column({ nullable: true })
+  pantone_cmyk_4: string;
+
+  @Column({ type: 'boolean', default: false })
+  bleach_card: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  box_board_card: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  art_card: boolean;
+
+  // Pricing Calculation Fields
+  @Column({ type: 'int', nullable: true })
+  ups: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price_per_kg_card: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price_per_kg_paper: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  conversion_percent_card: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  conversion_percent_paper: number;
+
+  // Fixed Charges
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_ctp: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_spot_uv: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_plain_uv: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_drip_off_uv: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_metalize: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_emboss: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_lamination: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  fixed_charge_others: number;
 
   // Pricing Breakdown
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })

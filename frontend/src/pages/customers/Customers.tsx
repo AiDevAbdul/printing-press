@@ -18,7 +18,9 @@ interface Customer {
   state: string;
   address?: string;
   postal_code?: string;
-  gstin?: string;
+  customer_group?: string;
+  strn?: string;
+  ntn?: string;
   credit_limit: number;
   is_active: boolean;
   created_at: string;
@@ -33,7 +35,9 @@ interface CustomerFormData {
   city: string;
   state: string;
   postal_code: string;
-  gstin: string;
+  customer_group: string;
+  strn: string;
+  ntn: string;
   credit_limit: number;
 }
 
@@ -52,7 +56,9 @@ export default function Customers() {
     city: '',
     state: '',
     postal_code: '',
-    gstin: '',
+    customer_group: '',
+    strn: '',
+    ntn: '',
     credit_limit: 0,
   });
 
@@ -91,7 +97,9 @@ export default function Customers() {
         city: '',
         state: '',
         postal_code: '',
-        gstin: '',
+        customer_group: '',
+        strn: '',
+        ntn: '',
         credit_limit: 0,
       });
     },
@@ -129,7 +137,9 @@ export default function Customers() {
         city: customer.city,
         state: customer.state,
         postal_code: customer.postal_code || '',
-        gstin: customer.gstin || '',
+        customer_group: customer.customer_group || '',
+        strn: customer.strn || '',
+        ntn: customer.ntn || '',
         credit_limit: customer.credit_limit,
       });
       setIsModalOpen(true);
@@ -147,7 +157,9 @@ export default function Customers() {
       city: '',
       state: '',
       postal_code: '',
-      gstin: '',
+      customer_group: '',
+      strn: '',
+      ntn: '',
       credit_limit: 0,
     });
     setIsModalOpen(true);
@@ -316,10 +328,28 @@ export default function Customers() {
                 value={formData.postal_code}
                 onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Group</label>
+                <select
+                  value={formData.customer_group}
+                  onChange={(e) => setFormData({ ...formData, customer_group: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Customer Group</option>
+                  <option value="Export">Export</option>
+                  <option value="Local">Local</option>
+                  <option value="Govt Stamp">Govt Stamp</option>
+                </select>
+              </div>
               <Input
-                label="GSTIN"
-                value={formData.gstin}
-                onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                label="STRN"
+                value={formData.strn}
+                onChange={(e) => setFormData({ ...formData, strn: e.target.value })}
+              />
+              <Input
+                label="NTN"
+                value={formData.ntn}
+                onChange={(e) => setFormData({ ...formData, ntn: e.target.value })}
               />
               <Input
                 label="Credit Limit"

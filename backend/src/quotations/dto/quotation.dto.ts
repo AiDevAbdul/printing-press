@@ -63,6 +63,10 @@ export class CreateQuotationDto {
   @IsString()
   unit: string;
 
+  @IsOptional()
+  @IsString()
+  double_sheet?: string;
+
   // Dimensions
   @IsOptional()
   @IsNumber()
@@ -219,7 +223,153 @@ export class CreateQuotationDto {
   @IsString()
   punch_size?: string;
 
-  // Pricing
+  // New Enhanced Fields
+  @IsOptional()
+  @IsString()
+  bar_code?: string;
+
+  @IsOptional()
+  @IsString()
+  dye_req?: string;
+
+  @IsOptional()
+  @IsString()
+  batch_no?: string;
+
+  @IsOptional()
+  @IsDateString()
+  mfg_date?: string;
+
+  @IsOptional()
+  @IsDateString()
+  exp_date?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  mrp_rs?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  four_color_process?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  inside_printing?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_cyan?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_magenta?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_yellow?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_black?: boolean;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_1?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_2?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_3?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_4?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  bleach_card?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  box_board_card?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  art_card?: boolean;
+
+  // Pricing Calculation Fields
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  ups?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_paper?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_paper?: number;
+
+  // Fixed Charges
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_ctp?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_spot_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_plain_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_drip_off_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_metalize?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_emboss?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_lamination?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_others?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -280,6 +430,10 @@ export class UpdateQuotationDto {
   @IsOptional()
   @IsString()
   unit?: string;
+
+  @IsOptional()
+  @IsString()
+  double_sheet?: string;
 
   @IsOptional()
   @IsNumber()
@@ -432,6 +586,150 @@ export class UpdateQuotationDto {
   punch_size?: string;
 
   @IsOptional()
+  @IsString()
+  bar_code?: string;
+
+  @IsOptional()
+  @IsString()
+  dye_req?: string;
+
+  @IsOptional()
+  @IsString()
+  batch_no?: string;
+
+  @IsOptional()
+  @IsDateString()
+  mfg_date?: string;
+
+  @IsOptional()
+  @IsDateString()
+  exp_date?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  mrp_rs?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  four_color_process?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  inside_printing?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_cyan?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_magenta?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_yellow?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  cmyk_black?: boolean;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_1?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_2?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_3?: string;
+
+  @IsOptional()
+  @IsString()
+  pantone_cmyk_4?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  bleach_card?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  box_board_card?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  art_card?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  ups?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_paper?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_paper?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_ctp?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_spot_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_plain_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_drip_off_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_metalize?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_emboss?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_lamination?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_others?: number;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
@@ -465,12 +763,14 @@ export class UpdateQuotationDto {
 }
 
 export class CalculatePricingDto {
+  @IsOptional()
   @IsEnum(ProductType)
-  product_type: ProductType;
+  product_type?: ProductType;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  quantity: number;
+  quantity?: number;
 
   @IsOptional()
   @IsNumber()
@@ -566,6 +866,74 @@ export class CalculatePricingDto {
   @ValidateNested({ each: true })
   @Type(() => QuotationItemDto)
   items?: QuotationItemDto[];
+
+  // New Enhanced Fields for Pricing
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  ups?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price_per_kg_paper?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_card?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  conversion_percent_paper?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_ctp?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_spot_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_plain_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_drip_off_uv?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_metalize?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_emboss?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_lamination?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_charge_others?: number;
 }
 
 export class ConvertToOrderDto {

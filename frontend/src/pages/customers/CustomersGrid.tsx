@@ -100,9 +100,16 @@ export function CustomersGrid({
               </div>
             </div>
 
-            {customer.gstin && (
+            {customer.customer_group && (
               <div className="text-xs text-gray-500">
-                GSTIN: {customer.gstin}
+                Group: {customer.customer_group}
+              </div>
+            )}
+
+            {(customer.strn || customer.ntn) && (
+              <div className="text-xs text-gray-500 space-y-1">
+                {customer.strn && <div>STRN: {customer.strn}</div>}
+                {customer.ntn && <div>NTN: {customer.ntn}</div>}
               </div>
             )}
 

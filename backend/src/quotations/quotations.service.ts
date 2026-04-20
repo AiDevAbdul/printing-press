@@ -48,9 +48,9 @@ export class QuotationsService {
       die_cutting: createQuotationDto.die_cutting,
       pasting: createQuotationDto.pasting,
       ctp_required: createQuotationDto.ctp_required,
-      profit_margin_percent: createQuotationDto.profit_margin_percent,
-      discount_percent: createQuotationDto.discount_percent,
-      tax_percent: createQuotationDto.tax_percent,
+      profit_margin_percent: createQuotationDto.profit_margin_percent ?? 20,
+      discount_percent: createQuotationDto.discount_percent ?? 0,
+      tax_percent: createQuotationDto.tax_percent ?? 18,
       items: createQuotationDto.items,
     });
 

@@ -32,7 +32,15 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsString()
-  gstin?: string;
+  customer_group?: string;
+
+  @IsOptional()
+  @IsString()
+  strn?: string;
+
+  @IsOptional()
+  @IsString()
+  ntn?: string;
 
   @IsOptional()
   @IsNumber()
@@ -86,7 +94,15 @@ export class UpdateCustomerDto {
 
   @IsOptional()
   @IsString()
-  gstin?: string;
+  customer_group?: string;
+
+  @IsOptional()
+  @IsString()
+  strn?: string;
+
+  @IsOptional()
+  @IsString()
+  ntn?: string;
 
   @IsOptional()
   @IsNumber()

@@ -39,7 +39,13 @@ export class Customer {
   postal_code: string;
 
   @Column({ nullable: true })
-  gstin: string;
+  customer_group: string;
+
+  @Column({ nullable: true })
+  strn: string;
+
+  @Column({ nullable: true })
+  ntn: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   credit_limit: number;
