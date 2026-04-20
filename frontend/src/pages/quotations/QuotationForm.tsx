@@ -10,6 +10,8 @@ import {
   DOUBLE_SHEET_OPTIONS,
   DYE_REQ_OPTIONS,
   BAR_CODE_OPTIONS,
+  VARNISH_OPTIONS,
+  LAMINATION_OPTIONS,
   isCardProduct,
   isPaperProduct,
 } from '../../constants/quotation.constants';
@@ -104,9 +106,17 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
     pantone_p2: quotation?.pantone_p2 || false,
     pantone_p3: quotation?.pantone_p3 || false,
     pantone_p4: quotation?.pantone_p4 || false,
+    pantone_p1_code: quotation?.pantone_p1_code,
+    pantone_p2_code: quotation?.pantone_p2_code,
+    pantone_p3_code: quotation?.pantone_p3_code,
+    pantone_p4_code: quotation?.pantone_p4_code,
     bleach_card: quotation?.bleach_card || false,
     box_board_card: quotation?.box_board_card || false,
     art_card: quotation?.art_card || false,
+    embossing_details: quotation?.embossing_details,
+    foiling_details: quotation?.foiling_details,
+    die_cutting_details: quotation?.die_cutting_details,
+    pasting_details: quotation?.pasting_details,
     fixed_charge_ctp: quotation?.fixed_charge_ctp || 0,
     fixed_charge_spot_uv: quotation?.fixed_charge_spot_uv || 0,
     fixed_charge_plain_uv: quotation?.fixed_charge_plain_uv || 0,
@@ -119,6 +129,7 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
   });
 
   const [pricing, setPricing] = useState<PricingBreakdown | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     batchPrinting: false,
     fixedCharges: false,
@@ -159,12 +170,21 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
   // Users will click "Calculate Pricing" button instead
 
   const handleChange = useCallback((field: string, value: any) => {
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+
     if (isPricingField(field)) {
       setPricingFormData((prev) => ({ ...prev, [field]: value }));
     } else {
       setOtherFormData((prev) => ({ ...prev, [field]: value }));
     }
-  }, []);
+  }, [errors]);
 
   const toggleSection = useCallback((section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -172,25 +192,48 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
 
   // Manual pricing calculation function
   const handleCalculatePricing = useCallback(() => {
-    if (
-      pricingFormData.product_type &&
-      pricingFormData.quantity &&
-      pricingFormData.length &&
-      pricingFormData.width &&
-      pricingFormData.gsm
-    ) {
-      // Single-pass filter: build clean object without undefined values
-      const cleanData: any = {};
-      Object.entries(pricingFormData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          cleanData[key] = value;
-        }
-      });
-      calculatePricingMutation.mutate(cleanData);
-    } else {
-      alert('Please fill in: Product Type, Quantity, Length, Width, and GSM');
+    const newErrors: Record<string, string> = {};
+
+    if (!pricingFormData.product_type) newErrors.product_type = 'Product type is required';
+    if (!pricingFormData.quantity) newErrors.quantity = 'Quantity is required';
+    if (!pricingFormData.length) newErrors.length = 'Length is required';
+    if (!pricingFormData.width) newErrors.width = 'Width is required';
+    if (!pricingFormData.gsm) newErrors.gsm = 'GSM is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
-  }, [pricingFormData, calculatePricingMutation]);
+
+    // Single-pass filter: build clean object without undefined values
+    const cleanData: any = {};
+    const mergedData = { ...otherFormData, ...pricingFormData };
+
+    Object.entries(mergedData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanData[key] = value;
+      }
+    });
+
+    calculatePricingMutation.mutate(cleanData);
+  }, [pricingFormData, otherFormData, calculatePricingMutation]);
+
+  const validateForm = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+
+    if (!otherFormData.customer_id) newErrors.customer_id = 'Customer is required';
+    if (!otherFormData.quotation_date) newErrors.quotation_date = 'Quotation date is required';
+    if (!otherFormData.valid_until) newErrors.valid_until = 'Valid until date is required';
+    if (!otherFormData.product_name) newErrors.product_name = 'Product name is required';
+    if (!pricingFormData.product_type) newErrors.product_type = 'Product type is required';
+    if (!pricingFormData.quantity) newErrors.quantity = 'Quantity is required';
+    if (!pricingFormData.length) newErrors.length = 'Length is required';
+    if (!pricingFormData.width) newErrors.width = 'Width is required';
+    if (!pricingFormData.gsm) newErrors.gsm = 'GSM is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [otherFormData, pricingFormData]);
 
   // Helper to get value from correct state
   const getFormValue = (field: string) => {
@@ -202,6 +245,10 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return; // Errors already set in state
+    }
 
     // Merge both form data objects
     const mergedFormData = { ...otherFormData, ...pricingFormData };
@@ -264,13 +311,17 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
       }
     });
 
-    if (quotation?.id) {
-      await updateMutation.mutateAsync({
-        id: quotation.id,
-        data: submitData,
-      });
-    } else {
-      await createMutation.mutateAsync(submitData);
+    try {
+      if (quotation?.id) {
+        await updateMutation.mutateAsync({
+          id: quotation.id,
+          data: submitData,
+        });
+      } else {
+        await createMutation.mutateAsync(submitData);
+      }
+    } catch (error) {
+      // Error already handled by mutation onError
     }
   };
 
@@ -398,7 +449,9 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   <select
                     value={getFormValue("product_type") || ''}
                     onChange={(e) => handleChange('product_type', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                      errors.product_type ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                     required
                   >
                     <option value="">Select Product Type</option>
@@ -408,6 +461,9 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       </option>
                     ))}
                   </select>
+                  {errors.product_type && (
+                    <p className="mt-1 text-sm text-red-600">{errors.product_type}</p>
+                  )}
                 </div>
 
                 {availablePaperTypes.length > 0 && (
@@ -439,9 +495,14 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       type="number"
                       value={getFormValue("quantity") || ''}
                       onChange={(e) => handleChange('quantity', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                        errors.quantity ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                       required
                     />
+                    {errors.quantity && (
+                      <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>
+                    )}
                   </div>
 
                   <div>
@@ -492,8 +553,13 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       type="number"
                       value={getFormValue("length") || ''}
                       onChange={(e) => handleChange('length', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                        errors.length ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                     />
+                    {errors.length && (
+                      <p className="mt-1 text-sm text-red-600">{errors.length}</p>
+                    )}
                   </div>
 
                   <div>
@@ -504,8 +570,13 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       type="number"
                       value={getFormValue("width") || ''}
                       onChange={(e) => handleChange('width', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                        errors.width ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                     />
+                    {errors.width && (
+                      <p className="mt-1 text-sm text-red-600">{errors.width}</p>
+                    )}
                   </div>
 
                   <div>
@@ -529,7 +600,9 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                     <select
                       value={getFormValue("gsm") || ''}
                       onChange={(e) => handleChange('gsm', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                        errors.gsm ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                     >
                       <option value="">Select GSM</option>
                       {GSM_OPTIONS.map((gsm) => (
@@ -538,6 +611,9 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                         </option>
                       ))}
                     </select>
+                    {errors.gsm && (
+                      <p className="mt-1 text-sm text-red-600">{errors.gsm}</p>
+                    )}
                   </div>
 
                   <div>
@@ -686,16 +762,24 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   <div className="grid grid-cols-2 gap-4">
                     {[1, 2, 3, 4].map((num) => (
                       <div key={num}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Pantone {num}
+                        <label className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            checked={getFormValue(`pantone_p${num}`) || false}
+                            onChange={(e) => handleChange(`pantone_p${num}`, e.target.checked)}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Pantone {num}</span>
                         </label>
-                        <input
-                          type="text"
-                          placeholder="Code"
-                          value={(getFormValue(`pantone_cmyk_${num}`) as string) || ''}
-                          onChange={(e) => handleChange(`pantone_cmyk_${num}`, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        {getFormValue(`pantone_p${num}`) && (
+                          <input
+                            type="text"
+                            placeholder="Pantone Code"
+                            value={(getFormValue(`pantone_p${num}_code`) as string) || ''}
+                            onChange={(e) => handleChange(`pantone_p${num}_code`, e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -717,14 +801,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       onChange={(e) => handleChange('varnish_type', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="none">None</option>
-                      <option value="water_base">Water Base</option>
-                      <option value="duck">Duck</option>
-                      <option value="plain_uv">Plain UV</option>
-                      <option value="spot_uv">Spot UV</option>
-                      <option value="drip_off_uv">Drip Off UV</option>
-                      <option value="matt_uv">Matt UV</option>
-                      <option value="rough_uv">Rough UV</option>
+                      {VARNISH_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -737,11 +818,11 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                       onChange={(e) => handleChange('lamination_type', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="none">None</option>
-                      <option value="shine">Shine</option>
-                      <option value="matt">Matt</option>
-                      <option value="metalize">Metalize</option>
-                      <option value="rainbow">Rainbow</option>
+                      {LAMINATION_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -796,6 +877,69 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                     />
                     <span className="text-sm">CTP Required</span>
                   </label>
+                </div>
+
+                {/* Finishing Details Section */}
+                <div className="border-t pt-4 space-y-4">
+                  {getFormValue("embossing") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Embossing Details
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Pattern, depth, location"
+                        value={getFormValue("embossing_details") || ''}
+                        onChange={(e) => handleChange('embossing_details', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {getFormValue("foiling") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Foiling Details
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Gold, silver, color"
+                        value={getFormValue("foiling_details") || ''}
+                        onChange={(e) => handleChange('foiling_details', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {getFormValue("die_cutting") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Die Cutting Details
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Shape, size, pattern"
+                        value={getFormValue("die_cutting_details") || ''}
+                        onChange={(e) => handleChange('die_cutting_details', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {getFormValue("pasting") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pasting Details
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Type, location, pattern"
+                        value={getFormValue("pasting_details") || ''}
+                        onChange={(e) => handleChange('pasting_details', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Type Checkboxes */}

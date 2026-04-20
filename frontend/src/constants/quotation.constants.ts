@@ -1,4 +1,8 @@
 export const PRODUCT_TYPES = [
+  { label: 'CPP Carton', value: 'cpp_carton' },
+  { label: 'Silvo Blister', value: 'silvo_blister' },
+  { label: 'Bent Foil', value: 'bent_foil' },
+  { label: 'Alu Alu', value: 'alu_alu' },
   { label: 'Unit Carton', value: 'unit_carton' },
   { label: 'Label', value: 'label' },
   { label: 'Leaflet', value: 'leaflet' },
@@ -43,3 +47,29 @@ export function isCardProduct(productType: string): boolean {
 export function isPaperProduct(productType: string): boolean {
   return PAPER_PRODUCTS.includes(productType);
 }
+
+export const VARNISH_OPTIONS = [
+  { label: 'None', value: 'none' },
+  { label: 'Water Base', value: 'water_base' },
+  { label: 'Duck', value: 'duck' },
+  { label: 'Plain UV', value: 'plain_uv' },
+  { label: 'Spot UV', value: 'spot_uv' },
+  { label: 'Drip Off UV', value: 'drip_off_uv' },
+  { label: 'Matt UV', value: 'matt_uv' },
+  { label: 'Rough UV', value: 'rough_uv' },
+];
+
+export const LAMINATION_OPTIONS = [
+  { label: 'None', value: 'none' },
+  { label: 'Shine', value: 'shine' },
+  { label: 'Matt', value: 'matt' },
+  { label: 'Metalize', value: 'metalize' },
+  { label: 'Rainbow', value: 'rainbow' },
+];
+
+export const FINISHING_DETAILS_CONFIG = {
+  embossing: { label: 'Embossing Details', placeholder: 'e.g., Pattern, depth, location' },
+  foiling: { label: 'Foiling Details', placeholder: 'e.g., Gold, silver, color' },
+  die_cutting: { label: 'Die Cutting Details', placeholder: 'e.g., Shape, size, pattern' },
+  pasting: { label: 'Pasting Details', placeholder: 'e.g., Type, location, pattern' },
+};
