@@ -28,6 +28,7 @@ export class WorkflowApprovalService {
     jobId: string,
     stageName: string,
     qaManagerId: string,
+    companyId: string,
   ): Promise<void> {
     // Check if approval already exists
     const existingApproval = await this.approvalsService.getApprovalByStageId(stageId.toString());
@@ -42,7 +43,7 @@ export class WorkflowApprovalService {
       stage_name: stageName,
     };
 
-    await this.approvalsService.createApproval(approvalDto);
+    await this.approvalsService.createApproval(approvalDto, companyId);
 
     // Check if QA manager has a substitute
     const substitute = await this.substituteService.getActiveSubstitute(qaManagerId);
@@ -61,6 +62,7 @@ export class WorkflowApprovalService {
     // Log activity
     await this.activityLogService.logActivity(
       qaManagerId,
+      companyId,
       'approval_request_created',
       'stage',
       stageId.toString(),
@@ -164,6 +166,7 @@ export class WorkflowApprovalService {
     // Log activity
     await this.activityLogService.logActivity(
       qaManagerId,
+      stage.job.company_id,
       'stage_approved',
       'stage',
       stageId.toString(),
@@ -218,6 +221,7 @@ export class WorkflowApprovalService {
     // Log activity
     await this.activityLogService.logActivity(
       qaManagerId,
+      stage.job.company_id,
       'stage_rejected',
       'stage',
       stageId.toString(),

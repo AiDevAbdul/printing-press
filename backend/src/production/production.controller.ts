@@ -10,6 +10,7 @@ import { StartWorkflowStageDto, PauseWorkflowStageDto, CompleteWorkflowStageDto,
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { ProductionJobStatus } from './entities/production-job.entity';
 import { BadRequestException } from '@nestjs/common';
@@ -24,18 +25,18 @@ export class ProductionController {
 
   @Post('jobs')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  create(@Body() createProductionJobDto: CreateProductionJobDto) {
-    return this.productionService.create(createProductionJobDto);
+  create(@Body() createProductionJobDto: CreateProductionJobDto, @CurrentUser() user: any) {
+    return this.productionService.create(createProductionJobDto, user.id, user.company_id);
   }
 
   @Get('jobs')
-  findAll(@Query() queryDto: QueryProductionJobsDto) {
-    return this.productionService.findAllWithFilters(queryDto);
+  findAll(@Query() queryDto: QueryProductionJobsDto, @CurrentUser() user: any) {
+    return this.productionService.findAllWithFilters(queryDto, user.company_id);
   }
 
   @Get('queue')
-  getQueuedJobs() {
-    return this.productionService.getQueuedJobs();
+  getQueuedJobs(@CurrentUser() user: any) {
+    return this.productionService.getQueuedJobs(user.company_id);
   }
 
   // Production Workflow Endpoints
@@ -123,44 +124,44 @@ export class ProductionController {
   }
 
   @Get('jobs/:id')
-  findOne(@Param('id') id: string) {
-    return this.productionService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productionService.findOne(id, user.company_id);
   }
 
   @Patch('jobs/:id')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  update(@Param('id') id: string, @Body() updateProductionJobDto: UpdateProductionJobDto) {
-    return this.productionService.update(id, updateProductionJobDto);
+  update(@Param('id') id: string, @Body() updateProductionJobDto: UpdateProductionJobDto, @CurrentUser() user: any) {
+    return this.productionService.update(id, updateProductionJobDto, user.company_id);
   }
 
   @Patch('jobs/:id/status')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateProductionJobStatusDto) {
-    return this.productionService.updateStatus(id, updateStatusDto);
+  updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateProductionJobStatusDto, @CurrentUser() user: any) {
+    return this.productionService.updateStatus(id, updateStatusDto, user.company_id);
   }
 
   @Post('jobs/:id/start')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  startJob(@Param('id') id: string) {
-    return this.productionService.startJob(id);
+  startJob(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productionService.startJob(id, user.company_id);
   }
 
   @Post('jobs/:id/complete')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  completeJob(@Param('id') id: string) {
-    return this.productionService.completeJob(id);
+  completeJob(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productionService.completeJob(id, user.company_id);
   }
 
   @Post('jobs/:id/start-stage')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  startStage(@Param('id') id: string, @Body() startStageDto: StartStageDto) {
-    return this.productionService.startStage(id, startStageDto);
+  startStage(@Param('id') id: string, @Body() startStageDto: StartStageDto, @CurrentUser() user: any) {
+    return this.productionService.startStage(id, startStageDto, user.company_id);
   }
 
   @Post('jobs/:id/complete-stage')
   @Roles(UserRole.ADMIN, UserRole.PLANNER)
-  completeStage(@Param('id') id: string, @Body() completeStageDto: CompleteStageDto) {
-    return this.productionService.completeStage(id, completeStageDto);
+  completeStage(@Param('id') id: string, @Body() completeStageDto: CompleteStageDto, @CurrentUser() user: any) {
+    return this.productionService.completeStage(id, completeStageDto, user.company_id);
   }
 
   @Get('jobs/:id/timeline')
@@ -169,10 +170,10 @@ export class ProductionController {
   }
 
   @Get('schedule')
-  getSchedule(@Query('startDate') startDate: string, @Query('endDate') endDate: string) {
+  getSchedule(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @CurrentUser() user: any) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return this.productionService.getSchedule(start, end);
+    return this.productionService.getSchedule(start, end, user.company_id);
   }
 
   // Shop Floor Management Endpoints
@@ -188,8 +189,8 @@ export class ProductionController {
   }
 
   @Get('shop-floor/job/:id/qr-code')
-  generateJobQRCode(@Param('id') id: string) {
-    return this.productionService.generateJobQRCode(id);
+  generateJobQRCode(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.productionService.generateJobQRCode(id, user.company_id);
   }
 
   @Post('materials/issue')
@@ -231,15 +232,16 @@ export class ProductionController {
   getWastageAnalytics(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @CurrentUser() user: any,
   ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return this.productionService.getWastageAnalytics(start, end);
+    return this.productionService.getWastageAnalytics(start, end, user.company_id);
   }
 
   @Post('shop-floor/start-stage')
   startStageEnhanced(@Body() dto: StartStageEnhancedDto, @Req() req: any) {
-    return this.productionService.startStageEnhanced(dto, req.user.userId);
+    return this.productionService.startStageEnhanced(dto, req.user.userId, req.user.companyId);
   }
 
   @Post('shop-floor/complete-stage')

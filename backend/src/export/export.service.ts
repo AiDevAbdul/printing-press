@@ -20,7 +20,7 @@ export class ExportService {
     private productionRepository: Repository<ProductionJob>,
   ) {}
 
-  async exportWastageAnalytics(startDate: Date, endDate: Date): Promise<ExcelJS.Buffer> {
+  async exportWastageAnalytics(startDate: Date, endDate: Date, companyId: string): Promise<ExcelJS.Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Wastage Analytics');
 
@@ -52,7 +52,8 @@ export class ExportService {
       .leftJoinAndSelect('wastage.job', 'job')
       .leftJoinAndSelect('wastage.stage_history', 'stage_history')
       .leftJoinAndSelect('wastage.recorded_by', 'recorded_by')
-      .where('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .where('wastage.company_id = :companyId', { companyId })
+      .andWhere('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
       .orderBy('wastage.created_at', 'DESC')
       .getMany();
 
@@ -92,7 +93,7 @@ export class ExportService {
     return await workbook.xlsx.writeBuffer();
   }
 
-  async exportQualityMetrics(startDate: Date, endDate: Date): Promise<ExcelJS.Buffer> {
+  async exportQualityMetrics(startDate: Date, endDate: Date, companyId: string): Promise<ExcelJS.Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Quality Metrics');
 
@@ -123,7 +124,8 @@ export class ExportService {
       .leftJoinAndSelect('inspection.job', 'job')
       .leftJoinAndSelect('inspection.checkpoint', 'checkpoint')
       .leftJoinAndSelect('inspection.inspector', 'inspector')
-      .where('inspection.inspected_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .where('inspection.company_id = :companyId', { companyId })
+      .andWhere('inspection.inspected_at BETWEEN :startDate AND :endDate', { startDate, endDate })
       .orderBy('inspection.inspected_at', 'DESC')
       .getMany();
 
@@ -166,7 +168,7 @@ export class ExportService {
     return await workbook.xlsx.writeBuffer();
   }
 
-  async exportDashboardStats(): Promise<ExcelJS.Buffer> {
+  async exportDashboardStats(companyId: string): Promise<ExcelJS.Buffer> {
     const workbook = new ExcelJS.Workbook();
 
     // Orders sheet
@@ -190,6 +192,7 @@ export class ExportService {
     };
 
     const orders = await this.orderRepository.find({
+      where: { company_id: companyId },
       relations: ['customer'],
       order: { created_at: 'DESC' },
       take: 1000,
@@ -229,6 +232,7 @@ export class ExportService {
     };
 
     const jobs = await this.productionRepository.find({
+      where: { company_id: companyId },
       relations: ['order', 'assigned_operator'],
       order: { created_at: 'DESC' },
       take: 1000,

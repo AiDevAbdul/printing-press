@@ -4,6 +4,7 @@ import { ApproveStageDto, RejectStageDto } from './dto/approval.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
 @Controller('approvals')
@@ -16,32 +17,32 @@ export class ApprovalsController {
   async getPendingApprovals(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 50,
-    @Request() req,
+    @CurrentUser() user: any,
   ) {
     const offset = (page - 1) * limit;
-    const qaManagerId = req.user.role === UserRole.ADMIN ? undefined : req.user.id;
-    return this.approvalsService.getPendingApprovals(limit, offset, qaManagerId);
+    const qaManagerId = user.role === UserRole.ADMIN ? undefined : user.id;
+    return this.approvalsService.getPendingApprovals(user.company_id, limit, offset, qaManagerId);
   }
 
   @Get('history')
   @Roles(UserRole.QA_MANAGER, UserRole.ADMIN)
   async getApprovalHistory(
-    @Request() req,
+    @CurrentUser() user: any,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 50,
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
     const offset = (page - 1) * limit;
-    const qaManagerId = req.user.role === UserRole.ADMIN ? undefined : req.user.id;
-    return this.approvalsService.getApprovalHistory(limit, offset, status as any, search, qaManagerId);
+    const qaManagerId = user.role === UserRole.ADMIN ? undefined : user.id;
+    return this.approvalsService.getApprovalHistory(user.company_id, limit, offset, status as any, search, qaManagerId);
   }
 
   @Get('stats')
   @Roles(UserRole.QA_MANAGER, UserRole.ADMIN)
-  async getApprovalStats(@Request() req) {
-    const qaManagerId = req.user.role === UserRole.ADMIN ? undefined : req.user.id;
-    return this.approvalsService.getApprovalStats(qaManagerId);
+  async getApprovalStats(@CurrentUser() user: any) {
+    const qaManagerId = user.role === UserRole.ADMIN ? undefined : user.id;
+    return this.approvalsService.getApprovalStats(user.company_id, qaManagerId);
   }
 
   @Post(':id/approve')

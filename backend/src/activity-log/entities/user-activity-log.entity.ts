@@ -13,6 +13,9 @@ export class UserActivityLog {
   @Column({ type: 'uuid' })
   user_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @Column()
   action: string;
 

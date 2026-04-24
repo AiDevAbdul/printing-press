@@ -61,6 +61,7 @@ export class SubstituteService {
     // Log activity
     await this.activityLogService.logActivity(
       userId,
+      user.company_id,
       'set_substitute_user',
       'user',
       userId,

@@ -36,6 +36,7 @@ export class WorkflowApprovalController {
       body.job_id,
       body.stage_name,
       body.qa_manager_id,
+      req.user.companyId,
     );
 
     return { message: 'Approval request created' };

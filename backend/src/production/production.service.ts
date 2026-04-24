@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { ProductionJob, ProductionJobStatus } from './entities/production-job.entity';
@@ -18,6 +18,8 @@ import * as QRCode from 'qrcode';
 
 @Injectable()
 export class ProductionService {
+  private readonly logger = new Logger(ProductionService.name);
+
   constructor(
     @InjectRepository(ProductionJob)
     private productionJobsRepository: Repository<ProductionJob>,
@@ -45,10 +47,11 @@ export class ProductionService {
     return `JOB-${year}${month}${day}-${random}`;
   }
 
-  async create(createProductionJobDto: CreateProductionJobDto): Promise<ProductionJob> {
+  async create(createProductionJobDto: CreateProductionJobDto, userId: string, companyId: string): Promise<ProductionJob> {
     const job = this.productionJobsRepository.create({
       ...createProductionJobDto,
       job_number: this.generateJobNumber(),
+      company_id: companyId,
       order: { id: createProductionJobDto.order_id } as any,
       assigned_operator: createProductionJobDto.assigned_operator_id
         ? { id: createProductionJobDto.assigned_operator_id } as any
@@ -58,15 +61,15 @@ export class ProductionService {
     });
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
-    await this.updateQueuePositions();
+    await this.updateSearchableText(savedJob.id, companyId);
+    await this.updateQueuePositions(companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
-  private async updateSearchableText(jobId: string): Promise<void> {
+  private async updateSearchableText(jobId: string, companyId: string): Promise<void> {
     const job = await this.productionJobsRepository.findOne({
-      where: { id: jobId },
+      where: { id: jobId, company_id: companyId },
       relations: ['order', 'order.customer', 'assigned_operator'],
     });
 
@@ -89,9 +92,9 @@ export class ProductionService {
     await this.productionJobsRepository.update(jobId, { searchable_text: searchText });
   }
 
-  private async updateQueuePositions(): Promise<void> {
+  private async updateQueuePositions(companyId: string): Promise<void> {
     const queuedJobs = await this.productionJobsRepository.find({
-      where: { status: ProductionJobStatus.QUEUED },
+      where: { status: ProductionJobStatus.QUEUED, company_id: companyId },
       relations: ['order'],
       order: { created_at: 'ASC' },
     });
@@ -136,6 +139,7 @@ export class ProductionService {
   }
 
   async findAll(
+    companyId: string,
     status?: ProductionJobStatus,
     machine?: string,
     startDate?: Date,
@@ -144,7 +148,7 @@ export class ProductionService {
     limit = 10,
   ): Promise<{ data: ProductionJob[]; total: number }> {
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: any = { company_id: companyId };
 
     if (status) {
       where.status = status;
@@ -169,7 +173,7 @@ export class ProductionService {
     return { data, total };
   }
 
-  async findAllWithFilters(queryDto: QueryProductionJobsDto): Promise<{ data: ProductionJob[]; total: number }> {
+  async findAllWithFilters(queryDto: QueryProductionJobsDto, companyId: string): Promise<{ data: ProductionJob[]; total: number }> {
     const page = queryDto.page || 1;
     const limit = queryDto.limit || 50;
     const skip = (page - 1) * limit;
@@ -178,7 +182,8 @@ export class ProductionService {
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.order', 'order')
       .leftJoinAndSelect('order.customer', 'customer')
-      .leftJoinAndSelect('job.assigned_operator', 'operator');
+      .leftJoinAndSelect('job.assigned_operator', 'operator')
+      .where('job.company_id = :companyId', { companyId });
 
     // Status filter - support multiple statuses separated by comma
     if (queryDto.status) {
@@ -231,17 +236,17 @@ export class ProductionService {
     return { data, total };
   }
 
-  async getQueuedJobs(): Promise<ProductionJob[]> {
+  async getQueuedJobs(companyId: string): Promise<ProductionJob[]> {
     return this.productionJobsRepository.find({
-      where: { status: ProductionJobStatus.QUEUED },
+      where: { status: ProductionJobStatus.QUEUED, company_id: companyId },
       relations: ['order', 'order.customer'],
       order: { queue_position: 'ASC' },
     });
   }
 
-  async findOne(id: string): Promise<ProductionJob> {
+  async findOne(id: string, companyId: string): Promise<ProductionJob> {
     const job = await this.productionJobsRepository.findOne({
-      where: { id },
+      where: { id, company_id: companyId },
       relations: ['order', 'order.customer', 'assigned_operator'],
     });
 
@@ -252,8 +257,8 @@ export class ProductionService {
     return job;
   }
 
-  async update(id: string, updateProductionJobDto: UpdateProductionJobDto): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async update(id: string, updateProductionJobDto: UpdateProductionJobDto, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
 
     if (updateProductionJobDto.assigned_operator_id) {
       job.assigned_operator = { id: updateProductionJobDto.assigned_operator_id } as any;
@@ -264,27 +269,27 @@ export class ProductionService {
     return this.productionJobsRepository.save(job);
   }
 
-  async updateStatus(id: string, updateStatusDto: UpdateProductionJobStatusDto): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async updateStatus(id: string, updateStatusDto: UpdateProductionJobStatusDto, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
     job.status = updateStatusDto.status;
     return this.productionJobsRepository.save(job);
   }
 
-  async startJob(id: string): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async startJob(id: string, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
     job.status = ProductionJobStatus.IN_PROGRESS;
     job.actual_start_date = new Date();
     job.inline_status = this.generateInlineStatus(job);
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
-    await this.updateQueuePositions();
+    await this.updateSearchableText(savedJob.id, companyId);
+    await this.updateQueuePositions(companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
-  async completeJob(id: string): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async completeJob(id: string, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
     job.status = ProductionJobStatus.COMPLETED;
     job.actual_end_date = new Date();
     job.actual_completion = new Date();
@@ -297,13 +302,13 @@ export class ProductionService {
     }
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
+    await this.updateSearchableText(savedJob.id, companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
-  async startStage(id: string, startStageDto: StartStageDto): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async startStage(id: string, startStageDto: StartStageDto, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
 
     // Complete previous stage if exists
     if (job.current_stage) {
@@ -348,13 +353,13 @@ export class ProductionService {
     job.inline_status = this.generateInlineStatus(job);
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
+    await this.updateSearchableText(savedJob.id, companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
-  async completeStage(id: string, completeStageDto: CompleteStageDto): Promise<ProductionJob> {
-    const job = await this.findOne(id);
+  async completeStage(id: string, completeStageDto: CompleteStageDto, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(id, companyId);
 
     if (!job.current_stage) {
       throw new NotFoundException('No active stage to complete');
@@ -383,9 +388,9 @@ export class ProductionService {
     job.inline_status = 'In Production - Between Stages';
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
+    await this.updateSearchableText(savedJob.id, companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
   async getStageTimeline(id: string): Promise<ProductionStageHistory[]> {
@@ -396,10 +401,11 @@ export class ProductionService {
     });
   }
 
-  async getSchedule(startDate: Date, endDate: Date): Promise<ProductionJob[]> {
+  async getSchedule(startDate: Date, endDate: Date, companyId: string): Promise<ProductionJob[]> {
     return this.productionJobsRepository.find({
       where: {
         scheduled_start_date: Between(startDate, endDate),
+        company_id: companyId,
       },
       order: { scheduled_start_date: 'ASC' },
       relations: ['order', 'order.customer', 'assigned_operator'],
@@ -434,15 +440,15 @@ export class ProductionService {
     return job;
   }
 
-  async generateJobQRCode(id: string): Promise<string> {
-    const job = await this.findOne(id);
+  async generateJobQRCode(id: string, companyId: string): Promise<string> {
+    const job = await this.findOne(id, companyId);
     const qrData = `JOB-${job.job_number}`;
 
     try {
       const qrCodeDataUrl = await QRCode.toDataURL(qrData);
       return qrCodeDataUrl;
     } catch (error) {
-      throw new Error('Failed to generate QR code');
+      throw new BadRequestException('Failed to generate QR code');
     }
   }
 
@@ -508,14 +514,15 @@ export class ProductionService {
     });
   }
 
-  async getWastageAnalytics(startDate: Date, endDate: Date): Promise<any> {
+  async getWastageAnalytics(startDate: Date, endDate: Date, companyId: string): Promise<any> {
     // Wastage by type
     const wastageByType = await this.wastageRecordRepository
       .createQueryBuilder('wastage')
       .select('wastage.wastage_type', 'type')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(wastage.estimated_cost)', 'cost')
-      .where('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .where('wastage.company_id = :companyId', { companyId })
+      .andWhere('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
       .groupBy('wastage.wastage_type')
       .getRawMany();
 
@@ -526,7 +533,8 @@ export class ProductionService {
       .select('stage_history.stage', 'stage')
       .addSelect('SUM(wastage.quantity)', 'quantity')
       .addSelect('SUM(wastage.estimated_cost)', 'cost')
-      .where('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .where('wastage.company_id = :companyId', { companyId })
+      .andWhere('wastage.created_at BETWEEN :startDate AND :endDate', { startDate, endDate })
       .groupBy('stage_history.stage')
       .getRawMany();
 
@@ -553,8 +561,8 @@ export class ProductionService {
     };
   }
 
-  async startStageEnhanced(dto: StartStageEnhancedDto, userId: string): Promise<ProductionJob> {
-    const job = await this.findOne(dto.job_id);
+  async startStageEnhanced(dto: StartStageEnhancedDto, userId: string, companyId: string): Promise<ProductionJob> {
+    const job = await this.findOne(dto.job_id, companyId);
 
     // Complete previous stage if exists
     if (job.current_stage) {
@@ -611,9 +619,9 @@ export class ProductionService {
     job.inline_status = this.generateInlineStatus(job);
 
     const savedJob = await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(savedJob.id);
+    await this.updateSearchableText(savedJob.id, companyId);
 
-    return this.findOne(savedJob.id);
+    return this.findOne(savedJob.id, companyId);
   }
 
   async completeStageEnhanced(dto: CompleteStageEnhancedDto, userId: string): Promise<ProductionStageHistory> {
@@ -665,13 +673,13 @@ export class ProductionService {
     }
 
     // Update job
-    const job = await this.findOne(stageHistory.job.id);
+    const job = await this.findOne(stageHistory.job.id, stageHistory.job.company_id);
     job.current_stage = null;
     job.current_process = null;
     job.inline_status = 'In Production - Between Stages';
 
     await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(job.id);
+    await this.updateSearchableText(job.id, stageHistory.job.company_id);
 
     return stageHistory;
   }
@@ -702,7 +710,7 @@ export class ProductionService {
       } catch (error) {
         failed++;
         // Log error but continue processing other actions
-        console.error('Failed to sync action:', error);
+        this.logger.error('Failed to sync action:', error);
       }
     }
 
@@ -714,7 +722,7 @@ export class ProductionService {
 
     switch (action_type) {
       case 'start_stage':
-        await this.startStageEnhanced(payload, user_id);
+        await this.startStageEnhanced(payload, user_id, queueItem.company_id);
         break;
       case 'complete_stage':
         await this.completeStageEnhanced(payload, user_id);
@@ -732,13 +740,22 @@ export class ProductionService {
         await this.recordMachineCounter(payload, user_id);
         break;
       default:
-        throw new Error(`Unknown action type: ${action_type}`);
+        throw new BadRequestException(`Unknown action type: ${action_type}`);
     }
   }
 
   // Production Workflow Methods
 
   async initializeWorkflow(jobId: string, specs?: any): Promise<void> {
+    // Get job to access company_id
+    const jobRecord = await this.productionJobsRepository.findOne({
+      where: { id: jobId },
+    });
+
+    if (!jobRecord) {
+      throw new NotFoundException('Job not found');
+    }
+
     const allStages = [
       { name: 'Printing - Cyan', order: 1, required: true },
       { name: 'Printing - Magenta', order: 2, required: true },
@@ -768,7 +785,7 @@ export class ProductionService {
 
       // Create corresponding approval record
       try {
-        console.log('Creating approval for stage:', {
+        this.logger.log('Creating approval for stage:', {
           inline_item_id: savedStage.id,
           job_id: jobId,
           stage_name: stage.name,
@@ -777,10 +794,10 @@ export class ProductionService {
           inline_item_id: savedStage.id,
           job_id: jobId,
           stage_name: stage.name,
-        });
-        console.log('Approval created successfully:', approval.id);
+        }, jobRecord.company_id);
+        this.logger.log('Approval created successfully:', approval.id);
       } catch (error) {
-        console.error('Failed to create approval record for stage:', stage.name, error);
+        this.logger.error('Failed to create approval record for stage:', stage.name, error);
       }
     }
   }
@@ -829,7 +846,15 @@ export class ProductionService {
       });
     }
 
-    const job = await this.findOne(jobId);
+    const job = await this.productionJobsRepository.findOne({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    const jobWithDetails = await this.findOne(jobId, job.company_id);
 
     // Fetch all approvals for this job to sync QA status
     const approvals = await this.approvalsService.getApprovalsByJobId(jobId);
@@ -927,7 +952,15 @@ export class ProductionService {
     await this.workflowStagesRepository.save(stage);
 
     // Update job
-    const job = await this.findOne(jobId);
+    const jobRecord = await this.productionJobsRepository.findOne({
+      where: { id: jobId },
+    });
+
+    if (!jobRecord) {
+      throw new NotFoundException('Job not found');
+    }
+
+    const job = await this.findOne(jobId, jobRecord.company_id);
     job.current_stage = stage.stage_name;
     job.assigned_machine = machine || job.assigned_machine;
     job.status = ProductionJobStatus.IN_PROGRESS;
@@ -1057,20 +1090,28 @@ export class ProductionService {
     console.log('Next stage:', nextStage ? `${nextStage.stage_name} (Order: ${nextStage.stage_order})` : 'None');
 
     // Update job's current_stage
-    const job = await this.findOne(jobId);
+    const jobRecord = await this.productionJobsRepository.findOne({
+      where: { id: jobId },
+    });
+
+    if (!jobRecord) {
+      throw new NotFoundException('Job not found');
+    }
+
+    const jobToUpdate = await this.findOne(jobId, jobRecord.company_id);
     if (nextStage) {
-      job.current_stage = nextStage.stage_name;
+      jobToUpdate.current_stage = nextStage.stage_name;
       console.log('Updated job current_stage to:', nextStage.stage_name);
     } else {
       // All stages completed
-      job.current_stage = null;
-      job.status = ProductionJobStatus.COMPLETED;
-      job.actual_completion = now;
-      job.inline_status = 'Completed - Ready for Delivery';
+      jobToUpdate.current_stage = null;
+      jobToUpdate.status = ProductionJobStatus.COMPLETED;
+      jobToUpdate.actual_completion = now;
+      jobToUpdate.inline_status = 'Completed - Ready for Delivery';
       console.log('All stages completed');
     }
-    await this.productionJobsRepository.save(job);
-    await this.updateSearchableText(jobId);
+    await this.productionJobsRepository.save(jobToUpdate);
+    await this.updateSearchableText(jobId, jobRecord.company_id);
 
     console.log('=== END completeWorkflowStage DEBUG ===');
 
@@ -1085,6 +1126,15 @@ export class ProductionService {
 
   async backfillApprovals(jobId: string): Promise<any> {
     console.log('Starting backfill approvals for job:', jobId);
+
+    // Get job to access company_id
+    const job = await this.productionJobsRepository.findOne({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
 
     // Get all workflow stages for this job
     const stages = await this.workflowStagesRepository.find({
@@ -1104,7 +1154,7 @@ export class ProductionService {
           inline_item_id: stage.id,
           job_id: jobId,
           stage_name: stage.stage_name,
-        });
+        }, job.company_id);
         createdCount++;
       } catch (error) {
         console.error('Failed to create approval for stage:', stage.id, error);

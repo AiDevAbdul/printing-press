@@ -90,7 +90,7 @@ describe('ApprovalsService', () => {
       mockApprovalRepository.create.mockReturnValue(mockApproval);
       mockApprovalRepository.save.mockResolvedValue(mockApproval);
 
-      const result = await service.createApproval(createDto);
+      const result = await service.createApproval(createDto, 'company-1');
 
       expect(mockApprovalRepository.create).toHaveBeenCalledWith({
         inline_item_id: createDto.inline_item_id,
@@ -117,7 +117,7 @@ describe('ApprovalsService', () => {
 
       mockApprovalRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
-      const result = await service.getPendingApprovals(10, 0);
+      const result = await service.getPendingApprovals('company-1', 10, 0);
 
       expect(result.approvals).toEqual([mockApproval]);
       expect(result.total).toBe(1);
@@ -138,7 +138,7 @@ describe('ApprovalsService', () => {
 
       mockApprovalRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
-      await service.getPendingApprovals(10, 0, 'qa-manager-1');
+      await service.getPendingApprovals('company-1', 10, 0, 'qa-manager-1');
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
@@ -251,7 +251,7 @@ describe('ApprovalsService', () => {
 
       mockApprovalRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
-      const result = await service.getApprovalStats();
+      const result = await service.getApprovalStats('company-1');
 
       expect(result).toHaveProperty('pending_count');
       expect(result).toHaveProperty('approved_count');

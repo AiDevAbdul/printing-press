@@ -275,8 +275,19 @@ export class QuotationsService {
       );
     }
 
+    // Fixed Charges Cost
+    let fixedChargesCost = 0;
+    fixedChargesCost += (dto.fixed_charge_ctp || 0);
+    fixedChargesCost += (dto.fixed_charge_spot_uv || 0);
+    fixedChargesCost += (dto.fixed_charge_plain_uv || 0);
+    fixedChargesCost += (dto.fixed_charge_drip_off_uv || 0);
+    fixedChargesCost += (dto.fixed_charge_metalize || 0);
+    fixedChargesCost += (dto.fixed_charge_emboss || 0);
+    fixedChargesCost += (dto.fixed_charge_lamination || 0);
+    fixedChargesCost += (dto.fixed_charge_others || 0);
+
     // Subtotal
-    const subtotal = materialCost + printingCost + finishingCost + prePressCost + additionalItemsCost;
+    const subtotal = materialCost + printingCost + finishingCost + prePressCost + additionalItemsCost + fixedChargesCost;
 
     // Overhead (15% default)
     const overheadCost = subtotal * 0.15;
@@ -410,14 +421,14 @@ export class QuotationsService {
         // Map quotation material fields to order fields
         substrate: quotation.paper_type,
         gsm: quotation.gsm?.toString(),
-        // Map color fields - quotation uses color_front/back, order uses CMYK + Pantone
+        // Map color fields - use actual color values instead of hardcoded '100'
         colors: quotation.color_front && quotation.color_back
           ? `${quotation.color_front}/${quotation.color_back}`
           : undefined,
-        color_cyan: quotation.color_front ? '100' : undefined,
-        color_magenta: quotation.color_front ? '100' : undefined,
-        color_yellow: quotation.color_front ? '100' : undefined,
-        color_black: quotation.color_front ? '100' : undefined,
+        color_cyan: quotation.cmyk_cyan ? quotation.color_front?.toString() : undefined,
+        color_magenta: quotation.cmyk_magenta ? quotation.color_front?.toString() : undefined,
+        color_yellow: quotation.cmyk_yellow ? quotation.color_front?.toString() : undefined,
+        color_black: quotation.cmyk_black ? quotation.color_front?.toString() : undefined,
         color_p1: quotation.pantone_p1_code,
         color_p2: quotation.pantone_p2_code,
         color_p3: quotation.pantone_p3_code,
@@ -426,6 +437,9 @@ export class QuotationsService {
         varnish_type: quotation.varnish_type ? [quotation.varnish_type] : undefined,
         lamination_type: quotation.lamination_type ? [quotation.lamination_type] : undefined,
         uv_emboss_details: quotation.embossing_details,
+        foiling_details: quotation.foiling_details,
+        die_cutting_details: quotation.die_cutting_details,
+        pasting_details: quotation.pasting_details,
         // Map pre-press fields
         ctp_info: quotation.ctp_details,
         die_type: quotation.die_type as any,
@@ -435,6 +449,15 @@ export class QuotationsService {
         thickness_micron: quotation.foil_thickness ? Number(quotation.foil_thickness) : undefined,
         tablet_size: quotation.tablet_size,
         punch_size: quotation.punch_size,
+        // Map fixed charges
+        fixed_charge_ctp: quotation.fixed_charge_ctp,
+        fixed_charge_spot_uv: quotation.fixed_charge_spot_uv,
+        fixed_charge_plain_uv: quotation.fixed_charge_plain_uv,
+        fixed_charge_drip_off_uv: quotation.fixed_charge_drip_off_uv,
+        fixed_charge_metalize: quotation.fixed_charge_metalize,
+        fixed_charge_emboss: quotation.fixed_charge_emboss,
+        fixed_charge_lamination: quotation.fixed_charge_lamination,
+        fixed_charge_others: quotation.fixed_charge_others,
         // Pricing
         quoted_price: quotation.total_amount,
         final_price: quotation.total_amount,

@@ -143,6 +143,7 @@ export class UsersService {
     // Log activity
     await this.activityLogService.logActivity(
       userId,
+      user.company_id,
       'updated_profile',
       'user',
       userId,
@@ -174,6 +175,7 @@ export class UsersService {
     // Log activity
     await this.activityLogService.logActivity(
       adminId,
+      user.company_id,
       'updated_user_permissions',
       'user',
       userId,

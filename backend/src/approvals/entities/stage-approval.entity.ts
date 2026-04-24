@@ -23,6 +23,9 @@ export class StageApproval {
   @Column({ type: 'uuid', nullable: true })
   job_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @Column()
   stage_name: string;
 

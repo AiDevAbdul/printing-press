@@ -17,10 +17,12 @@ export class ApprovalsService {
 
   async createApproval(
     createApprovalDto: CreateStageApprovalDto,
+    companyId: string,
   ): Promise<StageApproval> {
     const approval = this.approvalRepository.create({
       inline_item_id: createApprovalDto.inline_item_id,
       job_id: createApprovalDto.job_id,
+      company_id: companyId,
       stage_name: createApprovalDto.stage_name,
       status: ApprovalStatus.PENDING,
     });
@@ -28,9 +30,10 @@ export class ApprovalsService {
     return this.approvalRepository.save(approval);
   }
 
-  async getPendingApprovals(limit: number = 50, offset: number = 0, qaManagerId?: string) {
+  async getPendingApprovals(companyId: string, limit: number = 50, offset: number = 0, qaManagerId?: string) {
     const query = this.approvalRepository.createQueryBuilder('approval')
-      .where('approval.status = :status', { status: ApprovalStatus.PENDING });
+      .where('approval.company_id = :companyId', { companyId })
+      .andWhere('approval.status = :status', { status: ApprovalStatus.PENDING });
 
     if (qaManagerId) {
       query.andWhere('approval.created_by = :qaManagerId', { qaManagerId });
@@ -48,18 +51,20 @@ export class ApprovalsService {
   }
 
   async getApprovalHistory(
+    companyId: string,
     limit: number = 50,
     offset: number = 0,
     status?: ApprovalStatus,
     search?: string,
     qaManagerId?: string,
   ) {
-    const query = this.approvalRepository.createQueryBuilder('approval');
+    const query = this.approvalRepository.createQueryBuilder('approval')
+      .where('approval.company_id = :companyId', { companyId });
 
     if (status) {
-      query.where('approval.status = :status', { status });
+      query.andWhere('approval.status = :status', { status });
     } else {
-      query.where('approval.status IN (:...statuses)', {
+      query.andWhere('approval.status IN (:...statuses)', {
         statuses: [ApprovalStatus.APPROVED, ApprovalStatus.REJECTED],
       });
     }
@@ -85,17 +90,19 @@ export class ApprovalsService {
     return { approvals, total, page: Math.floor(offset / limit) + 1, limit };
   }
 
-  async getApprovalStats(qaManagerId?: string) {
-    const query = this.approvalRepository.createQueryBuilder('approval');
+  async getApprovalStats(companyId: string, qaManagerId?: string) {
+    const query = this.approvalRepository.createQueryBuilder('approval')
+      .where('approval.company_id = :companyId', { companyId });
 
     if (qaManagerId) {
-      query.where('approval.approved_by = :qaManagerId', { qaManagerId });
+      query.andWhere('approval.approved_by = :qaManagerId', { qaManagerId });
     }
 
     const total = await query.getCount();
 
     const pendingQuery = this.approvalRepository.createQueryBuilder('approval')
-      .where('approval.status = :status', { status: ApprovalStatus.PENDING });
+      .where('approval.company_id = :companyId', { companyId })
+      .andWhere('approval.status = :status', { status: ApprovalStatus.PENDING });
     if (qaManagerId) {
       pendingQuery.andWhere('approval.created_by = :qaManagerId', { qaManagerId });
     }
@@ -153,6 +160,7 @@ export class ApprovalsService {
     // Log activity
     await this.activityLogService.logActivity(
       qaManagerId,
+      approval.job?.company_id || '',
       'approved_stage',
       'stage_approval',
       approvalId,
@@ -195,6 +203,7 @@ export class ApprovalsService {
     // Log activity
     await this.activityLogService.logActivity(
       qaManagerId,
+      approval.job?.company_id || '',
       'rejected_stage',
       'stage_approval',
       approvalId,

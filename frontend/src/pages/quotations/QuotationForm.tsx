@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { quotationService, Quotation, CreateQuotationDto, PricingBreakdown } from '../../services/quotation.service';
 import { customerService } from '../../services/customer.service';
 import {
@@ -137,7 +138,7 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
 
   const queryClient = useQueryClient();
 
-  const { data: customersData } = useQuery({
+  const { data: customersData, isLoading: customersLoading, isError: customersError } = useQuery({
     queryKey: ['customers'],
     queryFn: () => customerService.getAll(),
   });
@@ -148,6 +149,10 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       onClose();
     },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || 'Failed to create quotation';
+      toast.error(msg);
+    },
   });
 
   const updateMutation = useMutation({
@@ -157,12 +162,20 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       onClose();
     },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || 'Failed to update quotation';
+      toast.error(msg);
+    },
   });
 
   const calculatePricingMutation = useMutation({
     mutationFn: quotationService.calculatePricing,
     onSuccess: (data) => {
       setPricing(data);
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || 'Failed to calculate pricing';
+      toast.error(msg);
     },
   });
 
@@ -380,19 +393,29 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Customer *
                   </label>
-                  <select
-                    value={getFormValue("customer_id") || ''}
-                    onChange={(e) => handleChange('customer_id', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map((customer: any) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.company_name}
-                      </option>
-                    ))}
-                  </select>
+                  {customersLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-500">
+                      Loading customers...
+                    </div>
+                  ) : customersError ? (
+                    <div className="w-full px-3 py-2 border border-red-300 rounded bg-red-50 text-red-600">
+                      Failed to load customers
+                    </div>
+                  ) : (
+                    <select
+                      value={getFormValue("customer_id") || ''}
+                      onChange={(e) => handleChange('customer_id', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Customer</option>
+                      {customers.map((customer: any) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.company_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1128,10 +1151,12 @@ const QuotationForm = ({ quotation, onClose }: QuotationFormProps) => {
                           {charge.label}
                         </label>
                         <input
+                          key={`${charge.key}-input`}
                           type="number"
                           inputMode="decimal"
+                          step="0.01"
                           value={getFormValue(charge.key) || ''}
-                          onChange={(e) => handleChange(charge.key, Number(e.target.value))}
+                          onChange={(e) => handleChange(charge.key, e.target.value === '' ? 0 : Number(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>

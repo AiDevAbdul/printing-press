@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, UseGuards, Request, Query, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserResponseDto, UpdateUserProfileDto, UpdateUserPermissionsDto, SetSubstituteUserDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -95,8 +95,9 @@ export class UsersController {
     @Param('id') id: string,
     @Query('limit') limit: number = 50,
     @Query('offset') offset: number = 0,
+    @Req() req: any,
   ) {
-    const { logs, total } = await this.activityLogService.getUserActivityLog(id, limit, offset);
+    const { logs, total } = await this.activityLogService.getUserActivityLog(id, req.user.companyId, limit, offset);
     return {
       data: logs,
       total,

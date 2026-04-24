@@ -20,6 +20,9 @@ export class OfflineSyncQueue {
   @Column({ type: 'uuid' })
   user_id: string;
 
+  @Column({ type: 'uuid' })
+  company_id: string;
+
   @Column({ type: 'varchar', length: 50 })
   action_type: string;
 

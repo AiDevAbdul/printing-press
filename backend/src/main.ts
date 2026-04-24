@@ -1,6 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import * as net from 'net';
+
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(startPort, () => {
+      server.close(() => resolve(startPort));
+    });
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(findAvailablePort(startPort + 1));
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,7 +49,8 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 3000;
+  const defaultPort = parseInt(process.env.PORT || '3000', 10);
+  const port = await findAvailablePort(defaultPort);
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}/api`);
 }

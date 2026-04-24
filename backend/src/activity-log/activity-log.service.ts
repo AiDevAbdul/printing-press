@@ -12,6 +12,7 @@ export class ActivityLogService {
 
   async logActivity(
     userId: string,
+    companyId: string,
     action: string,
     entityType?: string,
     entityId?: string,
@@ -21,6 +22,7 @@ export class ActivityLogService {
   ): Promise<UserActivityLog> {
     const log = this.activityLogRepository.create({
       user_id: userId,
+      company_id: companyId,
       action,
       entity_type: entityType,
       entity_id: entityId,
@@ -34,11 +36,12 @@ export class ActivityLogService {
 
   async getUserActivityLog(
     userId: string,
+    companyId: string,
     limit: number = 50,
     offset: number = 0,
   ): Promise<{ logs: UserActivityLog[]; total: number }> {
     const [logs, total] = await this.activityLogRepository.findAndCount({
-      where: { user_id: userId },
+      where: { user_id: userId, company_id: companyId },
       order: { created_at: 'DESC' },
       take: limit,
       skip: offset,
@@ -48,12 +51,13 @@ export class ActivityLogService {
   }
 
   async getActivityLogByEntity(
+    companyId: string,
     entityType: string,
     entityId: string,
     limit: number = 50,
   ): Promise<UserActivityLog[]> {
     return this.activityLogRepository.find({
-      where: { entity_type: entityType, entity_id: entityId },
+      where: { company_id: companyId, entity_type: entityType, entity_id: entityId },
       order: { created_at: 'DESC' },
       take: limit,
       relations: ['user'],
@@ -61,10 +65,12 @@ export class ActivityLogService {
   }
 
   async getAllActivityLogs(
+    companyId: string,
     limit: number = 100,
     offset: number = 0,
   ): Promise<{ logs: UserActivityLog[]; total: number }> {
     const [logs, total] = await this.activityLogRepository.findAndCount({
+      where: { company_id: companyId },
       order: { created_at: 'DESC' },
       take: limit,
       skip: offset,
