@@ -1,11 +1,15 @@
 # Printing Press Management System
 
-**Status:** ✅ **Phases 0-2 Complete** — Next.js foundation ready, moving to page migration (Phase 3)
+**Status:** 🔄 **Phase 3 In Progress** — Layout infrastructure done, page porting underway
 
 - [x] Phase 0 — Project Scaffold (Next.js, Tailwind, Prisma, auth utilities)
 - [x] Phase 1 — Auth Routes (login, select-company, refresh, me, logout)
 - [x] Phase 2 — Frontend Shell (layouts, providers, company context)
-- ⏳ **Phase 3 — Page Migration** (30 pages, next focus)
+- 🔄 **Phase 3 — Page Migration** (Steps 1-2 complete)
+  - [x] Step 1: Auth pages (Login, CompanySelector)
+  - [x] Step 2: Layout components (Header, Sidebar, Breadcrumb, CompanySwitcher, MobileNav, iconMap)
+  - ⏳ Step 3: UI components (Button, Input, Modal, Card, Badge, Tabs, etc.)
+  - ⏳ Step 4: Remaining 28 pages
 - ⏳ Phase 4 — API Route Handlers (19 modules)
 - ⏳ Phase 5 — File Storage (Vercel Blob)
 - ⏳ Phase 6 — Cutover & Cleanup
