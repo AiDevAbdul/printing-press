@@ -1,253 +1,232 @@
 @import "tailwindcss";
 
-/* Base Styles */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
-  min-height: 100vh;
+@theme {
+  /* ── Brand / CPP default ────────────────────────────────────── */
+  --color-brand:           #1B4FDB;
+  --color-brand-dark:      #1239B5;
+  --color-brand-light:     #EEF3FD;
+  --color-accent:          #F97316;
+  --color-accent-dark:     #EA6A06;
+
+  /* ── Page structure ─────────────────────────────────────────── */
+  --color-page-bg:         #F5F5F7;
+  --color-surface:         #FFFFFF;
+  --color-surface-raised:  #FFFFFF;
+
+  /* ── Text ───────────────────────────────────────────────────── */
+  --color-text-primary:    #1D1D1F;
+  --color-text-secondary:  #6E6E73;
+  --color-text-tertiary:   #AEAEB2;
+  --color-text-inverse:    #FFFFFF;
+
+  /* ── Borders ────────────────────────────────────────────────── */
+  --color-border:          #D2D2D7;
+  --color-border-subtle:   #E8E8ED;
+
+  /* ── Semantic ───────────────────────────────────────────────── */
+  --color-success:         #34C759;
+  --color-success-bg:      #F0FDF4;
+  --color-warning:         #FF9500;
+  --color-warning-bg:      #FFFBEB;
+  --color-danger:          #FF3B30;
+  --color-danger-bg:       #FFF1F0;
+  --color-info:            #007AFF;
+  --color-info-bg:         #EFF6FF;
+
+  /* ── Production status ──────────────────────────────────────── */
+  --color-status-queued:   #636366;
+  --color-status-running:  #007AFF;
+  --color-status-paused:   #FF9500;
+  --color-status-done:     #34C759;
+  --color-status-blocked:  #FF3B30;
+
+  /* ── Elevation ──────────────────────────────────────────────── */
+  --shadow-1:     0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-2:     0 4px 8px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-3:     0 8px 16px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04);
+  --shadow-4:     0 16px 32px rgba(0,0,0,0.10), 0 8px 16px rgba(0,0,0,0.06);
+  --shadow-modal: 0 24px 48px rgba(0,0,0,0.14), 0 12px 24px rgba(0,0,0,0.08);
+
+  /* ── Radius ─────────────────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-full: 9999px;
+
+  /* ── Motion ─────────────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in-out: cubic-bezier(0.46, 0.03, 0.52, 0.96);
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   340ms;
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', Consolas, 'Courier New', monospace;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* ── Company theme overrides ────────────────────────────────────── */
+
+[data-company="silvo"] {
+  --color-brand:       #0D7490;
+  --color-brand-dark:  #0A5F73;
+  --color-brand-light: #E0F7FA;
+  --color-accent:      #6366F1;
+  --color-accent-dark: #4F46E5;
 }
 
-/* Smooth transitions */
-* {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+[data-company="bestfoil"] {
+  --color-brand:       #92400E;
+  --color-brand-dark:  #78350F;
+  --color-brand-light: #FEF3C7;
+  --color-accent:      #EAB308;
+  --color-accent-dark: #CA8A04;
 }
 
-/* Page transitions */
+/* ── Glass surface values (not Tailwind utilities) ──────────────── */
+
+:root {
+  --glass-blur-sm:  8px;
+  --glass-blur-md: 16px;
+  --glass-blur-lg: 24px;
+  --glass-bg:      rgba(255, 255, 255, 0.82);
+  --glass-border:  rgba(255, 255, 255, 0.5);
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom animations */
-@keyframes pulse-slow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.95;
-  }
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-page-bg);
+  color: var(--color-text-primary);
+  min-height: 100dvh;
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+code {
+  font-family: var(--font-mono);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ── Focus ring ─────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out;
-}
+/* ── Scrollbar ──────────────────────────────────────────────────── */
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.animate-slideIn {
-  animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slideInUp {
-  animation: slideInUp 0.3s ease-out;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fadeInScale {
-  animation: fadeInScale 0.3s ease-out;
-}
-
-/* Modal animations */
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.animate-modalSlideIn {
-  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Skeleton loading animation */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
-}
-
-/* Spin animation for loaders */
-@keyframes spin-smooth {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-smooth {
-  animation: spin-smooth 1s linear infinite;
-}
-
-/* Bounce animation */
-@keyframes bounce-soft {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
-.animate-bounce-soft {
-  animation: bounce-soft 1s ease-in-out infinite;
-}
-
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-page-bg);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-text-tertiary);
 }
 
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* ── Utility: glass surface ─────────────────────────────────────── */
 
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-/* Button hover effects */
-.btn-hover {
-  transition: all 0.2s ease;
-}
-
-.btn-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.btn-hover:active {
-  transform: translateY(0);
-}
-
-/* Glass card effect */
 .glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border: 1px solid var(--glass-border);
 }
 
-/* Glow effect */
-.glow {
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+/* ── Utility: glow states ───────────────────────────────────────── */
+
+.glow         { box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand) 30%, transparent); }
+.glow-success { box-shadow: 0 0 20px color-mix(in srgb, var(--color-success) 30%, transparent); }
+.glow-warning { box-shadow: 0 0 20px color-mix(in srgb, var(--color-warning) 30%, transparent); }
+.glow-danger  { box-shadow: 0 0 20px color-mix(in srgb, var(--color-danger) 30%, transparent); }
+
+/* ── Keyframes ──────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.glow-success {
-  box-shadow: 0 0 20px rgba(22, 163, 74, 0.3);
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-.glow-warning {
-  box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.glow-error {
-  box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Focus visible for accessibility */
-:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: scale(0.96) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
 }
 
-/* Reduced motion support */
+@keyframes spin-smooth {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.9; }
+}
+
+/* ── Animation classes ──────────────────────────────────────────── */
+
+.animate-fadeIn       { animation: fadeIn      var(--duration-normal) var(--ease-out) both; }
+.animate-slideIn      { animation: slideIn     var(--duration-normal) var(--ease-out) both; }
+.animate-slideInUp    { animation: slideInUp   var(--duration-normal) var(--ease-out) both; }
+.animate-fadeInScale  { animation: fadeInScale var(--duration-normal) var(--ease-spring) both; }
+.animate-modalSlideIn { animation: modalSlideIn var(--duration-normal) var(--ease-spring) both; }
+.animate-pulse-slow   { animation: pulse-slow  3s ease-in-out infinite; }
+.animate-spin-smooth  { animation: spin-smooth 1s linear infinite; }
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-border-subtle) 25%,
+    var(--color-border) 50%,
+    var(--color-border-subtle) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -255,44 +234,19 @@ textarea:focus-visible {
   }
 }
 
-/* Print Styles */
+/* ── Print ──────────────────────────────────────────────────────── */
+
 @media print {
-  body {
-    background-color: white;
-  }
+  body { background-color: white; }
 
-  .print\:hidden {
-    display: none !important;
-  }
-
-  .print\:p-12 {
-    padding: 3rem !important;
-  }
-
-  @page {
-    margin: 1cm;
-    size: A4;
-  }
-
-  /* Ensure proper page breaks */
-  table, img, svg {
-    page-break-inside: avoid;
-  }
-
-  /* Remove shadows and backgrounds for print */
   * {
     box-shadow: none !important;
     text-shadow: none !important;
-  }
-
-  /* Ensure black text for print */
-  body, p, h1, h2, h3, h4, h5, h6, td, th, span, div {
     color: #000 !important;
   }
 
-  /* Keep borders visible */
-  table, th, td {
-    border-color: #000 !important;
-  }
-}
+  table, img, svg { page-break-inside: avoid; }
+  table, th, td   { border-color: #000 !important; }
 
+  @page { margin: 1cm; size: A4; }
+}

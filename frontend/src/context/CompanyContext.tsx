@@ -30,6 +30,18 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  const getCompanySlug = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes('silvo')) return 'silvo';
+    if (n.includes('best foil') || n.includes('bestfoil')) return 'bestfoil';
+    return 'cpp';
+  };
+
+  useEffect(() => {
+    const slug = selectedCompany ? getCompanySlug(selectedCompany.name) : 'cpp';
+    document.documentElement.setAttribute('data-company', slug);
+  }, [selectedCompany]);
+
   const selectCompany = (company: Company) => {
     setSelectedCompany(company);
     localStorage.setItem('selectedCompany', JSON.stringify(company));

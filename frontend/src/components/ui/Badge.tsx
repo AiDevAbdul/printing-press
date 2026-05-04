@@ -1,60 +1,81 @@
 import React from 'react';
-import { COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../../theme/colors';
+
+type StatusKey =
+  | 'pending' | 'approved' | 'in_progress' | 'completed'
+  | 'delivered' | 'cancelled' | 'rejected' | 'paused'
+  | 'queued' | 'running' | 'blocked';
+
+type PriorityKey = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface BadgeProps {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'status' | 'priority';
-  status?: keyof typeof STATUS_COLORS;
-  priority?: keyof typeof PRIORITY_COLORS;
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'status' | 'priority';
+  status?: StatusKey;
+  priority?: PriorityKey;
+  dot?: boolean;
   children: React.ReactNode;
   className?: string;
 }
+
+const statusColors: Record<StatusKey, { bg: string; text: string }> = {
+  pending:     { bg: 'var(--color-warning-bg)',  text: 'var(--color-warning)' },
+  approved:    { bg: 'var(--color-success-bg)',  text: 'var(--color-success)' },
+  in_progress: { bg: 'var(--color-info-bg)',     text: 'var(--color-info)' },
+  running:     { bg: 'var(--color-info-bg)',     text: 'var(--color-info)' },
+  completed:   { bg: 'var(--color-success-bg)',  text: 'var(--color-success)' },
+  delivered:   { bg: 'var(--color-success-bg)',  text: 'var(--color-success)' },
+  cancelled:   { bg: '#F5F5F7',                  text: 'var(--color-text-secondary)' },
+  rejected:    { bg: 'var(--color-danger-bg)',   text: 'var(--color-danger)' },
+  blocked:     { bg: 'var(--color-danger-bg)',   text: 'var(--color-danger)' },
+  paused:      { bg: 'var(--color-warning-bg)',  text: 'var(--color-warning)' },
+  queued:      { bg: '#F5F5F7',                  text: 'var(--color-text-secondary)' },
+};
+
+const priorityColors: Record<PriorityKey, { bg: string; text: string }> = {
+  low:    { bg: '#F5F5F7',                 text: 'var(--color-text-secondary)' },
+  medium: { bg: 'var(--color-info-bg)',    text: 'var(--color-info)' },
+  high:   { bg: 'var(--color-warning-bg)', text: 'var(--color-warning)' },
+  urgent: { bg: 'var(--color-danger-bg)',  text: 'var(--color-danger)' },
+};
+
+const variantStyles: Record<string, { bg: string; text: string }> = {
+  default: { bg: '#F5F5F7',                  text: 'var(--color-text-secondary)' },
+  success: { bg: 'var(--color-success-bg)',  text: 'var(--color-success)' },
+  warning: { bg: 'var(--color-warning-bg)',  text: 'var(--color-warning)' },
+  danger:  { bg: 'var(--color-danger-bg)',   text: 'var(--color-danger)' },
+  info:    { bg: 'var(--color-info-bg)',     text: 'var(--color-info)' },
+  brand:   { bg: 'var(--color-brand-light)', text: 'var(--color-brand)' },
+};
 
 export function Badge({
   variant = 'default',
   status,
   priority,
+  dot = false,
   children,
   className = '',
 }: BadgeProps) {
-  let bgColor: string = COLORS.GRAY_100;
-  let textColor: string = COLORS.GRAY_600;
-  let borderColor: string = COLORS.GRAY_400;
+  let colors: { bg: string; text: string };
 
-  if (variant === 'status' && status && STATUS_COLORS[status]) {
-    const colors = STATUS_COLORS[status];
-    bgColor = colors.bg;
-    textColor = colors.text;
-    borderColor = colors.border;
-  } else if (variant === 'priority' && priority && PRIORITY_COLORS[priority]) {
-    const colors = PRIORITY_COLORS[priority];
-    bgColor = colors.bg;
-    textColor = colors.text;
-    borderColor = colors.border;
+  if (variant === 'status' && status && statusColors[status]) {
+    colors = statusColors[status];
+  } else if (variant === 'priority' && priority && priorityColors[priority]) {
+    colors = priorityColors[priority];
   } else {
-    const variantMap: Record<string, { bg: string; text: string; border: string }> = {
-      default: { bg: COLORS.GRAY_100, text: COLORS.GRAY_600, border: COLORS.GRAY_400 },
-      success: { bg: COLORS.SUCCESS_LIGHT, text: COLORS.SUCCESS, border: COLORS.SUCCESS },
-      warning: { bg: COLORS.WARNING_LIGHT, text: COLORS.WARNING, border: COLORS.WARNING },
-      error: { bg: COLORS.ERROR_LIGHT, text: COLORS.ERROR, border: COLORS.ERROR },
-      info: { bg: COLORS.INFO_LIGHT, text: COLORS.INFO, border: COLORS.INFO },
-      status: { bg: COLORS.GRAY_100, text: COLORS.GRAY_600, border: COLORS.GRAY_400 },
-      priority: { bg: COLORS.GRAY_100, text: COLORS.GRAY_600, border: COLORS.GRAY_400 },
-    };
-    const colors = variantMap[variant];
-    bgColor = colors.bg;
-    textColor = colors.text;
-    borderColor = colors.border;
+    colors = variantStyles[variant] ?? variantStyles.default;
   }
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`}
-      style={{
-        backgroundColor: bgColor,
-        color: textColor,
-        borderColor: borderColor,
-      }}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}
+      style={{ backgroundColor: colors.bg, color: colors.text }}
     >
+      {dot && (
+        <span
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{ backgroundColor: colors.text }}
+          aria-hidden="true"
+        />
+      )}
       {children}
     </span>
   );

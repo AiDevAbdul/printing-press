@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Settings, ChevronDown, X, Check } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, X, Check, Menu } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { CompanySwitcher } from './CompanySwitcher';
-import { Menu } from 'lucide-react';
 import notificationsService, { Notification } from '../../services/notifications.service';
 
 export interface HeaderProps {
@@ -17,12 +16,7 @@ export interface HeaderProps {
   className?: string;
 }
 
-export function Header({
-  onMenuToggle,
-  user,
-  onLogout,
-  className = '',
-}: HeaderProps) {
+export function Header({ onMenuToggle, user, onLogout, className = '' }: HeaderProps) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -32,7 +26,6 @@ export function Header({
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch notifications on mount and when dropdown opens
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -41,200 +34,177 @@ export function Header({
         setNotifications(response.data || []);
         const count = await notificationsService.getUnreadCount();
         setUnreadCount(count);
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
+      } catch {
+        // silent
       } finally {
         setLoading(false);
       }
     };
 
-    if (showNotifications) {
-      fetchNotifications();
-    }
-
-    // Poll for new notifications every 30 seconds
+    if (showNotifications) fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [showNotifications]);
 
-  // Close menus when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+    const onOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
   }, []);
 
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent, callback: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      callback();
-    }
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsService.markAsRead(id);
+      setNotifications((n) => n.map((x) => x.id === id ? { ...x, is_read: true } : x));
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch { /* silent */ }
   };
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  const handleDeleteNotification = async (id: string) => {
     try {
-      await notificationsService.markAsRead(notificationId);
-      setNotifications(notifications.map(n =>
-        n.id === notificationId ? { ...n, is_read: true } : n
-      ));
-      setUnreadCount(Math.max(0, unreadCount - 1));
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
-
-  const handleDeleteNotification = async (notificationId: string) => {
-    try {
-      await notificationsService.deleteNotification(notificationId);
-      setNotifications(notifications.filter(n => n.id !== notificationId));
-    } catch (error) {
-      console.error('Failed to delete notification:', error);
-    }
+      await notificationsService.deleteNotification(id);
+      setNotifications((n) => n.filter((x) => x.id !== id));
+    } catch { /* silent */ }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       await notificationsService.markAllAsRead();
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      setNotifications((n) => n.map((x) => ({ ...x, is_read: true })));
       setUnreadCount(0);
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-    }
+    } catch { /* silent */ }
   };
 
   const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
+    const secs = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+    if (secs < 60) return 'just now';
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+    return `${Math.floor(secs / 86400)}d ago`;
   };
+
+  const initials = user?.name?.charAt(0)?.toUpperCase() || 'U';
 
   return (
     <header
-      className={`bg-white border-b border-gray-200 sticky top-0 z-40 ${className}`}
+      className={[
+        'bg-surface/90 border-b border-[var(--color-border-subtle)] sticky top-0 z-40',
+        className,
+      ].join(' ')}
+      style={{ backdropFilter: 'blur(var(--glass-blur-md))' }}
       role="banner"
     >
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Left: Mobile menu toggle + Breadcrumb */}
-        <div className="flex items-center gap-4 flex-1">
-          {/* Mobile menu toggle */}
+      <div className="flex items-center justify-between px-4 h-14">
+        {/* Left */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             onClick={onMenuToggle}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            className="lg:hidden p-2 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)] transition-colors duration-fast"
             aria-label="Toggle navigation menu"
-            aria-expanded="false"
           >
             <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
-
-          {/* Breadcrumb - hidden on mobile */}
-          <div className="hidden md:block">
+          <div className="hidden md:block min-w-0">
             <Breadcrumb />
           </div>
         </div>
 
-        {/* Right: Notifications + User menu */}
-        <div className="flex items-center gap-3">
-          {/* Company Switcher */}
+        {/* Right */}
+        <div className="flex items-center gap-1">
           <CompanySwitcher />
 
           {/* Notifications */}
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              onKeyDown={(e) => handleKeyDown(e, () => setShowNotifications(!showNotifications))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 relative"
+              className="relative p-2 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)] transition-colors duration-fast"
               aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
               aria-expanded={showNotifications}
               aria-haspopup="true"
             >
-              <Bell className="w-5 h-5 text-gray-600" aria-hidden="true" />
+              <Bell className="w-5 h-5" aria-hidden="true" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold" aria-label={`${unreadCount} unread notifications`}>
+                <span
+                  className="absolute top-1.5 right-1.5 w-4 h-4 bg-danger text-white rounded-full flex items-center justify-center text-[10px] font-bold"
+                  aria-label={`${unreadCount} unread`}
+                >
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Notifications dropdown */}
             {showNotifications && (
               <div
-                className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-fadeInScale z-50"
+                className="absolute right-0 mt-2 w-80 bg-surface rounded-xl border border-[var(--color-border-subtle)] py-1 animate-fadeInScale z-50 overflow-hidden"
+                style={{ boxShadow: 'var(--shadow-3)' }}
                 role="region"
                 aria-label="Notifications panel"
               >
-                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Notifications</h3>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    Notifications
+                  </h3>
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      aria-label="Mark all notifications as read"
+                      className="text-xs text-brand hover:text-brand-dark font-medium transition-colors"
                     >
-                      Mark all as read
+                      Mark all read
                     </button>
                   )}
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto">
                   {loading ? (
-                    <div className="px-4 py-8 text-center text-gray-500">
-                      <p className="text-sm">Loading notifications...</p>
-                    </div>
+                    <p className="px-4 py-6 text-sm text-center text-[var(--color-text-tertiary)]">
+                      Loading…
+                    </p>
                   ) : notifications.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500">
-                      <p className="text-sm">No notifications</p>
-                    </div>
+                    <p className="px-4 py-6 text-sm text-center text-[var(--color-text-tertiary)]">
+                      No notifications
+                    </p>
                   ) : (
-                    notifications.map((notification) => (
+                    notifications.map((n) => (
                       <div
-                        key={notification.id}
-                        className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150 flex items-start gap-3 group ${
-                          !notification.is_read ? 'bg-blue-50' : ''
+                        key={n.id}
+                        className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--color-border-subtle)] group transition-colors duration-fast ${
+                          !n.is_read ? 'bg-brand-light' : 'hover:bg-[var(--color-page-bg)]'
                         }`}
                         role="article"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${!notification.is_read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                            {notification.title}
+                          <p className={`text-sm ${!n.is_read ? 'font-semibold text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
+                            {n.title}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            {notification.message}
+                          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 line-clamp-2">
+                            {n.message}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {formatTimeAgo(notification.created_at)}
+                          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                            {formatTimeAgo(n.created_at)}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          {!notification.is_read && (
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-fast flex-shrink-0">
+                          {!n.is_read && (
                             <button
-                              onClick={() => handleMarkAsRead(notification.id)}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors duration-150"
+                              onClick={() => handleMarkAsRead(n.id)}
+                              className="p-1 rounded hover:bg-[var(--color-border-subtle)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
                               aria-label="Mark as read"
-                              title="Mark as read"
                             >
-                              <Check className="w-4 h-4 text-gray-500" />
+                              <Check className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <button
-                            onClick={() => handleDeleteNotification(notification.id)}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors duration-150"
-                            aria-label="Delete notification"
-                            title="Delete"
+                            onClick={() => handleDeleteNotification(n.id)}
+                            className="p-1 rounded hover:bg-[var(--color-border-subtle)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+                            aria-label="Delete"
                           >
-                            <X className="w-4 h-4 text-gray-500" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -249,65 +219,67 @@ export function Header({
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              onKeyDown={(e) => handleKeyDown(e, () => setShowUserMenu(!showUserMenu))}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-[var(--color-border-subtle)] transition-colors duration-fast"
               aria-label={`User menu for ${user?.name || 'User'}`}
               aria-expanded={showUserMenu}
               aria-haspopup="true"
             >
               <div
-                className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-medium"
+                className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-semibold flex-shrink-0"
                 aria-hidden="true"
               >
-                {user?.name?.charAt(0) || 'U'}
+                {initials}
               </div>
-              <ChevronDown className="w-4 h-4 text-gray-600 hidden md:block" aria-hidden="true" />
+              <ChevronDown
+                className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] hidden md:block"
+                aria-hidden="true"
+              />
             </button>
 
-            {/* User dropdown */}
             {showUserMenu && (
               <div
-                className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-fadeInScale"
+                className="absolute right-0 mt-2 w-52 bg-surface rounded-xl border border-[var(--color-border-subtle)] py-1 animate-fadeInScale z-50 overflow-hidden"
+                style={{ boxShadow: 'var(--shadow-3)' }}
                 role="menu"
                 aria-label="User options"
               >
                 {user && (
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="font-semibold text-gray-900">{user.name}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                    <p className="text-xs text-gray-400 mt-1 capitalize">{user.role}</p>
+                  <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)] truncate mt-0.5">
+                      {user.email}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 capitalize">
+                      {user.role}
+                    </p>
                   </div>
                 )}
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    navigate('/profile');
-                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-page-bg)] hover:text-[var(--color-text-primary)] transition-colors duration-fast"
+                  onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
                   role="menuitem"
                 >
                   <User className="w-4 h-4" aria-hidden="true" />
                   Profile
                 </button>
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-page-bg)] hover:text-[var(--color-text-primary)] transition-colors duration-fast"
                   onClick={() => setShowUserMenu(false)}
                   role="menuitem"
                 >
                   <Settings className="w-4 h-4" aria-hidden="true" />
                   Settings
                 </button>
-                <hr className="my-2 border-gray-200" />
+                <div className="my-1 border-t border-[var(--color-border-subtle)]" />
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    onLogout?.();
-                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-danger hover:bg-danger-bg transition-colors duration-fast"
+                  onClick={() => { setShowUserMenu(false); onLogout?.(); }}
                   role="menuitem"
                 >
                   <LogOut className="w-4 h-4" aria-hidden="true" />
-                  Logout
+                  Log out
                 </button>
               </div>
             )}

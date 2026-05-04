@@ -36,10 +36,9 @@ Frontend runs on `http://localhost:5173`
 4. Use the header company switcher to switch between companies
 
 ## Companies
-1. Capital Packages
-2. CPP Pre Press
-3. BEST FOIL
-4. SILVO Enterprises
+1. Capital Print and Pack (CPP) — primary focus
+2. SILVO Enterprises
+3. Best Foil
 
 ## Key Endpoints
 - `POST /api/auth/login` - Login

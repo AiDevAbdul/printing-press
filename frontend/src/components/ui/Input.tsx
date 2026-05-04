@@ -24,81 +24,107 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       className = '',
       disabled,
       id,
+      required,
       ...props
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const inputId = id || `input-${Math.random().toString(36).slice(2, 9)}`;
     const errorId = error ? `${inputId}-error` : undefined;
     const helperId = helperText ? `${inputId}-helper` : undefined;
 
-    const baseClasses =
-      'px-3 py-2 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1';
-
-    const stateClasses = error
-      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+    const borderCls = error
+      ? 'border-danger focus:border-danger focus:ring-danger'
       : success
-      ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
-      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+      ? 'border-success focus:border-success focus:ring-success'
+      : 'border-[var(--color-border)] focus:border-brand focus:ring-brand';
 
-    const disabledClasses = disabled
-      ? 'bg-gray-100 cursor-not-allowed opacity-60'
-      : 'bg-white';
-
-    const widthClass = fullWidth ? 'w-full' : '';
-
-    const paddingClasses = leftIcon ? 'pl-10' : rightIcon ? 'pr-10' : '';
+    const paddingCls = leftIcon ? 'pl-10' : rightIcon || error || success ? 'pr-10' : '';
 
     return (
-      <div className={`${fullWidth ? 'w-full' : ''}`}>
+      <div className={fullWidth ? 'w-full' : ''}>
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-[var(--color-text-primary)] mb-1.5"
+          >
             {label}
+            {required && (
+              <span className="ml-1 text-danger" aria-hidden="true">*</span>
+            )}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
+            <div
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
+              aria-hidden="true"
+            >
               {leftIcon}
             </div>
           )}
           <input
             ref={ref}
             id={inputId}
-            className={`${baseClasses} ${stateClasses} ${disabledClasses} ${widthClass} ${paddingClasses} ${className}`}
+            className={[
+              'h-10 w-full px-3 text-sm rounded-md',
+              'bg-surface text-[var(--color-text-primary)]',
+              'border transition-all duration-fast',
+              'placeholder:text-[var(--color-text-tertiary)]',
+              'focus:outline-none focus:ring-2 focus:ring-offset-0',
+              'disabled:bg-[var(--color-page-bg)] disabled:opacity-50 disabled:cursor-not-allowed',
+              borderCls,
+              paddingCls,
+              fullWidth ? 'w-full' : '',
+              className,
+            ].filter(Boolean).join(' ')}
             disabled={disabled}
+            required={required}
             aria-invalid={!!error}
             aria-describedby={errorId || helperId}
             {...props}
           />
-          {rightIcon && !error && !success && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
+          {!error && !success && rightIcon && (
+            <div
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]"
+              aria-hidden="true"
+            >
               {rightIcon}
             </div>
           )}
           {error && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" aria-hidden="true">
-              <AlertCircle className="w-5 h-5" />
+            <div
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-danger"
+              aria-hidden="true"
+            >
+              <AlertCircle className="w-4 h-4" />
             </div>
           )}
-          {success && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" aria-hidden="true">
-              <CheckCircle className="w-5 h-5" />
+          {success && !error && (
+            <div
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-success"
+              aria-hidden="true"
+            >
+              <CheckCircle className="w-4 h-4" />
             </div>
           )}
         </div>
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+          <p
+            id={errorId}
+            className="mt-1.5 text-xs text-danger"
+            role="alert"
+          >
             {error}
           </p>
         )}
-        {success && (
-          <p className="mt-1 text-sm text-green-600" role="status">
+        {success && !error && (
+          <p className="mt-1.5 text-xs text-success" role="status">
             {success}
           </p>
         )}
         {helperText && !error && !success && (
-          <p id={helperId} className="mt-1 text-sm text-gray-500">
+          <p id={helperId} className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
             {helperText}
           </p>
         )}

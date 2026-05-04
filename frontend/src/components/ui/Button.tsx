@@ -2,12 +2,33 @@ import React from 'react';
 import { Loader } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+  variant?: 'primary' | 'accent' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
 }
+
+const variantCls = {
+  primary:
+    'bg-brand text-white hover:bg-brand-dark shadow-1 hover:shadow-2',
+  accent:
+    'bg-accent text-white hover:bg-accent-dark shadow-1 hover:shadow-2',
+  secondary:
+    'bg-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-border)]',
+  danger:
+    'bg-danger text-white hover:bg-[#e62e25] shadow-1 hover:shadow-2',
+  ghost:
+    'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)] hover:text-[var(--color-text-primary)]',
+  outline:
+    'bg-transparent border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)]',
+};
+
+const sizeCls = {
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded-md',
+  md: 'h-10 px-4 text-sm gap-2 rounded-md',
+  lg: 'h-12 px-5 text-sm gap-2 rounded-lg',
+};
 
 export function Button({
   variant = 'primary',
@@ -18,32 +39,26 @@ export function Button({
   disabled,
   fullWidth = false,
   className = '',
+  style,
   ...props
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-
-  const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 active:bg-blue-800',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 active:bg-gray-400',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500 active:bg-gray-200',
-    outline: 'bg-transparent border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500 active:bg-gray-100',
-  };
-
-  const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-  };
-
-  const widthClass = fullWidth ? 'w-full' : '';
-
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+      className={[
+        'inline-flex items-center justify-center font-medium select-none cursor-pointer',
+        'transition-all duration-fast',
+        'active:scale-[0.97]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+        'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+        variantCls[variant],
+        sizeCls[size],
+        fullWidth ? 'w-full' : '',
+        className,
+      ].filter(Boolean).join(' ')}
       disabled={disabled || isLoading}
       aria-busy={isLoading}
       aria-disabled={disabled || isLoading}
+      style={{ transitionTimingFunction: 'var(--ease-spring)', ...style }}
       {...props}
     >
       {isLoading ? (

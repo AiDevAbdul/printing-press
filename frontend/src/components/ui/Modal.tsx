@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 
 export interface ModalProps {
@@ -12,6 +12,14 @@ export interface ModalProps {
   footer?: React.ReactNode;
 }
 
+const sizeCls = {
+  sm:   'max-w-md',
+  md:   'max-w-lg',
+  lg:   'max-w-2xl',
+  xl:   'max-w-4xl',
+  full: 'max-w-7xl',
+};
+
 export function Modal({
   isOpen,
   onClose,
@@ -22,86 +30,77 @@ export function Modal({
   closeOnOverlayClick = true,
   footer,
 }: ModalProps) {
-  const modalId = `modal-${Math.random().toString(36).substr(2, 9)}`;
-  const titleId = title ? `${modalId}-title` : undefined;
+  const uid = useId();
+  const titleId = title ? `${uid}-title` : undefined;
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-7xl',
-  };
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (closeOnOverlayClick && e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
-      onClick={handleOverlayClick}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+      onClick={closeOnOverlayClick ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined}
       role="presentation"
     >
+      {/* Backdrop blur layer */}
       <div
-        className={`bg-white rounded-lg shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col animate-slideInUp`}
+        className="absolute inset-0 -z-10"
+        style={{ backdropFilter: 'blur(var(--glass-blur-sm))' }}
+        aria-hidden="true"
+      />
+
+      <div
+        className={[
+          'bg-surface w-full rounded-2xl flex flex-col animate-modalSlideIn',
+          'max-h-[90dvh]',
+          sizeCls[size],
+        ].join(' ')}
+        style={{ boxShadow: 'var(--shadow-modal)' }}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-subtle)] flex-shrink-0">
             {title && (
-              <h2 id={titleId} className="text-xl font-semibold text-gray-900">
+              <h2
+                id={titleId}
+                className="text-base font-semibold text-[var(--color-text-primary)]"
+              >
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                className="ml-auto p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)] transition-colors duration-fast"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5" aria-hidden="true" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+          <div className="px-6 py-4 border-t border-[var(--color-border-subtle)] bg-page-bg rounded-b-2xl flex-shrink-0">
             {footer}
           </div>
         )}
@@ -117,7 +116,7 @@ export interface ModalHeaderProps {
 
 export function ModalHeader({ children, className = '' }: ModalHeaderProps) {
   return (
-    <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+    <div className={`px-6 py-4 border-b border-[var(--color-border-subtle)] ${className}`}>
       {children}
     </div>
   );
@@ -129,7 +128,7 @@ export interface ModalBodyProps {
 }
 
 export function ModalBody({ children, className = '' }: ModalBodyProps) {
-  return <div className={`px-6 py-4 ${className}`}>{children}</div>;
+  return <div className={`px-6 py-5 ${className}`}>{children}</div>;
 }
 
 export interface ModalFooterProps {
@@ -140,7 +139,7 @@ export interface ModalFooterProps {
 export function ModalFooter({ children, className = '' }: ModalFooterProps) {
   return (
     <div
-      className={`px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3 ${className}`}
+      className={`px-6 py-4 border-t border-[var(--color-border-subtle)] bg-page-bg flex items-center justify-end gap-3 ${className}`}
     >
       {children}
     </div>

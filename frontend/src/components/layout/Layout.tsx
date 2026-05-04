@@ -132,7 +132,7 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-dvh bg-page-bg flex">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar

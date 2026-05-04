@@ -1,48 +1,45 @@
-# Printing Press Management System - Documentation
+# PrintFlow — Documentation
 
-**Last Updated:** April 20, 2026 | **Status:** ✅ Production Ready
+**Last Updated:** 2026-05-04 | **Status:** Active Development (CPP onboarding)
 
-## 📚 Essential Documentation
+## Essential Docs
 
 ### Getting Started
-- **[QUICK_START.md](QUICK_START.md)** - Setup, credentials, first steps
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, data flow, modules
+- **[QUICK_START.md](QUICK_START.md)** — Setup, credentials, first steps
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — System design, data flow, modules
 
 ### Development
-- **[MULTI_TENANT.md](MULTI_TENANT.md)** - Multi-company architecture, data isolation, JWT
-- **[API_CONVENTIONS.md](API_CONVENTIONS.md)** - API patterns, DTOs, validation
-- **[WORKFLOW.md](WORKFLOW.md)** - Production workflow, stage progression, operator inheritance
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[MULTI_TENANT.md](MULTI_TENANT.md)** — Multi-company architecture, data isolation, JWT
+- **[API_CONVENTIONS.md](API_CONVENTIONS.md)** — API patterns, DTOs, validation
+- **[WORKFLOW.md](WORKFLOW.md)** — Production workflow, stage progression
+- **[DESIGN_SYSTEM_PLAN.md](DESIGN_SYSTEM_PLAN.md)** — Apple HIG design system, token reference, phase roadmap
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Common issues
 
 ### Reference
-- **[CLIENT_REQ.md](CLIENT_REQ.md)** - Original requirements
-- **[DOMAIN_KNOWLEDGE.md](DOMAIN_KNOWLEDGE.md)** - Printing industry terminology
+- **[DOMAIN_KNOWLEDGE.md](DOMAIN_KNOWLEDGE.md)** — Printing industry terminology
 
 ---
 
-## 🎯 By Role
+## Companies
 
-**Developers**: QUICK_START.md → ARCHITECTURE.md → MULTI_TENANT.md → API_CONVENTIONS.md
-
-**DevOps/Deployment**: QUICK_START.md → ARCHITECTURE.md
-
-**Product/Business**: CLIENT_REQ.md → DOMAIN_KNOWLEDGE.md
-
----
-
-## 📊 System Overview
-
-**Multi-Tenant**: 4 companies (Capital Packages, CPP Pre Press, BEST FOIL, SILVO Enterprises)
-
-**Tech Stack**: NestJS + React 18 + TypeORM + PostgreSQL + Tailwind v4
-
-**Modules**: Auth, Users, Customers, Orders, Production, Inventory, Costing, Dashboard (12/12 complete)
-
-**Key Stats**: 40+ tables, 150+ endpoints, 30+ pages, 36+ components, ~75k LOC
+| Company | Focus | Status |
+|---------|-------|--------|
+| Capital Print and Pack (CPP) | Pre-Press, Production | **Primary — onboarding now** |
+| SILVO Enterprises | Alu-alu foil / pharma blister | Phase 5 |
+| Best Foil | Luxury foil packaging | Phase 5 |
 
 ---
 
-## 🚀 Quick Commands
+## Tech Stack
+
+**Backend**: NestJS · TypeORM · PostgreSQL  
+**Frontend**: React 19 · Vite · Tailwind v4 · React Query  
+**Design**: Apple HIG — Inter font, CSS custom property tokens, spring-physics motion  
+**Auth**: JWT with `company_id` + `is_super_admin` in payload
+
+---
+
+## Quick Commands
 
 ```bash
 # Backend
@@ -51,10 +48,9 @@ cd backend && npm install && npm run typeorm migration:run && npm run start:dev
 # Frontend
 cd frontend && npm install && npm run dev
 
-# Login
-Email: admin@printingpress.com | Password: admin123
+# Login: admin@printingpress.com / admin123
 ```
 
 ---
 
-**Built with NestJS, React, PostgreSQL, and Claude Opus 4.6**
+**For UI work: always check [DESIGN_SYSTEM_PLAN.md](DESIGN_SYSTEM_PLAN.md) before hardcoding any color, spacing, or shadow values.**

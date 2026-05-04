@@ -8,6 +8,20 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
+const variantCls = {
+  default:  'bg-surface border border-[var(--color-border-subtle)] shadow-1',
+  elevated: 'bg-surface shadow-2',
+  outlined: 'bg-surface border border-[var(--color-border)]',
+  glass:    'glass-card',
+};
+
+const paddingCls = {
+  none: '',
+  sm:   'p-3',
+  md:   'p-5',
+  lg:   'p-6',
+};
+
 export function Card({
   variant = 'default',
   padding = 'md',
@@ -15,33 +29,21 @@ export function Card({
   children,
   className = '',
   onClick,
+  style,
   ...props
 }: CardProps) {
-  const baseClasses = 'rounded-lg transition-all duration-200';
-
-  const variantClasses = {
-    default: 'bg-white border border-gray-200',
-    elevated: 'bg-white shadow-md',
-    outlined: 'bg-white border-2 border-gray-300',
-    glass: 'bg-white/80 backdrop-blur-sm border border-gray-200/50',
-  };
-
-  const paddingClasses = {
-    none: '',
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-6',
-  };
-
-  const hoverClasses = hover
-    ? 'hover:shadow-lg hover:-translate-y-1 cursor-pointer'
-    : '';
-
-  const clickableClasses = onClick ? 'cursor-pointer' : '';
-
   return (
     <div
-      className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${hoverClasses} ${clickableClasses} ${className}`}
+      className={[
+        'rounded-lg',
+        'transition-all duration-normal',
+        variantCls[variant],
+        paddingCls[padding],
+        hover ? 'hover:shadow-3 hover:-translate-y-px cursor-pointer' : '',
+        onClick ? 'cursor-pointer' : '',
+        className,
+      ].filter(Boolean).join(' ')}
+      style={{ transitionTimingFunction: 'var(--ease-out)', ...style }}
       onClick={onClick}
       {...props}
     >
@@ -57,7 +59,7 @@ export interface CardHeaderProps {
 
 export function CardHeader({ children, className = '' }: CardHeaderProps) {
   return (
-    <div className={`border-b border-gray-200 pb-3 mb-4 ${className}`}>
+    <div className={`border-b border-[var(--color-border-subtle)] pb-4 mb-4 ${className}`}>
       {children}
     </div>
   );
@@ -70,7 +72,7 @@ export interface CardTitleProps {
 
 export function CardTitle({ children, className = '' }: CardTitleProps) {
   return (
-    <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>
+    <h3 className={`text-base font-semibold text-[var(--color-text-primary)] ${className}`}>
       {children}
     </h3>
   );
@@ -92,7 +94,7 @@ export interface CardFooterProps {
 
 export function CardFooter({ children, className = '' }: CardFooterProps) {
   return (
-    <div className={`border-t border-gray-200 pt-3 mt-4 ${className}`}>
+    <div className={`border-t border-[var(--color-border-subtle)] pt-4 mt-4 ${className}`}>
       {children}
     </div>
   );
