@@ -90,7 +90,7 @@ export const AllVariants: Story = {
       <Badge variant="default">Default</Badge>
       <Badge variant="success">Success</Badge>
       <Badge variant="warning">Warning</Badge>
-      <Badge variant="error">Error</Badge>
+      <Badge variant="danger">Error</Badge>
       <Badge variant="info">Info</Badge>
     </div>
   ),
@@ -106,7 +106,7 @@ export const AllVariantsExtended: Story = {
       <Badge variant="default">Default</Badge>
       <Badge variant="success">Success</Badge>
       <Badge variant="warning">Warning</Badge>
-      <Badge variant="error">Error</Badge>
+      <Badge variant="danger">Error</Badge>
       <Badge variant="info">Info</Badge>
       <Badge variant="status" status="pending">Pending</Badge>
       <Badge variant="priority" priority="high">High</Badge>
