@@ -13,15 +13,11 @@ export default function Login() {
 
   const getDashboardRoute = (role: string): string => {
     const roleRoutes: Record<string, string> = {
-      prepress: '/dashboard/prepress',
-      operator: '/dashboard/production',
-      planner: '/dashboard/production',
-      qa_manager: '/dashboard/quality',
+      admin: '/dashboard',
       sales: '/dashboard/sales',
-      analyst: '/dashboard/analytics',
+      planner: '/dashboard/production',
       accounts: '/dashboard/finance',
       inventory: '/dashboard/inventory',
-      admin: '/dashboard',
     }
     return roleRoutes[role] || '/dashboard'
   }
