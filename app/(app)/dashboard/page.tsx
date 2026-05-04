@@ -1,140 +1,238 @@
-'use client'
+'use client';
 
-import { Header } from '@/components/layout/Header'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { MobileNav } from '@/components/layout/MobileNav'
-import { useState, useEffect } from 'react'
-import type { SidebarItem } from '@/components/layout/Sidebar'
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Card } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { dashboardService } from '@/lib/services/dashboard.service';
+import { formatCurrency } from '@/lib/formatters';
+import {
+  Package,
+  Factory,
+  AlertTriangle,
+  FileText,
+  AlertCircle
+} from 'lucide-react';
 
 export default function Dashboard() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me', { credentials: 'include' })
-        if (response.ok) {
-          const data = await response.json()
-          setUser({
-            name: data.name || 'User',
-            email: data.email || '',
-            role: data.role || '',
-          })
-        }
-      } catch (err) {
-        console.error('Failed to fetch user:', err)
-      }
-    }
-    fetchUser()
-  }, [])
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: dashboardService.getStats,
+  });
 
-  const navigationItems: SidebarItem[] = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: 'dashboard',
-      href: '/dashboard',
-    },
-    {
-      id: 'sales',
-      label: 'Sales',
-      icon: 'orders',
-      children: [
-        { id: 'customers', label: 'Customers', icon: 'customers', href: '/customers' },
-        { id: 'quotations', label: 'Quotations', icon: 'quotations', href: '/quotations' },
-        { id: 'orders', label: 'Orders', icon: 'orders', href: '/orders' },
-      ],
-    },
-    {
-      id: 'production',
-      label: 'Production',
-      icon: 'production',
-      children: [
-        { id: 'prepress', label: 'Pre-Press', icon: 'prepress', href: '/prepress' },
-        { id: 'production-jobs', label: 'Production', icon: 'production', href: '/production' },
-        { id: 'shop-floor', label: 'Shop Floor', icon: 'shop-floor', href: '/shop-floor' },
-        { id: 'quality', label: 'Quality', icon: 'quality', href: '/quality' },
-      ],
-    },
-  ]
+  const { data: productionStatus, isLoading: productionLoading, error: productionError } = useQuery({
+    queryKey: ['production-status'],
+    queryFn: dashboardService.getProductionStatus,
+  });
 
-  const getActiveItem = () => {
-    return 'dashboard'
+  if (statsLoading || productionLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton variant="text" className="h-10 w-80" />
+            <Skeleton variant="text" className="h-4 w-60" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+        <Skeleton variant="card" className="h-64" />
+      </div>
+    );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-page-bg">
-      <Header
-        onMenuToggle={() => setMobileNavOpen(true)}
-        user={user || undefined}
+  if (statsError || productionError) {
+    return (
+      <EmptyState
+        icon={<AlertCircle />}
+        title="Error loading dashboard"
+        description="There was an error loading the dashboard data. Please try again."
       />
+    );
+  }
 
-      <div className="flex flex-1">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <Sidebar
-            items={navigationItems}
-            activeItem={getActiveItem()}
-            collapsed={sidebarCollapsed}
-            onCollapsedChange={setSidebarCollapsed}
-          />
-        </div>
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
-        {/* Mobile Navigation */}
-        <MobileNav
-          isOpen={mobileNavOpen}
-          onClose={() => setMobileNavOpen(false)}
-          items={navigationItems}
-          activeItem={getActiveItem()}
-        />
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <main className="p-4 md:p-6">
-            <h1 className="text-3xl font-bold text-text-primary mb-2">Dashboard</h1>
-            <p className="text-text-secondary mb-6">Welcome to the Printing Press Management System</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-surface border border-border rounded-lg p-6 shadow-1">
-                <div className="text-sm text-text-secondary mb-2">Total Orders</div>
-                <div className="text-3xl font-bold text-text-primary">0</div>
-                <div className="text-xs text-text-tertiary mt-2">Coming soon</div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-lg p-6 shadow-1">
-                <div className="text-sm text-text-secondary mb-2">In Production</div>
-                <div className="text-3xl font-bold text-text-primary">0</div>
-                <div className="text-xs text-text-tertiary mt-2">Coming soon</div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-lg p-6 shadow-1">
-                <div className="text-sm text-text-secondary mb-2">Quality Checks</div>
-                <div className="text-3xl font-bold text-text-primary">0</div>
-                <div className="text-xs text-text-tertiary mt-2">Coming soon</div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-lg p-6 shadow-1">
-                <div className="text-sm text-text-secondary mb-2">Pending Invoices</div>
-                <div className="text-3xl font-bold text-text-primary">0</div>
-                <div className="text-xs text-text-tertiary mt-2">Coming soon</div>
-              </div>
-            </div>
-
-            <div className="mt-8 bg-surface border border-border rounded-lg p-6 shadow-1">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">Next Steps</h2>
-              <ul className="space-y-2 text-text-secondary">
-                <li>✓ Phase 3 Step 1: Auth pages (Login, Company Selector) ported</li>
-                <li>✓ Phase 3 Step 2: Layout components (Header, Sidebar) ported</li>
-                <li>⏳ Phase 3 Step 3: UI components (Button, Input, Modal, etc.) to port</li>
-                <li>⏳ Phase 3 Step 4: Remaining 28 pages to port</li>
-                <li>⏳ Phase 4: API Route Handlers to implement</li>
-              </ul>
-            </div>
-          </main>
+  return (
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)]">
+            Dashboard
+          </h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{currentDate}</p>
         </div>
       </div>
+
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card
+          variant="elevated"
+          padding="md"
+          hover
+          onClick={() => router.push('/orders')}
+          className="cursor-pointer"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Orders</p>
+                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.orders.total || 0}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="flex-1 px-3 py-1.5 bg-[var(--color-warning-bg)] text-[var(--color-warning)] rounded-lg text-xs font-medium text-center">
+                Pending: {stats?.orders.pending || 0}
+              </span>
+              <span className="flex-1 px-3 py-1.5 bg-[var(--color-info-bg)] text-[var(--color-info)] rounded-lg text-xs font-medium text-center">
+                Active: {stats?.orders.in_production || 0}
+              </span>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="md"
+          hover
+          onClick={() => router.push('/production')}
+          className="cursor-pointer"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Factory className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Production Jobs</p>
+                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.production_jobs.total || 0}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="flex-1 px-3 py-1.5 bg-[var(--color-success-bg)] text-[var(--color-success)] rounded-lg text-xs font-medium text-center">
+                Active: {productionStatus?.in_progress || 0}
+              </span>
+              <span className="flex-1 px-3 py-1.5 bg-[var(--color-warning-bg)] text-[var(--color-warning)] rounded-lg text-xs font-medium text-center">
+                Queued: {stats?.production_jobs.queued || 0}
+              </span>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="md"
+          hover
+          onClick={() => router.push('/inventory')}
+          className="cursor-pointer"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Low Stock Alert</p>
+                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.low_stock_items || 0}</p>
+              </div>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-warning-bg)] px-3 py-1.5 rounded-lg text-center">
+              Items need reordering
+            </p>
+          </div>
+        </Card>
+
+        <Card
+          variant="elevated"
+          padding="md"
+          hover
+          onClick={() => router.push('/invoices')}
+          className="cursor-pointer"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Pending Invoices</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{formatCurrency(stats?.pending_invoices_amount || 0)}</p>
+              </div>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] bg-blue-50 px-3 py-1.5 rounded-lg text-center">
+              Outstanding amount
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Production Status Section */}
+      {productionStatus && (
+        <Card variant="elevated" padding="lg">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Production Overview</h2>
+            <button
+              onClick={() => router.push('/production')}
+              className="text-sm text-brand hover:text-brand-dark font-medium"
+            >
+              View All →
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  {productionStatus.in_progress || 0}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-900">In Progress</p>
+                  <p className="text-xs text-green-700">Active production jobs</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  {productionStatus.scheduled_today || 0}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">Scheduled Today</p>
+                  <p className="text-xs text-blue-700">Jobs starting today</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  {productionStatus.overdue || 0}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-red-900">Overdue</p>
+                  <p className="text-xs text-red-700">Require immediate attention</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Card>
+      )}
     </div>
-  )
+  );
 }

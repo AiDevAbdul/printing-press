@@ -1,15 +1,15 @@
 # Printing Press Management System
 
-**Status:** 🔄 **Phase 3 In Progress** — Layout infrastructure done, page porting underway
+**Status:** 🔄 **Phase 3 In Progress** — All 28 pages stubbed + Dashboard fully implemented
 
 - [x] Phase 0 — Project Scaffold (Next.js, Tailwind, Prisma, auth utilities)
 - [x] Phase 1 — Auth Routes (login, select-company, refresh, me, logout)
 - [x] Phase 2 — Frontend Shell (layouts, providers, company context)
-- 🔄 **Phase 3 — Page Migration** (Steps 1-2 complete)
+- 🔄 **Phase 3 — Page Migration** (Steps 1-4 in progress)
   - [x] Step 1: Auth pages (Login, CompanySelector)
   - [x] Step 2: Layout components (Header, Sidebar, Breadcrumb, CompanySwitcher, MobileNav, iconMap)
-  - ⏳ Step 3: UI components (Button, Input, Modal, Card, Badge, Tabs, etc.)
-  - ⏳ Step 4: Remaining 28 pages
+  - [x] Step 3: UI components (Button, Input, Modal, Card, Badge, Tabs, Select, Checkbox, Radio, Alert, Skeleton, EmptyState, Pagination, SortButton)
+  - 🔄 Step 4: All 28 pages (1 fully implemented, 27 stubs with mapping guide)
 - ⏳ Phase 4 — API Route Handlers (19 modules)
 - ⏳ Phase 5 — File Storage (Vercel Blob)
 - ⏳ Phase 6 — Cutover & Cleanup
