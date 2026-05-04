@@ -62,7 +62,12 @@ export async function verifyRefreshToken(token: string | undefined): Promise<JWT
 }
 
 export async function getAuthToken(req: NextRequest): Promise<JWTPayload> {
-  const token = req.cookies.get('auth_token')?.value
+  let token = req.cookies.get('auth_token')?.value
+
+  if (!token) {
+    token = req.cookies.get('auth_temp')?.value
+  }
+
   const payload = await verifyToken(token)
 
   if (!payload) {

@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 const updateUserSchema = z.object({
   email: z.string().email().optional(),
   full_name: z.string().min(1).optional(),
-  role: z.enum(['admin', 'sales', 'production', 'quality', 'finance', 'dispatch', 'prepress', 'operator']).optional(),
+  role: z.enum(['admin', 'sales', 'planner', 'accounts', 'inventory']).optional(),
   phone: z.string().optional(),
   department: z.string().optional(),
   bio: z.string().optional(),

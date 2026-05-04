@@ -30,7 +30,7 @@ export async function GET(
 
     const customer = await db.customers.findFirst({
       where: { id, company_id: companyId },
-      include: { users: true },
+      include: { users: { select: { id: true, full_name: true, email: true } } },
     });
 
     if (!customer) {
@@ -77,7 +77,7 @@ export async function PATCH(
     const customer = await db.customers.update({
       where: { id },
       data: validated,
-      include: { users: true },
+      include: { users: { select: { id: true, full_name: true, email: true } } },
     });
 
     return NextResponse.json(customer);

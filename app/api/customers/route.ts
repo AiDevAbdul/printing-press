@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
-        include: { users: true },
+        include: { users: { select: { id: true, full_name: true, email: true } } },
       }),
       db.customers.count({ where }),
     ]);
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         company_id: companyId,
         created_by: userId,
       },
-      include: { users: true },
+      include: { users: { select: { id: true, full_name: true, email: true } } },
     });
 
     return NextResponse.json(customer, { status: 201 });
