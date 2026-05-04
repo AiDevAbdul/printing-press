@@ -50,9 +50,9 @@ export const Warning: Story = {
   },
 };
 
-export const Error: Story = {
+export const Danger: Story = {
   args: {
-    variant: 'error',
+    variant: 'danger',
     children: 'Failed',
   },
 };

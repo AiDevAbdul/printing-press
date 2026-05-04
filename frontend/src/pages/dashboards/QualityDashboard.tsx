@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { StatCard } from '../../components/ui/StatCard';
-import { Badge } from '../../components/ui/Badge';
 import { Card, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';

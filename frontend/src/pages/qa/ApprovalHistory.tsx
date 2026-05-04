@@ -137,7 +137,7 @@ export function ApprovalHistory() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-gray-900">{approval.job_number}</h3>
                     <Badge
-                      variant={approval.status === 'approved' ? 'success' : 'error'}
+                      variant={approval.status === 'approved' ? 'success' : 'danger'}
                     >
                       {approval.status === 'approved' ? (
                         <>

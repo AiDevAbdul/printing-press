@@ -44,7 +44,7 @@ export function StageApprovalStatus({ stageId }: StageApprovalStatusProps) {
       case 'approved':
         return 'success';
       case 'rejected':
-        return 'error';
+        return 'danger';
       case 'pending':
         return 'warning';
       default:
