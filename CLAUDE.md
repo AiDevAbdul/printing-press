@@ -1,8 +1,16 @@
 # Printing Press Management System
 
-**Status:** Migrating to Next.js 15 (single unified app) from split NestJS + React stack.
+**Status:** ✅ **Phases 0-2 Complete** — Next.js foundation ready, moving to page migration (Phase 3)
 
-Multi-tenant printing SaaS for 4 companies. See `docs/README.md` for full documentation and `docs/NEXTJS_MIGRATION.md` for migration plan.
+- [x] Phase 0 — Project Scaffold (Next.js, Tailwind, Prisma, auth utilities)
+- [x] Phase 1 — Auth Routes (login, select-company, refresh, me, logout)
+- [x] Phase 2 — Frontend Shell (layouts, providers, company context)
+- ⏳ **Phase 3 — Page Migration** (30 pages, next focus)
+- ⏳ Phase 4 — API Route Handlers (19 modules)
+- ⏳ Phase 5 — File Storage (Vercel Blob)
+- ⏳ Phase 6 — Cutover & Cleanup
+
+Multi-tenant printing SaaS for 4 companies. See `docs/NEXTJS_MIGRATION.md` for detailed migration plan and progress.
 
 ## Quick Start (During Migration)
 
