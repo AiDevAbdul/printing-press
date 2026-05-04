@@ -12,8 +12,12 @@
   - [x] Step 4: All 28 pages (1 fully implemented, 27 stubs with mapping guide)
 - [x] Phase 4 — API Route Handlers (19/19 modules complete)
   - Customers, Users, Orders, Quotations, Invoices, Dashboard, Inventory, Costing, Production, Quality, Prepress, Dispatch, Notifications, Companies, Machines, Workflow, Approvals, Activity Log, Export
-- 🔄 Phase 5 — File Storage (Vercel Blob)
-- ⏳ Phase 6 — Cutover & Cleanup
+- [x] Phase 5 — File Storage (Vercel Blob)
+  - Upload API endpoint with company-level isolation
+  - Client-side hooks and components
+  - File utilities and validation
+  - Documentation complete
+- 🔄 Phase 6 — Cutover & Cleanup (Final migration)
 
 Multi-tenant printing SaaS for 4 companies. See `docs/NEXTJS_MIGRATION.md` for detailed migration plan and progress.
 
