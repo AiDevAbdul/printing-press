@@ -12,3 +12,4 @@ export { Skeleton, SkeletonCard, SkeletonTable, SkeletonGrid, type SkeletonProps
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { Pagination, type PaginationProps } from './Pagination';
 export { SortButton, type SortButtonProps } from './SortButton';
+export { FileUpload, type FileUploadProps } from './FileUpload';
