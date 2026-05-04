@@ -34,7 +34,8 @@
       "Bash(npm ls:*)",
       "mcp__ide__getDiagnostics",
       "Bash(git add *)",
-      "Bash(git commit -m 'Phase 0-1: Next.js scaffold, Tailwind HIG tokens, Prisma setup, auth routes *)"
+      "Bash(git commit -m 'Phase 0-1: Next.js scaffold, Tailwind HIG tokens, Prisma setup, auth routes *)",
+      "Bash(git commit -m 'Update migration docs with Phase 0-2 completion status *)"
     ]
   },
   "mcpServers": {
