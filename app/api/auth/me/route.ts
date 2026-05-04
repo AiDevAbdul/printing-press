@@ -23,11 +23,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Get companies user can access
+    let companies: { id: string; name: string }[] = []
+    if (user.is_super_admin) {
+      const allCompanies = await db.companies.findMany()
+      companies = allCompanies.map((c) => ({ id: c.id, name: c.name }))
+    } else {
+      const userCompany = await db.companies.findUnique({
+        where: { id: token.company_id || '' },
+      })
+      if (userCompany) {
+        companies = [{ id: userCompany.id, name: userCompany.name }]
+      }
+    }
+
     return NextResponse.json({
       user: {
         ...user,
         companyId: token.company_id,
       },
+      companies,
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
