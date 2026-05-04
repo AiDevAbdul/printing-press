@@ -1,0 +1,1467 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model challans {
+  id                   String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  challan_number       String     @unique @db.VarChar(50)
+  delivery_id          String     @db.Uuid
+  challan_date         DateTime   @db.Date
+  terms_and_conditions String?
+  notes                String?
+  generated_by_id      String     @db.Uuid
+  created_at           DateTime   @default(now()) @db.Timestamp(6)
+  company_id           String     @db.Uuid
+  companies            companies  @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_challans_company_id")
+  deliveries           deliveries @relation(fields: [delivery_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_challan_delivery")
+  users                users      @relation(fields: [generated_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_challan_generated_by")
+
+  @@index([company_id], map: "IDX_challans_company_id")
+  @@index([delivery_id], map: "idx_challan_delivery")
+}
+
+model companies {
+  id                       String                     @id(map: "PK_companies") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                     String                     @unique @db.VarChar
+  email                    String?                    @db.VarChar
+  phone                    String?                    @db.VarChar
+  address                  String?
+  city                     String?                    @db.VarChar
+  state                    String?                    @db.VarChar
+  postal_code              String?                    @db.VarChar
+  gstin                    String?                    @db.VarChar
+  created_at               DateTime                   @default(now()) @db.Timestamp(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamp(6)
+  challans                 challans[]
+  customer_complaints      customer_complaints[]
+  customers                customers[]
+  deliveries               deliveries[]
+  delivery_tracking        delivery_tracking[]
+  design_approvals         design_approvals[]
+  design_attachments       design_attachments[]
+  designs                  designs[]
+  inventory_items          inventory_items[]
+  invoice_items            invoice_items[]
+  invoices                 invoices[]
+  job_costs                job_costs[]
+  machine_counters         machine_counters[]
+  material_consumption     material_consumption[]
+  orders                   orders[]
+  packing_lists            packing_lists[]
+  product_specifications   product_specifications[]
+  production_jobs          production_jobs[]
+  production_stage_history production_stage_history[]
+  quality_checkpoints      quality_checkpoints[]
+  quality_defects          quality_defects[]
+  quality_inspections      quality_inspections[]
+  quality_rejections       quality_rejections[]
+  quotation_history        quotation_history[]
+  quotation_items          quotation_items[]
+  quotations               quotations[]
+  specification_approvals  specification_approvals[]
+  stock_transactions       stock_transactions[]
+  users                    users[]
+  wastage_records          wastage_records[]
+
+  @@index([name], map: "IDX_company_name")
+}
+
+model costing_config {
+  id                        String   @id(map: "PK_6cea5c48782b56fe94472ce5eeb") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  paper_rate_per_kg         Decimal  @default(150) @db.Decimal(10, 2)
+  gsm_rate_factor           Decimal  @default(0.0001) @db.Decimal(10, 6)
+  cmyk_base_rate            Decimal  @default(2000) @db.Decimal(10, 2)
+  special_color_rate        Decimal  @default(800) @db.Decimal(10, 2)
+  spot_uv_rate_per_sqm      Decimal  @default(50) @db.Decimal(10, 2)
+  lamination_rate_per_sqm   Decimal  @default(30) @db.Decimal(10, 2)
+  embossing_rate_per_job    Decimal  @default(1500) @db.Decimal(10, 2)
+  die_cutting_rate_per_1000 Decimal  @default(500) @db.Decimal(10, 2)
+  pre_press_simple          Decimal  @default(2000) @db.Decimal(10, 2)
+  pre_press_medium          Decimal  @default(3500) @db.Decimal(10, 2)
+  pre_press_complex         Decimal  @default(5000) @db.Decimal(10, 2)
+  pre_press_rush            Decimal  @default(8000) @db.Decimal(10, 2)
+  is_active                 Boolean  @default(true)
+  updated_at                DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customer_complaints {
+  id                                              String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  complaint_number                                String           @unique @db.VarChar(50)
+  customer_id                                     String           @db.Uuid
+  job_id                                          String?          @db.Uuid
+  subject                                         String           @db.VarChar(200)
+  description                                     String
+  status                                          String           @default("open") @db.VarChar(20)
+  severity                                        String           @default("medium") @db.VarChar(20)
+  photo_url                                       String?          @db.VarChar(255)
+  root_cause_analysis                             String?
+  corrective_action                               String?
+  preventive_action                               String?
+  resolution_notes                                String?
+  resolved_at                                     DateTime?        @db.Timestamp(6)
+  assigned_to_id                                  String?          @db.Uuid
+  created_by_id                                   String           @db.Uuid
+  created_at                                      DateTime         @default(now()) @db.Timestamp(6)
+  updated_at                                      DateTime         @default(now()) @db.Timestamp(6)
+  company_id                                      String           @db.Uuid
+  companies                                       companies        @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_customer_complaints_company_id")
+  users_customer_complaints_assigned_to_idTousers users?           @relation("customer_complaints_assigned_to_idTousers", fields: [assigned_to_id], references: [id], onUpdate: NoAction, map: "fk_complaint_assigned_to")
+  users_customer_complaints_created_by_idTousers  users            @relation("customer_complaints_created_by_idTousers", fields: [created_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_complaint_created_by")
+  customers                                       customers        @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complaint_customer")
+  production_jobs                                 production_jobs? @relation(fields: [job_id], references: [id], onUpdate: NoAction, map: "fk_complaint_job")
+
+  @@index([company_id], map: "IDX_customer_complaints_company_id")
+  @@index([customer_id], map: "idx_complaint_customer")
+  @@index([severity], map: "idx_complaint_severity")
+  @@index([status], map: "idx_complaint_status")
+}
+
+model customers {
+  id                  String                @id(map: "PK_customers") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String                @db.VarChar
+  company_name        String?               @db.VarChar
+  email               String                @db.VarChar
+  phone               String                @db.VarChar
+  address             String?
+  city                String?               @db.VarChar
+  state               String?               @db.VarChar
+  postal_code         String?               @db.VarChar
+  credit_limit        Decimal               @default(0) @db.Decimal(10, 2)
+  credit_days         Int                   @default(30)
+  payment_terms       String?
+  is_active           Boolean               @default(true)
+  created_by          String?               @db.Uuid
+  created_at          DateTime              @default(now()) @db.Timestamp(6)
+  updated_at          DateTime              @default(now()) @db.Timestamp(6)
+  company_id          String                @db.Uuid
+  customer_group      String?               @db.VarChar
+  strn                String?               @db.VarChar
+  ntn                 String?               @db.VarChar
+  customer_complaints customer_complaints[]
+  users               users?                @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8f138f284609b045dc64c91757a")
+  companies           companies             @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_customers_company_id")
+  deliveries          deliveries[]
+  invoices            invoices[]
+  orders              orders[]
+  quotations          quotations[]
+
+  @@index([company_id], map: "IDX_customers_company_id")
+  @@index([company_id, is_active], map: "IDX_customers_company_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model deliveries {
+  id                      String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  delivery_number         String              @unique @db.VarChar(50)
+  job_id                  String              @db.Uuid
+  customer_id             String              @db.Uuid
+  delivery_status         String              @default("pending") @db.VarChar(20)
+  delivery_type           String              @db.VarChar(20)
+  scheduled_date          DateTime            @db.Date
+  packed_at               DateTime?           @db.Timestamp(6)
+  dispatched_at           DateTime?           @db.Timestamp(6)
+  delivered_at            DateTime?           @db.Timestamp(6)
+  courier_name            String?             @db.VarChar(100)
+  tracking_number         String?             @db.VarChar(100)
+  vehicle_number          String?             @db.VarChar(50)
+  driver_name             String?             @db.VarChar(100)
+  driver_phone            String?             @db.VarChar(20)
+  delivery_address        String
+  delivery_contact_name   String?             @db.VarChar(100)
+  delivery_contact_phone  String?             @db.VarChar(20)
+  pod_photo_url           String?             @db.VarChar(255)
+  pod_signature_url       String?             @db.VarChar(255)
+  received_by_name        String?             @db.VarChar(100)
+  received_by_designation String?             @db.VarChar(100)
+  delivery_notes          String?
+  failure_reason          String?
+  created_by_id           String              @db.Uuid
+  created_at              DateTime            @default(now()) @db.Timestamp(6)
+  updated_at              DateTime            @default(now()) @db.Timestamp(6)
+  company_id              String              @db.Uuid
+  challans                challans[]
+  companies               companies           @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_deliveries_company_id")
+  users                   users               @relation(fields: [created_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_delivery_created_by")
+  customers               customers           @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_delivery_customer")
+  production_jobs         production_jobs     @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_delivery_job")
+  delivery_tracking       delivery_tracking[]
+  packing_lists           packing_lists[]
+
+  @@index([company_id], map: "IDX_deliveries_company_id")
+  @@index([customer_id], map: "idx_delivery_customer")
+  @@index([job_id], map: "idx_delivery_job")
+  @@index([scheduled_date], map: "idx_delivery_scheduled_date")
+  @@index([delivery_status], map: "idx_delivery_status")
+}
+
+model delivery_tracking {
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  delivery_id   String     @db.Uuid
+  status        String     @db.VarChar(100)
+  location      String?    @db.VarChar(200)
+  notes         String?
+  updated_by_id String     @db.Uuid
+  created_at    DateTime   @default(now()) @db.Timestamp(6)
+  company_id    String     @db.Uuid
+  companies     companies  @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_delivery_tracking_company_id")
+  deliveries    deliveries @relation(fields: [delivery_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tracking_delivery")
+  users         users      @relation(fields: [updated_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_tracking_updated_by")
+
+  @@index([company_id], map: "IDX_delivery_tracking_company_id")
+  @@index([delivery_id], map: "idx_tracking_delivery")
+}
+
+model design_approvals {
+  id          String                       @id(map: "PK_e4852c951fd48b9e3df187c950a") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id  String                       @db.Uuid
+  design_id   String                       @db.Uuid
+  approver_id String                       @db.Uuid
+  status      design_approvals_status_enum @default(pending)
+  comments    String?
+  created_at  DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime                     @default(now()) @db.Timestamp(6)
+  users       users                        @relation(fields: [approver_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_c045a12c701a1656c0d121b13dc")
+  companies   companies                    @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_d84fbe57b7e5e983abe00945884")
+  designs     designs                      @relation(fields: [design_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_fba14585e55158bb8df797994c6")
+
+  @@index([company_id, design_id], map: "IDX_d2bf8519558ce7a519c8770862")
+}
+
+model design_attachments {
+  id             String    @id(map: "PK_d528dc9ebfa7b014823471b0dcc") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id     String    @db.Uuid
+  design_id      String    @db.Uuid
+  file_name      String    @db.VarChar
+  file_url       String    @db.VarChar
+  file_type      String?   @db.VarChar
+  uploaded_by_id String?   @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  users          users?    @relation(fields: [uploaded_by_id], references: [id], onUpdate: NoAction, map: "FK_53912fb3082407ac627aa6f8a81")
+  companies      companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_6cf8f4d5828d1dd17e1c608ffb7")
+  designs        designs   @relation(fields: [design_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_d561c7e67175c24af6f8b18c1e4")
+
+  @@index([company_id, design_id], map: "IDX_2e75d8a4a9512a80653e230df1")
+}
+
+model designs {
+  id                     String                        @id(map: "PK_3679aaa73bc37ec35a24a3cfde8") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id             String                        @db.Uuid
+  name                   String                        @db.VarChar
+  design_type            designs_design_type_enum
+  product_category       designs_product_category_enum
+  product_name           String?                       @db.VarChar
+  status                 designs_status_enum           @default(in_design)
+  designer_id            String?                       @db.Uuid
+  specs_sheet_url        String?                       @db.VarChar
+  approval_sheet_url     String?                       @db.VarChar
+  notes                  String?
+  created_at             DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                      @default(now()) @db.Timestamp(6)
+  design_approvals       design_approvals[]
+  design_attachments     design_attachments[]
+  users                  users?                        @relation(fields: [designer_id], references: [id], onUpdate: NoAction, map: "FK_3f7d2b0e1f8e3de3078a8f500c2")
+  companies              companies                     @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_a9b5ee10123de53b1a927c3db9f")
+  product_specifications product_specifications[]
+
+  @@index([company_id, design_type], map: "IDX_5a78cd64a20a62221058c795d5")
+  @@index([company_id, product_category], map: "IDX_89308ee73e25fd473da70bdd8c")
+  @@index([company_id, status], map: "IDX_c64f18af48c8bbd8c0ecc7cc0b")
+}
+
+model inventory_items {
+  id                 String                              @id(map: "PK_inventory_items") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  item_code          String                              @unique(map: "UQ_item_code") @db.VarChar
+  item_name          String                              @db.VarChar
+  category           inventory_items_category_enum
+  subcategory        String?                             @db.VarChar
+  unit               String                              @db.VarChar
+  size_length        Decimal?                            @db.Decimal(10, 2)
+  size_width         Decimal?                            @db.Decimal(10, 2)
+  brand              String?                             @db.VarChar
+  color              String?                             @db.VarChar
+  current_stock      Decimal                             @default(0) @db.Decimal(10, 2)
+  reorder_level      Decimal                             @default(0) @db.Decimal(10, 2)
+  reorder_quantity   Decimal                             @default(0) @db.Decimal(10, 2)
+  unit_cost          Decimal                             @default(0) @db.Decimal(10, 2)
+  is_active          Boolean                             @default(true)
+  created_at         DateTime                            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime                            @default(now()) @db.Timestamp(6)
+  main_category      inventory_items_main_category_enum?
+  gsm                Int?
+  size               String?                             @db.VarChar
+  material_type      String?                             @db.VarChar
+  company_id         String                              @db.Uuid
+  companies          companies                           @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_inventory_items_company_id")
+  job_costs          job_costs[]
+  stock_transactions stock_transactions[]
+
+  @@index([brand], map: "IDX_2eaf34cf433de58fea7f338f9c")
+  @@index([main_category], map: "IDX_bfe41ae257a16ae241f9a31c3b")
+  @@index([size], map: "IDX_c357096a04c9716b57b1d73fa7")
+  @@index([color], map: "IDX_ed333a9c0d800e4b8e97b91471")
+  @@index([company_id], map: "IDX_inventory_items_company_id")
+}
+
+model invoice_items {
+  id          String    @id(map: "PK_invoice_items") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  invoice_id  String?   @db.Uuid
+  description String    @db.VarChar
+  quantity    Decimal   @db.Decimal(10, 2)
+  unit_price  Decimal   @db.Decimal(10, 2)
+  total_price Decimal   @db.Decimal(10, 2)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  company_id  String    @db.Uuid
+  invoices    invoices? @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dc991d555664682cfe892eea2c1")
+  companies   companies @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_invoice_items_company_id")
+
+  @@index([company_id], map: "IDX_invoice_items_company_id")
+}
+
+model invoices {
+  id                   String               @id(map: "PK_invoices") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  invoice_number       String               @unique(map: "UQ_invoice_number") @db.VarChar
+  order_id             String?              @db.Uuid
+  customer_id          String?              @db.Uuid
+  invoice_date         DateTime             @db.Date
+  due_date             DateTime             @db.Date
+  subtotal             Decimal              @db.Decimal(10, 2)
+  tax_rate             Decimal              @default(0) @db.Decimal(5, 2)
+  tax_amount           Decimal              @default(0) @db.Decimal(10, 2)
+  total_amount         Decimal              @db.Decimal(10, 2)
+  paid_amount          Decimal              @default(0) @db.Decimal(10, 2)
+  balance_amount       Decimal              @default(0) @db.Decimal(10, 2)
+  status               invoices_status_enum @default(draft)
+  payment_terms        String?
+  notes                String?
+  created_by           String?              @db.Uuid
+  created_at           DateTime             @default(now()) @db.Timestamp(6)
+  updated_at           DateTime             @default(now()) @db.Timestamp(6)
+  final_quantity       Decimal?             @db.Decimal(10, 2)
+  unit_rate            Decimal?             @db.Decimal(10, 2)
+  sales_tax_applicable Boolean              @default(false)
+  company_name         String?              @db.VarChar
+  group_name           String?              @db.VarChar
+  product_type         String?              @db.VarChar
+  strength             String?              @db.VarChar
+  company_id           String               @db.Uuid
+  invoice_items        invoice_items[]
+  users                users?               @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_39a202af5d1dd1744458820ecb5")
+  customers            customers?           @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_65e3145f317bd655481d3f96c74")
+  orders               orders?              @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ea83c3b911906a3578de2340fdf")
+  companies            companies            @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_invoices_company_id")
+
+  @@index([company_id], map: "IDX_invoices_company_id")
+  @@index([company_id, status], map: "IDX_invoices_company_status")
+}
+
+model job_costs {
+  id                    String                   @id(map: "PK_job_costs") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_id                String?                  @db.Uuid
+  cost_type             job_costs_cost_type_enum
+  item_id               String?                  @db.Uuid
+  description           String                   @db.VarChar
+  quantity              Decimal                  @db.Decimal(10, 2)
+  unit_cost             Decimal                  @db.Decimal(10, 2)
+  total_cost            Decimal                  @db.Decimal(10, 2)
+  created_at            DateTime                 @default(now()) @db.Timestamp(6)
+  order_id              String?                  @db.Uuid
+  card_length           Decimal?                 @db.Decimal(10, 2)
+  card_width            Decimal?                 @db.Decimal(10, 2)
+  card_gsm              Int?
+  colors_cmyk           Boolean                  @default(false)
+  special_colors_count  Int                      @default(0)
+  special_colors        String?
+  lamination_required   Boolean                  @default(false)
+  embossing_required    Boolean                  @default(false)
+  material_cost         Decimal                  @default(0) @db.Decimal(10, 2)
+  printing_cost_cmyk    Decimal                  @default(0) @db.Decimal(10, 2)
+  printing_cost_special Decimal                  @default(0) @db.Decimal(10, 2)
+  uv_cost               Decimal                  @default(0) @db.Decimal(10, 2)
+  lamination_cost       Decimal                  @default(0) @db.Decimal(10, 2)
+  die_cutting_cost      Decimal                  @default(0) @db.Decimal(10, 2)
+  embossing_cost        Decimal                  @default(0) @db.Decimal(10, 2)
+  pre_press_charges     Decimal                  @default(0) @db.Decimal(10, 2)
+  total_processing_cost Decimal                  @default(0) @db.Decimal(10, 2)
+  cost_per_unit         Decimal                  @default(0) @db.Decimal(10, 4)
+  card_type             String?                  @db.VarChar
+  uv_type               String?                  @db.VarChar
+  company_id            String                   @db.Uuid
+  inventory_items       inventory_items?         @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_2197f37f0bfcd775ff292004042")
+  orders                orders?                  @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8196c6c729ca2595a37adf08b02")
+  production_jobs       production_jobs?         @relation(fields: [job_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_8dedf043a7b1cf9ad001812920b")
+  companies             companies                @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_job_costs_company_id")
+
+  @@index([company_id], map: "IDX_job_costs_company_id")
+}
+
+model machine_counters {
+  id                       String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_id                   String                   @db.Uuid
+  stage_history_id         String                   @db.Uuid
+  machine_name             String                   @db.VarChar(50)
+  counter_start            Int
+  counter_end              Int?
+  good_quantity            Int?
+  waste_quantity           Int?
+  notes                    String?
+  recorded_by_id           String                   @db.Uuid
+  created_at               DateTime                 @default(now()) @db.Timestamp(6)
+  company_id               String                   @db.Uuid
+  companies                companies                @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_machine_counters_company_id")
+  production_jobs          production_jobs          @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_machine_counter_job")
+  production_stage_history production_stage_history @relation(fields: [stage_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_machine_counter_stage")
+  users                    users                    @relation(fields: [recorded_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_machine_counter_user")
+
+  @@index([company_id], map: "IDX_machine_counters_company_id")
+  @@index([job_id], map: "idx_machine_counter_job")
+  @@index([stage_history_id], map: "idx_machine_counter_stage")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model material_consumption {
+  id                       String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_id                   String                    @db.Uuid
+  stage_history_id         String?                   @db.Uuid
+  material_name            String                    @db.VarChar(100)
+  material_code            String?                   @db.VarChar(50)
+  transaction_type         String                    @db.VarChar(20)
+  quantity                 Decimal                   @db.Decimal(10, 2)
+  unit                     String                    @db.VarChar(20)
+  notes                    String?
+  issued_by_id             String                    @db.Uuid
+  created_at               DateTime                  @default(now()) @db.Timestamp(6)
+  company_id               String                    @db.Uuid
+  companies                companies                 @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_material_consumption_company_id")
+  production_jobs          production_jobs           @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_material_consumption_job")
+  production_stage_history production_stage_history? @relation(fields: [stage_history_id], references: [id], onUpdate: NoAction, map: "fk_material_consumption_stage")
+  users                    users                     @relation(fields: [issued_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_material_consumption_user")
+
+  @@index([company_id], map: "IDX_material_consumption_company_id")
+  @@index([job_id], map: "idx_material_consumption_job")
+  @@index([stage_history_id], map: "idx_material_consumption_stage")
+}
+
+model migrations {
+  id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
+  timestamp BigInt
+  name      String @db.VarChar
+}
+
+model notifications {
+  id         String                 @id(map: "PK_notifications") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String                 @db.Uuid
+  type       notification_type_enum
+  title      String                 @db.VarChar
+  message    String
+  link       String?                @db.VarChar
+  read       Boolean                @default(false)
+  created_at DateTime               @default(now()) @db.Timestamp(6)
+  users      users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_notifications_user")
+
+  @@index([created_at], map: "IDX_notifications_created_at")
+  @@index([read], map: "IDX_notifications_read")
+  @@index([user_id], map: "IDX_notifications_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model offline_sync_queue {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id       String   @db.Uuid
+  action_type   String   @db.VarChar(50)
+  payload       Json
+  status        String   @default("pending") @db.VarChar(20)
+  error_message String?
+  retry_count   Int      @default(0)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([status], map: "idx_offline_sync_status")
+  @@index([user_id], map: "idx_offline_sync_user")
+}
+
+model orders {
+  id                        String                        @id(map: "PK_orders") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_number              String                        @unique(map: "UQ_order_number") @db.VarChar
+  customer_id               String?                       @db.Uuid
+  order_date                DateTime                      @db.Date
+  delivery_date             DateTime                      @db.Date
+  status                    orders_status_enum            @default(pending)
+  priority                  orders_priority_enum          @default(normal)
+  product_name              String                        @db.VarChar
+  quantity                  Int
+  unit                      String                        @db.VarChar
+  size_length               Decimal?                      @db.Decimal(10, 2)
+  size_width                Decimal?                      @db.Decimal(10, 2)
+  size_unit                 String?                       @db.VarChar
+  substrate                 String?                       @db.VarChar
+  gsm                       String?                       @db.VarChar
+  colors                    String?                       @db.VarChar
+  printing_type             orders_printing_type_enum?
+  finishing_requirements    String?
+  special_instructions      String?
+  quoted_price              Decimal?                      @db.Decimal(10, 2)
+  final_price               Decimal?                      @db.Decimal(10, 2)
+  created_by                String?                       @db.Uuid
+  created_at                DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at                DateTime                      @default(now()) @db.Timestamp(6)
+  product_type              orders_product_type_enum?
+  is_repeat_order           Boolean                       @default(false)
+  previous_order_id         String?                       @db.Uuid
+  card_size                 String?                       @db.VarChar
+  strength                  String?                       @db.VarChar
+  type                      String?                       @db.VarChar
+  color_p1                  String?                       @db.VarChar
+  color_p2                  String?                       @db.VarChar
+  color_p3                  String?                       @db.VarChar
+  color_p4                  String?                       @db.VarChar
+  varnish_type              String?
+  varnish_details           String?
+  lamination_type           String?
+  lamination_size           String?                       @db.VarChar
+  uv_emboss_details         String?
+  has_back_printing         Boolean                       @default(false)
+  has_barcode               Boolean                       @default(false)
+  batch_number              String?                       @db.VarChar
+  ctp_info                  String?
+  die_type                  orders_die_type_enum?
+  die_reference             String?                       @db.VarChar
+  emboss_film_details       String?
+  plate_reference           String?                       @db.VarChar
+  designer_name             String?                       @db.VarChar
+  design_approved_by        String?                       @db.VarChar
+  design_approved_at        DateTime?                     @db.Timestamp(6)
+  cylinder_reference        String?                       @db.VarChar
+  cylinder_sent_date        DateTime?                     @db.Date
+  cylinder_approved_date    DateTime?                     @db.Date
+  cylinder_received_date    DateTime?                     @db.Date
+  thickness_micron          Decimal?                      @db.Decimal(10, 2)
+  tablet_size               String?                       @db.VarChar
+  punch_size                String?                       @db.VarChar
+  specifications            String?
+  auto_sync_enabled         Boolean                       @default(true)
+  group_name                String?                       @db.VarChar
+  production_status         String?                       @db.VarChar
+  company_id                String                        @db.Uuid
+  design_file_status        design_file_status_enum?
+  design_file_formats       String?
+  design_approval_date      DateTime?                     @db.Date
+  design_revisions_count    Int?                          @default(0)
+  design_notes              String?
+  color_separation_type     color_separation_type_enum?
+  number_of_plates          Int?
+  plate_size                String?                       @db.VarChar
+  plate_material            plate_material_enum?
+  plate_condition           plate_condition_enum?
+  plate_approval_status     plate_approval_status_enum?
+  plate_approval_date       DateTime?                     @db.Date
+  proof_type_required       String?
+  proof_status              proof_status_enum?
+  proof_approval_date       DateTime?                     @db.Date
+  color_matching_standard   color_matching_standard_enum?
+  quality_check_notes       String?
+  approved_by               String?                       @db.VarChar
+  preferred_machines        String?
+  special_setup_required    Boolean?                      @default(false)
+  setup_instructions        String?
+  estimated_setup_time      Int?
+  machine_calibration_notes String?
+  color_cyan                String?                       @db.VarChar
+  color_magenta             String?                       @db.VarChar
+  color_yellow              String?                       @db.VarChar
+  color_black               String?                       @db.VarChar
+  card_width                String?                       @db.VarChar
+  card_length               String?                       @db.VarChar
+  invoices                  invoices[]
+  job_costs                 job_costs[]
+  users                     users?                        @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_574a2f0932043d4e4baf188ee05")
+  customers                 customers?                    @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_772d0ce0473ac2ccfa26060dbe9")
+  companies                 companies                     @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_orders_company_id")
+  production_jobs           production_jobs[]
+  quotations                quotations[]
+
+  @@index([color_separation_type], map: "IDX_orders_color_separation_type")
+  @@index([company_id, created_at], map: "IDX_orders_company_created")
+  @@index([company_id], map: "IDX_orders_company_id")
+  @@index([company_id, status], map: "IDX_orders_company_status")
+  @@index([design_file_status], map: "IDX_orders_design_file_status")
+  @@index([plate_approval_status], map: "IDX_orders_plate_approval_status")
+  @@index([proof_status], map: "IDX_orders_proof_status")
+}
+
+model packing_lists {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  delivery_id      String     @db.Uuid
+  box_number       Int
+  item_description String     @db.VarChar(200)
+  quantity         Int
+  unit             String     @db.VarChar(20)
+  weight_kg        Decimal?   @db.Decimal(10, 2)
+  notes            String?
+  created_at       DateTime   @default(now()) @db.Timestamp(6)
+  company_id       String     @db.Uuid
+  companies        companies  @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_packing_lists_company_id")
+  deliveries       deliveries @relation(fields: [delivery_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_packing_list_delivery")
+
+  @@index([company_id], map: "IDX_packing_lists_company_id")
+  @@index([delivery_id], map: "idx_packing_list_delivery")
+}
+
+model product_specifications {
+  id                                                 String                                      @id(map: "PK_1936a81a371c31faaddb04331a2") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id                                         String                                      @db.Uuid
+  design_id                                          String?                                     @db.Uuid
+  product_name                                       String                                      @db.VarChar
+  customer_group                                     product_specifications_customer_group_enum?
+  file_folder_name                                   String?                                     @db.VarChar
+  form_number                                        String?                                     @db.VarChar
+  card_type                                          product_specifications_card_type_enum?
+  card_gramage                                       Decimal?                                    @db.Decimal(5, 2)
+  back_printing                                      Boolean                                     @default(false)
+  lamination_type                                    product_specifications_lamination_type_enum @default(none)
+  lamination_shine                                   Boolean                                     @default(false)
+  lamination_metalize                                Boolean                                     @default(false)
+  lamination_emboss                                  Boolean                                     @default(false)
+  lamination_details                                 String?                                     @db.VarChar
+  varnish_type                                       product_specifications_varnish_type_enum    @default(none)
+  varnish_spot_uv                                    Boolean                                     @default(false)
+  varnish_drip_off                                   Boolean                                     @default(false)
+  varnish_matt                                       Boolean                                     @default(false)
+  has_barcode                                        Boolean                                     @default(false)
+  batch_number                                       String?                                     @db.VarChar
+  has_price                                          Boolean                                     @default(false)
+  color_cyan                                         Boolean                                     @default(false)
+  color_magenta                                      Boolean                                     @default(false)
+  color_yellow                                       Boolean                                     @default(false)
+  color_black                                        Boolean                                     @default(false)
+  has_special_colors                                 Boolean                                     @default(false)
+  special_colors_detail                              String?                                     @db.VarChar
+  pantone_p1                                         String?                                     @db.VarChar
+  pantone_p2                                         String?                                     @db.VarChar
+  pantone_p3                                         String?                                     @db.VarChar
+  pantone_p4                                         String?                                     @db.VarChar
+  required_card_length                               Decimal?                                    @db.Decimal(8, 2)
+  required_card_width                                Decimal?                                    @db.Decimal(8, 2)
+  required_card_gramage                              Decimal?                                    @db.Decimal(5, 2)
+  printing_card_length                               Decimal?                                    @db.Decimal(8, 2)
+  printing_card_width                                Decimal?                                    @db.Decimal(8, 2)
+  printing_card_gramage                              Decimal?                                    @db.Decimal(5, 2)
+  ups_code                                           String?                                     @db.VarChar
+  grain_side_first                                   Boolean                                     @default(false)
+  old_dye_code                                       String?                                     @db.VarChar
+  new_dye_code                                       String?                                     @db.VarChar
+  is_new_dye                                         Boolean                                     @default(false)
+  ctp_required                                       Boolean                                     @default(false)
+  drip_off_required                                  Boolean                                     @default(false)
+  spot_uv_required                                   Boolean                                     @default(false)
+  emboss_required                                    Boolean                                     @default(false)
+  status                                             product_specifications_status_enum          @default(draft)
+  prepared_by_id                                     String?                                     @db.Uuid
+  received_by_id                                     String?                                     @db.Uuid
+  grn_number                                         String?                                     @db.VarChar
+  other_information                                  String?
+  created_at                                         DateTime                                    @default(now()) @db.Timestamp(6)
+  updated_at                                         DateTime                                    @default(now()) @db.Timestamp(6)
+  users_product_specifications_received_by_idTousers users?                                      @relation("product_specifications_received_by_idTousers", fields: [received_by_id], references: [id], onUpdate: NoAction, map: "FK_020ca0962ddb2a402678ac2ef60")
+  designs                                            designs?                                    @relation(fields: [design_id], references: [id], onUpdate: NoAction, map: "FK_033569decffc5841c8167915b1e")
+  companies                                          companies                                   @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_e19bd26ddf9d6d12d525c2420da")
+  users_product_specifications_prepared_by_idTousers users?                                      @relation("product_specifications_prepared_by_idTousers", fields: [prepared_by_id], references: [id], onUpdate: NoAction, map: "FK_ec380a6c621936443af33f49cd9")
+  specification_approvals                            specification_approvals[]
+
+  @@index([company_id], map: "idx_product_specifications_company_id")
+  @@index([design_id], map: "idx_product_specifications_design_id")
+  @@index([status], map: "idx_product_specifications_status")
+}
+
+model production_jobs {
+  id                         String                       @id(map: "PK_production_jobs") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_number                 String                       @unique(map: "UQ_job_number") @db.VarChar
+  order_id                   String?                      @db.Uuid
+  scheduled_start_date       DateTime?                    @db.Date
+  scheduled_end_date         DateTime?                    @db.Date
+  actual_start_date          DateTime?                    @db.Timestamp(6)
+  actual_end_date            DateTime?                    @db.Timestamp(6)
+  status                     production_jobs_status_enum  @default(queued)
+  assigned_machine           String?                      @db.VarChar
+  assigned_operator          String?                      @db.Uuid
+  estimated_hours            Decimal?                     @db.Decimal(10, 2)
+  actual_hours               Decimal?                     @db.Decimal(10, 2)
+  notes                      String?
+  created_at                 DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime                     @default(now()) @db.Timestamp(6)
+  queue_position             Int?
+  current_stage              String?                      @db.VarChar(100)
+  current_process            String?                      @db.VarChar(100)
+  inline_status              String?                      @db.VarChar(255)
+  searchable_text            String?
+  estimated_start            DateTime?                    @db.Timestamp(6)
+  estimated_completion       DateTime?                    @db.Timestamp(6)
+  actual_completion          DateTime?                    @db.Timestamp(6)
+  progress_percent           Int?                         @default(0)
+  quality_status             String?                      @db.VarChar(20)
+  failed_inspections_count   Int?                         @default(0)
+  last_inspection_date       DateTime?                    @db.Timestamp(6)
+  company_id                 String                       @db.Uuid
+  customer_complaints        customer_complaints[]
+  deliveries                 deliveries[]
+  job_costs                  job_costs[]
+  machine_counters           machine_counters[]
+  material_consumption       material_consumption[]
+  orders                     orders?                      @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_53931cf9bdae6756ee8502017a1")
+  users                      users?                       @relation(fields: [assigned_operator], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_96e40dbd1fd777a611b86af5ebb")
+  companies                  companies                    @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_production_jobs_company_id")
+  production_stage_history   production_stage_history[]
+  production_workflow_stages production_workflow_stages[]
+  quality_inspections        quality_inspections[]
+  quality_rejections         quality_rejections[]
+  stage_approvals            stage_approvals[]
+  wastage_records            wastage_records[]
+
+  @@index([current_stage], map: "IDX_production_current_stage")
+  @@index([company_id], map: "IDX_production_jobs_company_id")
+  @@index([company_id, status], map: "IDX_production_jobs_company_status")
+  @@index([assigned_machine], map: "IDX_production_machine")
+  @@index([status], map: "IDX_production_status")
+}
+
+model production_stage_history {
+  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_id               String                 @db.Uuid
+  stage                String                 @db.VarChar(100)
+  process              String?                @db.VarChar(100)
+  machine              String?                @db.VarChar(50)
+  operator_id          String?                @db.Uuid
+  started_at           DateTime               @default(now()) @db.Timestamp(6)
+  completed_at         DateTime?              @db.Timestamp(6)
+  duration_minutes     Int?
+  notes                String?
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  updated_at           DateTime               @default(now()) @db.Timestamp(6)
+  quality_checked      Boolean?               @default(false)
+  quality_status       String?                @db.VarChar(20)
+  company_id           String                 @db.Uuid
+  machine_counters     machine_counters[]
+  material_consumption material_consumption[]
+  companies            companies              @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_production_stage_history_company_id")
+  production_jobs      production_jobs        @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_stage_history_job")
+  users                users?                 @relation(fields: [operator_id], references: [id], onUpdate: NoAction, map: "FK_stage_history_operator")
+  quality_inspections  quality_inspections[]
+  wastage_records      wastage_records[]
+
+  @@index([company_id], map: "IDX_production_stage_history_company_id")
+  @@index([job_id], map: "IDX_stage_history_job")
+  @@index([stage], map: "IDX_stage_history_stage")
+}
+
+model production_workflow_stages {
+  id                                                     Int                                    @id(map: "PK_5d8f91174ec2bd02caa4cd3872c") @default(autoincrement())
+  stage_name                                             String                                 @db.VarChar(100)
+  stage_order                                            Int
+  status                                                 production_workflow_stages_status_enum @default(pending)
+  started_at                                             DateTime?                              @db.Timestamp(6)
+  paused_at                                              DateTime?                              @db.Timestamp(6)
+  resumed_at                                             DateTime?                              @db.Timestamp(6)
+  completed_at                                           DateTime?                              @db.Timestamp(6)
+  active_duration_minutes                                Int                                    @default(0)
+  pause_duration_minutes                                 Int                                    @default(0)
+  total_duration_minutes                                 Int?
+  operator_name                                          String?                                @db.VarChar(255)
+  machine                                                String?                                @db.VarChar(100)
+  waste_quantity                                         Decimal?                               @db.Decimal(10, 2)
+  notes                                                  String?
+  pause_reason                                           String?                                @db.VarChar(255)
+  created_at                                             DateTime                               @default(now()) @db.Timestamp(6)
+  updated_at                                             DateTime                               @default(now()) @db.Timestamp(6)
+  job_id                                                 String?                                @db.Uuid
+  operator_id                                            String?                                @db.Uuid
+  qa_approval_required                                   Boolean                                @default(true)
+  qa_approval_status                                     approval_status_enum?                  @default(pending)
+  qa_approved_by                                         String?                                @db.Uuid
+  qa_approved_at                                         DateTime?                              @db.Timestamp(6)
+  qa_rejection_reason                                    String?
+  production_jobs                                        production_jobs?                       @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_2e2dce7b6f9f321a564d76d6fe2")
+  users_production_workflow_stages_operator_idTousers    users?                                 @relation("production_workflow_stages_operator_idTousers", fields: [operator_id], references: [id], onUpdate: NoAction, map: "FK_8b9caac6bc0d73e6e639248f7a6")
+  users_production_workflow_stages_qa_approved_byTousers users?                                 @relation("production_workflow_stages_qa_approved_byTousers", fields: [qa_approved_by], references: [id], onUpdate: NoAction, map: "FK_workflow_stages_qa_approved_by")
+
+  @@index([job_id], map: "IDX_workflow_job")
+  @@index([stage_name], map: "IDX_workflow_stage")
+  @@index([qa_approval_status], map: "IDX_workflow_stages_qa_approval_status")
+  @@index([status], map: "IDX_workflow_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quality_checkpoints {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String                @db.VarChar(100)
+  description         String?
+  stage               String                @db.VarChar(50)
+  severity            String                @default("mandatory") @db.VarChar(20)
+  checklist_items     Json?
+  is_active           Boolean               @default(true)
+  sequence_order      Int                   @default(0)
+  created_at          DateTime              @default(now()) @db.Timestamp(6)
+  updated_at          DateTime              @default(now()) @db.Timestamp(6)
+  company_id          String                @db.Uuid
+  companies           companies             @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quality_checkpoints_company_id")
+  quality_inspections quality_inspections[]
+
+  @@index([company_id], map: "IDX_quality_checkpoints_company_id")
+  @@index([is_active], map: "idx_checkpoint_active")
+  @@index([stage], map: "idx_checkpoint_stage")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quality_defects {
+  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inspection_id       String              @db.Uuid
+  category            String              @db.VarChar(50)
+  severity            String              @db.VarChar(20)
+  description         String              @db.VarChar(200)
+  quantity            Int                 @default(1)
+  photo_url           String?             @db.VarChar(255)
+  root_cause          String?
+  corrective_action   String?
+  logged_by_id        String              @db.Uuid
+  created_at          DateTime            @default(now()) @db.Timestamp(6)
+  company_id          String              @db.Uuid
+  companies           companies           @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quality_defects_company_id")
+  quality_inspections quality_inspections @relation(fields: [inspection_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_defect_inspection")
+  users               users               @relation(fields: [logged_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_defect_logged_by")
+
+  @@index([company_id], map: "IDX_quality_defects_company_id")
+  @@index([category], map: "idx_defect_category")
+  @@index([inspection_id], map: "idx_defect_inspection")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quality_inspections {
+  id                       String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inspection_number        String                    @unique @db.VarChar(50)
+  job_id                   String                    @db.Uuid
+  stage_history_id         String?                   @db.Uuid
+  checkpoint_id            String                    @db.Uuid
+  status                   String                    @default("pending") @db.VarChar(20)
+  sample_size              Int?
+  defects_found            Int?
+  checklist_results        Json?
+  notes                    String?
+  failure_reason           String?
+  inspector_id             String                    @db.Uuid
+  inspected_at             DateTime?                 @db.Timestamp(6)
+  created_at               DateTime                  @default(now()) @db.Timestamp(6)
+  company_id               String                    @db.Uuid
+  quality_defects          quality_defects[]
+  companies                companies                 @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quality_inspections_company_id")
+  quality_checkpoints      quality_checkpoints       @relation(fields: [checkpoint_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_inspection_checkpoint")
+  users                    users                     @relation(fields: [inspector_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_inspection_inspector")
+  production_jobs          production_jobs           @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_inspection_job")
+  production_stage_history production_stage_history? @relation(fields: [stage_history_id], references: [id], onUpdate: NoAction, map: "fk_inspection_stage")
+
+  @@index([company_id], map: "IDX_quality_inspections_company_id")
+  @@index([checkpoint_id], map: "idx_inspection_checkpoint")
+  @@index([job_id], map: "idx_inspection_job")
+  @@index([status], map: "idx_inspection_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quality_rejections {
+  id                String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rejection_number  String          @unique @db.VarChar(50)
+  job_id            String          @db.Uuid
+  rejected_quantity Int
+  unit              String          @db.VarChar(20)
+  reason            String
+  disposition       String          @db.VarChar(50)
+  estimated_loss    Decimal?        @db.Decimal(10, 2)
+  corrective_action String?
+  is_resolved       Boolean         @default(false)
+  resolved_at       DateTime?       @db.Timestamp(6)
+  rejected_by_id    String          @db.Uuid
+  created_at        DateTime        @default(now()) @db.Timestamp(6)
+  company_id        String          @db.Uuid
+  companies         companies       @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quality_rejections_company_id")
+  production_jobs   production_jobs @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rejection_job")
+  users             users           @relation(fields: [rejected_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_rejection_rejected_by")
+
+  @@index([company_id], map: "IDX_quality_rejections_company_id")
+  @@index([job_id], map: "idx_rejection_job")
+  @@index([is_resolved], map: "idx_rejection_resolved")
+}
+
+model quotation_history {
+  id            String     @id(map: "PK_quotation_history") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  quotation_id  String     @db.Uuid
+  old_status    String     @db.VarChar
+  new_status    String     @db.VarChar
+  notes         String?
+  changed_by_id String     @db.Uuid
+  changed_at    DateTime   @default(now()) @db.Timestamp(6)
+  company_id    String     @db.Uuid
+  users         users      @relation(fields: [changed_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_quotation_history_changed_by")
+  companies     companies  @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quotation_history_company_id")
+  quotations    quotations @relation(fields: [quotation_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_quotation_history_quotation")
+
+  @@index([company_id], map: "IDX_quotation_history_company_id")
+  @@index([quotation_id], map: "IDX_quotation_history_quotation_id")
+}
+
+model quotation_items {
+  id           String     @id(map: "PK_quotation_items") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  quotation_id String     @db.Uuid
+  description  String     @db.VarChar
+  quantity     Decimal    @db.Decimal(10, 2)
+  unit         String     @db.VarChar
+  unit_price   Decimal    @db.Decimal(10, 2)
+  total_price  Decimal    @db.Decimal(10, 2)
+  notes        String?
+  company_id   String     @db.Uuid
+  companies    companies  @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quotation_items_company_id")
+  quotations   quotations @relation(fields: [quotation_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_quotation_items_quotation")
+
+  @@index([company_id], map: "IDX_quotation_items_company_id")
+  @@index([quotation_id], map: "IDX_quotation_items_quotation_id")
+}
+
+model quotations {
+  id                       String              @id(map: "PK_quotations") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  quotation_number         String              @unique(map: "UQ_quotation_number") @db.VarChar
+  version                  Int                 @default(1)
+  parent_quotation_id      String?             @db.Uuid
+  status                   String              @default("draft") @db.VarChar
+  customer_id              String              @db.Uuid
+  quotation_date           DateTime            @db.Date
+  valid_until              DateTime            @db.Date
+  product_name             String              @db.VarChar
+  product_type             String              @default("cpp_carton") @db.VarChar
+  quantity                 Decimal             @db.Decimal(10, 2)
+  unit                     String              @db.VarChar
+  length                   Decimal?            @db.Decimal(10, 2)
+  width                    Decimal?            @db.Decimal(10, 2)
+  height                   Decimal?            @db.Decimal(10, 2)
+  dimension_unit           String?             @db.VarChar
+  paper_type               String?             @db.VarChar
+  gsm                      Int?
+  board_quality            String?             @db.VarChar
+  color_front              Int                 @default(0)
+  color_back               Int                 @default(0)
+  pantone_p1               Boolean             @default(false)
+  pantone_p1_code          String?             @db.VarChar
+  pantone_p2               Boolean             @default(false)
+  pantone_p2_code          String?             @db.VarChar
+  pantone_p3               Boolean             @default(false)
+  pantone_p3_code          String?             @db.VarChar
+  pantone_p4               Boolean             @default(false)
+  pantone_p4_code          String?             @db.VarChar
+  varnish_type             String              @default("none") @db.VarChar
+  lamination_type          String              @default("none") @db.VarChar
+  embossing                Boolean             @default(false)
+  embossing_details        String?             @db.VarChar
+  foiling                  Boolean             @default(false)
+  foiling_details          String?             @db.VarChar
+  die_cutting              Boolean             @default(false)
+  die_cutting_details      String?             @db.VarChar
+  pasting                  Boolean             @default(false)
+  pasting_details          String?             @db.VarChar
+  ctp_required             Boolean             @default(false)
+  ctp_details              String?             @db.VarChar
+  die_type                 String?             @db.VarChar
+  plate_reference          String?             @db.VarChar
+  cylinder_size            Decimal?            @db.Decimal(10, 2)
+  foil_thickness           Decimal?            @db.Decimal(10, 2)
+  tablet_size              String?             @db.VarChar
+  punch_size               String?             @db.VarChar
+  material_cost            Decimal             @default(0) @db.Decimal(10, 2)
+  printing_cost            Decimal             @default(0) @db.Decimal(10, 2)
+  finishing_cost           Decimal             @default(0) @db.Decimal(10, 2)
+  pre_press_cost           Decimal             @default(0) @db.Decimal(10, 2)
+  overhead_cost            Decimal             @default(0) @db.Decimal(10, 2)
+  subtotal                 Decimal             @default(0) @db.Decimal(10, 2)
+  profit_margin_percent    Decimal             @default(20) @db.Decimal(5, 2)
+  profit_margin_amount     Decimal             @default(0) @db.Decimal(10, 2)
+  discount_percent         Decimal             @default(0) @db.Decimal(5, 2)
+  discount_amount          Decimal             @default(0) @db.Decimal(10, 2)
+  tax_percent              Decimal             @default(18) @db.Decimal(5, 2)
+  tax_amount               Decimal             @default(0) @db.Decimal(10, 2)
+  total_amount             Decimal             @default(0) @db.Decimal(10, 2)
+  notes                    String?
+  terms_and_conditions     String?
+  converted_to_order_id    String?             @db.Uuid
+  converted_at             DateTime?           @db.Timestamp(6)
+  created_by_id            String              @db.Uuid
+  sent_at                  DateTime?           @db.Timestamp(6)
+  approved_at              DateTime?           @db.Timestamp(6)
+  rejected_at              DateTime?           @db.Timestamp(6)
+  created_at               DateTime            @default(now()) @db.Timestamp(6)
+  updated_at               DateTime            @default(now()) @db.Timestamp(6)
+  company_id               String              @db.Uuid
+  double_sheet             String?             @db.VarChar
+  bar_code                 String?             @db.VarChar
+  dye_req                  String?             @db.VarChar
+  batch_no                 String?             @db.VarChar
+  mfg_date                 DateTime?           @db.Date
+  exp_date                 DateTime?           @db.Date
+  mrp_rs                   Decimal?            @db.Decimal(10, 2)
+  four_color_process       Boolean             @default(false)
+  inside_printing          Boolean             @default(false)
+  cmyk_cyan                Boolean             @default(false)
+  cmyk_magenta             Boolean             @default(false)
+  cmyk_yellow              Boolean             @default(false)
+  cmyk_black               Boolean             @default(false)
+  pantone_cmyk_1           String?             @db.VarChar
+  pantone_cmyk_2           String?             @db.VarChar
+  pantone_cmyk_3           String?             @db.VarChar
+  pantone_cmyk_4           String?             @db.VarChar
+  bleach_card              Boolean             @default(false)
+  box_board_card           Boolean             @default(false)
+  art_card                 Boolean             @default(false)
+  ups                      Int?
+  price_per_kg_card        Decimal?            @db.Decimal(10, 2)
+  price_per_kg_paper       Decimal?            @db.Decimal(10, 2)
+  conversion_percent_card  Decimal?            @db.Decimal(5, 2)
+  conversion_percent_paper Decimal?            @db.Decimal(5, 2)
+  fixed_charge_ctp         Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_spot_uv     Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_plain_uv    Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_drip_off_uv Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_metalize    Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_emboss      Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_lamination  Decimal             @default(0) @db.Decimal(10, 2)
+  fixed_charge_others      Decimal             @default(0) @db.Decimal(10, 2)
+  quotation_history        quotation_history[]
+  quotation_items          quotation_items[]
+  companies                companies           @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_quotations_company_id")
+  orders                   orders?             @relation(fields: [converted_to_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_quotations_converted_to_order")
+  users                    users               @relation(fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_quotations_created_by")
+  customers                customers           @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_quotations_customer")
+
+  @@index([company_id], map: "IDX_quotations_company_id")
+  @@index([company_id, status], map: "IDX_quotations_company_status")
+  @@index([customer_id], map: "IDX_quotations_customer_id")
+  @@index([quotation_date], map: "IDX_quotations_quotation_date")
+  @@index([status], map: "IDX_quotations_status")
+}
+
+model specification_approvals {
+  id                     String                              @id(map: "PK_9e6a037ff3bf75b689d4595cd98") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_id             String                              @db.Uuid
+  specification_id       String                              @db.Uuid
+  approver_id            String                              @db.Uuid
+  status                 specification_approvals_status_enum @default(pending)
+  comments               String?
+  approved_at            DateTime?                           @db.Timestamp(6)
+  created_at             DateTime                            @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                            @default(now()) @db.Timestamp(6)
+  users                  users                               @relation(fields: [approver_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_07f3c09277c165c28f042b64d5a")
+  companies              companies                           @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_12d812720a5f2cdd3ba007e9d08")
+  product_specifications product_specifications              @relation(fields: [specification_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_abc2c429034e3987a4fb0a8431a")
+
+  @@index([company_id], map: "idx_specification_approvals_company_id")
+  @@index([specification_id], map: "idx_specification_approvals_specification_id")
+  @@index([status], map: "idx_specification_approvals_status")
+}
+
+model stage_approvals {
+  id               String               @id(map: "PK_stage_approvals") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  inline_item_id   Int?
+  job_id           String?              @db.Uuid
+  stage_name       String               @db.VarChar
+  status           approval_status_enum @default(pending)
+  approved_by      String?              @db.Uuid
+  approved_at      DateTime?            @db.Timestamp(6)
+  rejection_reason String?
+  notes            String?
+  created_at       DateTime             @default(now()) @db.Timestamp(6)
+  updated_at       DateTime             @default(now()) @db.Timestamp(6)
+  users            users?               @relation(fields: [approved_by], references: [id], onUpdate: NoAction, map: "FK_stage_approvals_approved_by")
+  production_jobs  production_jobs?     @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_stage_approvals_job")
+
+  @@index([job_id], map: "IDX_stage_approvals_job_id")
+  @@index([status], map: "IDX_stage_approvals_status")
+}
+
+model stock_transactions {
+  id               String                                   @id(map: "PK_stock_transactions") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  transaction_type stock_transactions_transaction_type_enum
+  item_id          String?                                  @db.Uuid
+  quantity         Decimal                                  @db.Decimal(10, 2)
+  unit_cost        Decimal                                  @default(0) @db.Decimal(10, 2)
+  reference_type   stock_transactions_reference_type_enum
+  reference_id     String?                                  @db.Uuid
+  notes            String?
+  transaction_date DateTime                                 @db.Date
+  created_by       String?                                  @db.Uuid
+  created_at       DateTime                                 @default(now()) @db.Timestamp(6)
+  company_id       String                                   @db.Uuid
+  inventory_items  inventory_items?                         @relation(fields: [item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_9a3163210dc85e8862360eb2317")
+  users            users?                                   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_c36f71170f7013658ee98fcc7dd")
+  companies        companies                                @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_stock_transactions_company_id")
+
+  @@index([company_id], map: "IDX_stock_transactions_company_id")
+}
+
+model user_activity_log {
+  id          String   @id(map: "PK_user_activity_log") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String   @db.Uuid
+  action      String   @db.VarChar
+  entity_type String?  @db.VarChar
+  entity_id   String?  @db.VarChar
+  details     Json?
+  ip_address  String?  @db.VarChar
+  user_agent  String?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_user_activity_log_user")
+
+  @@index([created_at], map: "IDX_user_activity_log_created_at")
+  @@index([user_id], map: "IDX_user_activity_log_user_id")
+}
+
+model users {
+  id                                                                          String                       @id(map: "PK_users") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                                                                       String                       @db.VarChar
+  password_hash                                                               String                       @db.VarChar
+  full_name                                                                   String                       @db.VarChar
+  role                                                                        users_role_enum              @default(sales)
+  is_active                                                                   Boolean                      @default(true)
+  created_at                                                                  DateTime                     @default(now()) @db.Timestamp(6)
+  updated_at                                                                  DateTime                     @default(now()) @db.Timestamp(6)
+  company_id                                                                  String                       @db.Uuid
+  phone                                                                       String?                      @db.VarChar
+  department                                                                  String?                      @db.VarChar
+  bio                                                                         String?
+  avatar_url                                                                  String?                      @db.VarChar
+  system_access                                                               Json?                        @default("[]")
+  partial_access                                                              Json?                        @default("{}")
+  substitute_user_id                                                          String?                      @db.Uuid
+  substitute_start_date                                                       DateTime?                    @db.Date
+  substitute_end_date                                                         DateTime?                    @db.Date
+  substitute_reason                                                           String?
+  is_super_admin                                                              Boolean                      @default(false)
+  challans                                                                    challans[]
+  customer_complaints_customer_complaints_assigned_to_idTousers               customer_complaints[]        @relation("customer_complaints_assigned_to_idTousers")
+  customer_complaints_customer_complaints_created_by_idTousers                customer_complaints[]        @relation("customer_complaints_created_by_idTousers")
+  customers                                                                   customers[]
+  deliveries                                                                  deliveries[]
+  delivery_tracking                                                           delivery_tracking[]
+  design_approvals                                                            design_approvals[]
+  design_attachments                                                          design_attachments[]
+  designs                                                                     designs[]
+  invoices                                                                    invoices[]
+  machine_counters                                                            machine_counters[]
+  material_consumption                                                        material_consumption[]
+  notifications                                                               notifications[]
+  orders                                                                      orders[]
+  product_specifications_product_specifications_received_by_idTousers         product_specifications[]     @relation("product_specifications_received_by_idTousers")
+  product_specifications_product_specifications_prepared_by_idTousers         product_specifications[]     @relation("product_specifications_prepared_by_idTousers")
+  production_jobs                                                             production_jobs[]
+  production_stage_history                                                    production_stage_history[]
+  production_workflow_stages_production_workflow_stages_operator_idTousers    production_workflow_stages[] @relation("production_workflow_stages_operator_idTousers")
+  production_workflow_stages_production_workflow_stages_qa_approved_byTousers production_workflow_stages[] @relation("production_workflow_stages_qa_approved_byTousers")
+  quality_defects                                                             quality_defects[]
+  quality_inspections                                                         quality_inspections[]
+  quality_rejections                                                          quality_rejections[]
+  quotation_history                                                           quotation_history[]
+  quotations                                                                  quotations[]
+  specification_approvals                                                     specification_approvals[]
+  stage_approvals                                                             stage_approvals[]
+  stock_transactions                                                          stock_transactions[]
+  user_activity_log                                                           user_activity_log[]
+  companies                                                                   companies                    @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_users_company_id")
+  users                                                                       users?                       @relation("usersTousers", fields: [substitute_user_id], references: [id], onUpdate: NoAction, map: "FK_users_substitute_user")
+  other_users                                                                 users[]                      @relation("usersTousers")
+  wastage_records                                                             wastage_records[]
+
+  @@unique([email, company_id], map: "UQ_user_email_company")
+  @@index([company_id], map: "IDX_users_company_id")
+  @@index([is_super_admin], map: "idx_users_is_super_admin")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model wastage_records {
+  id                       String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  job_id                   String                   @db.Uuid
+  stage_history_id         String                   @db.Uuid
+  wastage_type             String                   @db.VarChar(50)
+  quantity                 Int
+  unit                     String                   @db.VarChar(20)
+  estimated_cost           Decimal?                 @db.Decimal(10, 2)
+  reason                   String?
+  corrective_action        String?
+  recorded_by_id           String                   @db.Uuid
+  created_at               DateTime                 @default(now()) @db.Timestamp(6)
+  company_id               String                   @db.Uuid
+  companies                companies                @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_wastage_records_company_id")
+  production_jobs          production_jobs          @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wastage_record_job")
+  production_stage_history production_stage_history @relation(fields: [stage_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wastage_record_stage")
+  users                    users                    @relation(fields: [recorded_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_wastage_record_user")
+
+  @@index([company_id], map: "IDX_wastage_records_company_id")
+  @@index([job_id], map: "idx_wastage_record_job")
+  @@index([stage_history_id], map: "idx_wastage_record_stage")
+}
+
+enum approval_status_enum {
+  pending
+  approved
+  rejected
+}
+
+enum color_matching_standard_enum {
+  pantone
+  cmyk
+  custom
+  none
+}
+
+enum color_separation_type_enum {
+  cmyk
+  spot_colors
+  rgb
+  pantone
+}
+
+enum design_approvals_status_enum {
+  pending
+  approved
+  rejected
+}
+
+enum design_file_status_enum {
+  not_received
+  received
+  approved
+  rejected
+  revision_needed
+}
+
+enum designs_design_type_enum {
+  box
+  label
+  literature
+  logo
+  other
+}
+
+enum designs_product_category_enum {
+  commercial
+  logo
+  product
+  other
+}
+
+enum designs_status_enum {
+  in_design
+  waiting_for_data
+  approved
+  rejected
+}
+
+enum inventory_items_category_enum {
+  paper
+  ink
+  plates
+  finishing_materials
+  packaging
+}
+
+enum inventory_items_main_category_enum {
+  block
+  paper
+  other_material
+}
+
+enum invoices_status_enum {
+  draft
+  sent
+  paid
+  overdue
+  cancelled
+}
+
+enum job_costs_cost_type_enum {
+  material
+  labor
+  machine
+  overhead
+}
+
+enum notification_type_enum {
+  approval_request
+  stage_approved
+  stage_rejected
+  stage_assigned
+  substitute_assigned
+  general
+}
+
+enum orders_die_type_enum {
+  new_die
+  old_die
+  none
+}
+
+enum orders_lamination_type_enum {
+  shine
+  matt
+  metalize
+  rainbow
+  none
+}
+
+enum orders_printing_type_enum {
+  offset
+  digital
+  flexo
+}
+
+enum orders_priority_enum {
+  low
+  normal
+  high
+  urgent
+}
+
+enum orders_product_type_enum {
+  cpp_carton
+  silvo_blister
+  bent_foil
+  alu_alu
+}
+
+enum orders_status_enum {
+  pending
+  approved
+  in_production
+  completed
+  delivered
+  cancelled
+}
+
+enum orders_varnish_type_enum {
+  water_base
+  duck
+  plain_uv
+  spot_uv
+  drip_off_uv
+  matt_uv
+  rough_uv
+  none
+}
+
+enum plate_approval_status_enum {
+  pending
+  approved
+  rejected
+}
+
+enum plate_condition_enum {
+  new
+  reused
+  refurbished
+}
+
+enum plate_material_enum {
+  aluminum
+  polyester
+  steel
+}
+
+enum product_specifications_card_type_enum {
+  plain
+  coated
+  uncoated
+  specialty
+}
+
+enum product_specifications_customer_group_enum {
+  export
+  local
+  govt
+}
+
+enum product_specifications_lamination_type_enum {
+  uv
+  matte
+  gloss
+  emboss
+  metalize
+  none
+}
+
+enum product_specifications_status_enum {
+  draft
+  pending_approval
+  approved
+  rejected
+}
+
+enum product_specifications_varnish_type_enum {
+  water_base
+  duck
+  none
+}
+
+enum production_jobs_status_enum {
+  queued
+  in_progress
+  paused
+  completed
+  cancelled
+}
+
+enum production_workflow_stages_status_enum {
+  pending
+  in_progress
+  paused
+  completed
+}
+
+enum proof_status_enum {
+  not_required
+  pending
+  sent
+  approved
+  rejected
+}
+
+enum specification_approvals_status_enum {
+  pending
+  approved
+  rejected
+  revision_requested
+}
+
+enum stock_transactions_reference_type_enum {
+  purchase
+  production_job
+  adjustment
+}
+
+enum stock_transactions_transaction_type_enum {
+  stock_in
+  stock_out
+  adjustment
+}
+
+enum user_role_enum {
+  admin
+  sales
+  planner
+  accounts
+  inventory
+  qa_manager
+  operator
+  analyst
+}
+
+enum users_role_enum {
+  admin
+  sales
+  planner
+  accounts
+  inventory
+}

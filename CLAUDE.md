@@ -1,38 +1,61 @@
 # Printing Press Management System
 
-Multi-tenant NestJS + React app for 4 printing companies. See `docs/README.md` for full documentation.
+**Status:** Migrating to Next.js 15 (single unified app) from split NestJS + React stack.
 
-## Quick Start
-- **Admin**: `admin@printingpress.com` / `admin123` (super-admin, access all companies)
-- **Backend**: `npm run start:dev` (port 3000)
-- **Frontend**: `npm run dev` (port 5173)
-- **Migrations**: `npm run typeorm migration:run`
+Multi-tenant printing SaaS for 4 companies. See `docs/README.md` for full documentation and `docs/NEXTJS_MIGRATION.md` for migration plan.
 
-## Architecture
+## Quick Start (During Migration)
+
+**Currently running as two separate apps:**
+- **Old Frontend**: `npm run dev` in `frontend/` (port 5173)
+- **Old Backend**: `npm run start:dev` in `backend/` (port 3000)
+- **Admin creds**: `admin@printingpress.com` / `admin123`
+
+**After migration (target):**
+- Single `npm run dev` at repo root
+- Single `package.json`
+- Single Vercel deployment
+
+## Architecture (Post-Migration)
+- **Framework**: Next.js 15 App Router (unified frontend + API)
+- **Backend**: Route Handlers replacing NestJS
+- **ORM**: Prisma (replacing TypeORM)
+- **Auth**: jose + httpOnly cookies (replacing localStorage JWTs)
 - **Multi-tenant**: All data filtered by `company_id` at DB level
-- **Super-admin**: Can switch companies via header; regular users locked to one company
-- **Role-based dashboards**: 8 roles map to specific dashboards (`/dashboard/prepress`, etc.)
-- **JWT**: Includes `company_id` and `is_super_admin` flag
+- **Super-admin**: Can switch companies; regular users locked to one company
+- **Role-based dashboards**: 8 roles map to specific dashboards
+- **JWT**: Includes `company_id` and `is_super_admin` flag in cookie
 
-## Critical Patterns
-- **Tailwind v4**: Uses `@tailwindcss/vite` + `@import "tailwindcss"` (no PostCSS)
-- **Multi-tenant**: All service methods accept `companyId`; all queries filter by `company_id`
-- **Auto-fields**: Never set `inline_status`, `queue_position`, `searchable_text` manually
-- **Workflow**: Stages have non-sequential orders (1,2,3,4,8,10,11); operator/machine inherited from previous stage
-- **Frontend**: All requests include `X-Company-ID` header via interceptor
+See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 
-## Key Files
-- `backend/src/auth/` - JWT, company selection, super-admin logic
-- `frontend/src/pages/dashboards/` - 7 role-based dashboard pages
-- `frontend/src/utils/dashboardRouter.ts` - Role → dashboard mapping
+## Critical Patterns (Next.js)
+- **Tailwind v4**: CSS-first config, `@import "tailwindcss"` at top of `globals.css`
+- **Multi-tenant**: All Route Handlers extract `company_id` from auth token, filter Prisma queries
+- **Auth**: JWT in httpOnly cookie `auth_token`, validated in `middleware.ts` before requests reach handlers
+- **Auto-fields**: Never set `inline_status`, `queue_position`, `searchable_text` manually (business logic enforces)
+- **Workflow**: Stages have non-sequential orders; operator/machine inherited from previous stage
+- **File uploads**: All go through `/api/upload` → Vercel Blob (no local disk in production)
+
+## Key Files (Post-Migration)
+- `app/(auth)/` - Login, company selector pages
+- `app/(app)/dashboard/` - Role-based dashboard routes
+- `app/api/auth/` - JWT, company selection, token refresh
+- `app/api/[module]/` - All business logic Route Handlers
+- `lib/auth.ts` - JWT sign/verify with jose
+- `lib/db.ts` - Prisma client singleton
+- `lib/tenant.ts` - Extract company_id from request
+- `middleware.ts` - Auth guard and request routing
+- `prisma/schema.prisma` - Entire DB schema
+- `docs/NEXTJS_MIGRATION.md` - Migration plan & progress
 - `docs/MULTI_TENANT.md` - Full multi-tenant details
 - `docs/ARCHITECTURE.md` - System design & data flow
 
-## Common Pitfalls
-- ⚠️ Forget `company_id` filter → data leakage
-- ⚠️ Set auto-fields manually → breaks calculations
-- ⚠️ Wrong decorator order in DTOs → validation fails
-- ⚠️ Missing `X-Company-ID` header → 401 errors
+## Common Pitfalls (Next.js)
+- ⚠️ Forget `company_id` filter in Prisma queries → data leakage between companies
+- ⚠️ Set auto-fields manually → breaks business logic
+- ⚠️ Skip `middleware.ts` validation → auth token not verified
+- ⚠️ Store auth token in localStorage → vulnerability (use httpOnly cookies)
+- ⚠️ Client Components trying to read DB directly → use Route Handlers instead
 
 ## Documentation Philosophy
 **Keep it short and to-the-point.** No huge documentation files. Each doc file should be concise, focused, and actionable. Link to other docs for details. Avoid repetition. Update docs as code changes—don't let them drift.

@@ -32,14 +32,18 @@
       "Bash(xargs kill -9)",
       "Bash(grep:*)",
       "Bash(npm ls:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Phase 0-1: Next.js scaffold, Tailwind HIG tokens, Prisma setup, auth routes *)"
     ]
   },
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-chrome-devtools"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-chrome-devtools"
+      ]
     }
   }
 }
-
