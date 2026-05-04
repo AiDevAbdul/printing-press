@@ -16,7 +16,7 @@ const createOrderSchema = z.object({
   substrate: z.string().optional(),
   gsm: z.string().optional(),
   colors: z.string().optional(),
-  printing_type: z.string().optional(),
+  printing_type: z.enum(['offset', 'digital', 'flexo']).optional(),
   finishing_requirements: z.string().optional(),
   special_instructions: z.string().optional(),
   quoted_price: z.number().optional(),
@@ -75,6 +75,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createOrderSchema.parse(body);
@@ -98,7 +106,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

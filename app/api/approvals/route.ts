@@ -6,7 +6,7 @@ import { z } from 'zod';
 const createApprovalSchema = z.object({
   design_id: z.string().uuid(),
   status: z.enum(['pending', 'approved', 'rejected']),
-  notes: z.string().optional(),
+  comments: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -22,14 +22,14 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status;
 
     const [data, total] = await Promise.all([
-      db.approvals.findMany({
+      db.design_approvals.findMany({
         where,
-        include: { design: true },
+        include: { designs: true },
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
       }),
-      db.approvals.count({ where }),
+      db.design_approvals.count({ where }),
     ]);
 
     return NextResponse.json({ data, total, page, limit, pages: Math.ceil(total / limit) });
@@ -44,17 +44,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = createApprovalSchema.parse(body);
 
+    if (!companyId) {
+      return NextResponse.json({ error: 'Company not selected' }, { status: 400 });
+    }
+
     const design = await db.designs.findFirst({
       where: { id: validated.design_id, company_id: companyId },
     });
     if (!design) return NextResponse.json({ error: 'Design not found' }, { status: 404 });
 
-    const approval = await db.approvals.create({
+    const approval = await db.design_approvals.create({
       data: {
         design_id: validated.design_id,
         status: validated.status,
-        notes: validated.notes,
-        reviewed_by: userId,
+        comments: validated.comments,
+        approver_id: userId,
         company_id: companyId,
       },
     });

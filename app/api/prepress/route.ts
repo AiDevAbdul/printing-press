@@ -4,10 +4,8 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const createPrepressSchema = z.object({
-  order_id: z.string().uuid().optional(),
-  design_name: z.string().min(1),
-  design_file_url: z.string().optional(),
-  approval_status: z.enum(['pending', 'approved', 'rejected', 'revision_requested']).default('pending'),
+  name: z.string().min(1),
+  specs_sheet_url: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -38,11 +36,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
     const validated = createPrepressSchema.parse(body);
 
     const design = await db.designs.create({
-      data: { ...validated, company_id: companyId, created_by: userId },
+      data: { ...validated, company_id: companyId, designer_id: userId, design_type: 'other', product_category: 'other' },
     });
 
     return NextResponse.json(design, { status: 201 });

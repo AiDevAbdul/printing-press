@@ -27,13 +27,13 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status;
 
     const [data, total] = await Promise.all([
-      db.inspections.findMany({
+      db.quality_inspections.findMany({
         where,
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
       }),
-      db.inspections.count({ where }),
+      db.quality_inspections.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -55,15 +55,31 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createQualitySchema.parse(body);
 
-    const inspection = await db.inspections.create({
+    // Generate inspection number
+    const date = new Date();
+    const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+    const inspection_number = `INS-${date.getFullYear()}-${dayOfYear}-${Date.now().toString().slice(-6)}`;
+
+    const inspection = await db.quality_inspections.create({
       data: {
         ...validated,
+        inspection_number,
         company_id: companyId,
+        checkpoint_id: '', // TODO: Add checkpoint selection
         inspector_id: validated.inspector_id || userId,
+        job_id: validated.job_id,
       },
     });
 
@@ -71,7 +87,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

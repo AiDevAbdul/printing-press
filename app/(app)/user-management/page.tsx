@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function User Management() {
+export default function UserManagement() {
   return (
     <div className="space-y-6">
       <div>

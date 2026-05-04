@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function Wastage Analytics() {
+export default function WastageAnalytics() {
   return (
     <div className="space-y-6">
       <div>

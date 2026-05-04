@@ -6,7 +6,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { getFileSizeLabel } from '@/lib/file-storage';
 import { clsx } from 'clsx';
 
-interface FileUploadProps {
+export interface FileUploadProps {
   category?: string;
   maxSize?: number;
   allowedTypes?: string[];

@@ -6,7 +6,7 @@ import { z } from 'zod';
 const createInventorySchema = z.object({
   item_code: z.string().min(1),
   item_name: z.string().min(1),
-  category: z.string().min(1),
+  category: z.enum(['paper', 'ink', 'plates', 'finishing_materials', 'packaging']),
   subcategory: z.string().optional(),
   unit: z.string().min(1),
   size_length: z.number().optional(),
@@ -73,6 +73,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createInventorySchema.parse(body);
@@ -100,7 +108,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

@@ -15,12 +15,8 @@ const updateCostingSchema = createCostingSchema.partial();
 
 export async function GET(req: NextRequest) {
   try {
-    const { companyId } = await getTenantContext(req);
-
-    // Get costing config for company
-    const config = await db.costing_config.findFirst({
-      where: { company_id: companyId },
-    });
+    // Get global costing config (only one record)
+    const config = await db.costing_config.findFirst();
 
     if (!config) {
       return NextResponse.json(
@@ -41,15 +37,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { companyId } = await getTenantContext(req);
     const body = await req.json();
 
     const validated = createCostingSchema.parse(body);
 
     // Check if config already exists
-    const existing = await db.costing_config.findFirst({
-      where: { company_id: companyId },
-    });
+    const existing = await db.costing_config.findFirst();
 
     if (existing) {
       // Update instead
@@ -61,17 +54,14 @@ export async function POST(req: NextRequest) {
     }
 
     const config = await db.costing_config.create({
-      data: {
-        ...validated,
-        company_id: companyId,
-      },
+      data: validated,
     });
 
     return NextResponse.json(config, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

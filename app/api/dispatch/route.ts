@@ -4,12 +4,14 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const createDispatchSchema = z.object({
-  order_id: z.string().uuid(),
+  job_id: z.string().uuid(),
+  customer_id: z.string().uuid(),
   delivery_address: z.string().min(1),
-  delivery_date: z.string().datetime(),
-  status: z.enum(['pending', 'in_transit', 'delivered', 'failed']).default('pending'),
+  scheduled_date: z.string().datetime(),
+  delivery_type: z.string(),
+  delivery_status: z.enum(['pending', 'in_transit', 'delivered', 'failed']).default('pending'),
   tracking_number: z.string().optional(),
-  notes: z.string().optional(),
+  delivery_notes: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -43,11 +45,24 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
     const validated = createDispatchSchema.parse(body);
 
+    // Generate delivery number
+    const date = new Date();
+    const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+    const delivery_number = `DEL-${date.getFullYear()}-${dayOfYear}-${Date.now().toString().slice(-6)}`;
+
     const delivery = await db.deliveries.create({
-      data: { ...validated, company_id: companyId, created_by: userId },
+      data: { ...validated, delivery_number, company_id: companyId, created_by_id: userId },
     });
 
     return NextResponse.json(delivery, { status: 201 });

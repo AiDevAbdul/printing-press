@@ -8,7 +8,7 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   full_name: z.string().min(1),
-  role: z.enum(['admin', 'sales', 'production', 'quality', 'finance', 'dispatch', 'prepress', 'operator']).default('sales'),
+  role: z.enum(['admin', 'sales', 'planner', 'accounts', 'inventory']).default('sales'),
   phone: z.string().optional(),
   department: z.string().optional(),
   bio: z.string().optional(),
@@ -82,6 +82,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     // Validate request body
@@ -122,7 +130,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

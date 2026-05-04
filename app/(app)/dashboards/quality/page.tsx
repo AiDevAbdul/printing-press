@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function Quality DashUoard() {
+export default function QualityDashboard() {
   return (
     <div className="space-y-6">
       <div>

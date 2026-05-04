@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const updateInventorySchema = z.object({
   item_name: z.string().optional(),
-  category: z.string().optional(),
+  category: z.enum(['paper', 'ink', 'plates', 'finishing_materials', 'packaging']).optional(),
   subcategory: z.string().optional(),
   unit: z.string().optional(),
   size_length: z.number().optional(),
@@ -21,11 +21,11 @@ const updateInventorySchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const item = await db.inventory_items.findFirst({
       where: { id, company_id: companyId },
@@ -50,11 +50,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const existing = await db.inventory_items.findFirst({
@@ -79,7 +79,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -93,11 +93,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const existing = await db.inventory_items.findFirst({
       where: { id, company_id: companyId },

@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function PrePress DashUoard() {
+export default function PrePressDashboard() {
   return (
     <div className="space-y-6">
       <div>

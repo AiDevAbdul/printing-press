@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
-        include: { created_by: true },
+        include: { users: true },
       }),
       db.customers.count({ where }),
     ]);
@@ -75,6 +75,13 @@ export async function POST(req: NextRequest) {
     const { companyId, userId } = await getTenantContext(req);
     const body = await req.json();
 
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     // Validate request body
     const validated = createCustomerSchema.parse(body);
 
@@ -84,14 +91,14 @@ export async function POST(req: NextRequest) {
         company_id: companyId,
         created_by: userId,
       },
-      include: { created_by: true },
+      include: { users: true },
     });
 
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

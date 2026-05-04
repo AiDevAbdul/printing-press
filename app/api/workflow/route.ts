@@ -22,13 +22,13 @@ export async function GET(req: NextRequest) {
     if (jobId) where.id = jobId;
 
     const [data, total] = await Promise.all([
-      db.jobs.findMany({
+      db.production_jobs.findMany({
         where,
-        include: { stages: { orderBy: { stage_number: 'asc' } } },
+        include: { production_workflow_stages: { orderBy: { stage_order: 'asc' } } },
         skip,
         take: limit,
       }),
-      db.jobs.count({ where }),
+      db.production_jobs.count({ where }),
     ]);
 
     return NextResponse.json({ data, total, page, limit });
@@ -43,17 +43,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = updateStageSchema.parse(body);
 
-    const job = await db.jobs.findFirst({
+    const job = await db.production_jobs.findFirst({
       where: { id: validated.job_id, company_id: companyId },
     });
     if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
-    const stage = await db.stages.findFirst({
-      where: { job_id: validated.job_id, stage_number: validated.stage_number },
+    const stage = await db.production_workflow_stages.findFirst({
+      where: { job_id: validated.job_id, stage_order: validated.stage_number },
     });
     if (!stage) return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
 
-    const updated = await db.stages.update({
+    const updated = await db.production_workflow_stages.update({
       where: { id: stage.id },
       data: {
         status: 'in_progress',

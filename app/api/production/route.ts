@@ -14,9 +14,9 @@ const createProductionSchema = z.object({
 });
 
 const updateProductionSchema = createProductionSchema.partial().extend({
-  status: z.enum(['queued', 'running', 'paused', 'completed', 'blocked']).optional(),
-  actual_start_date: z.string().datetime().optional(),
-  actual_end_date: z.string().datetime().optional(),
+  status: z.enum(['queued', 'in_progress', 'paused', 'completed', 'cancelled']).optional(),
+  actual_start_date: z.string().optional(),
+  actual_end_date: z.string().optional(),
   actual_hours: z.number().optional(),
 });
 
@@ -68,6 +68,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createProductionSchema.parse(body);
@@ -90,7 +98,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

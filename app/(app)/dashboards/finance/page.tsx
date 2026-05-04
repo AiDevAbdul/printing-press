@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function Finance DashUoard() {
+export default function FinanceDashboard() {
   return (
     <div className="space-y-6">
       <div>

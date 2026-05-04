@@ -4,13 +4,13 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const updateProductionSchema = z.object({
-  status: z.enum(['queued', 'running', 'paused', 'completed', 'blocked']).optional(),
+  status: z.enum(['queued', 'in_progress', 'paused', 'completed', 'cancelled']).optional(),
   assigned_machine: z.string().optional(),
   assigned_operator: z.string().uuid().optional(),
-  scheduled_start_date: z.string().datetime().optional(),
-  scheduled_end_date: z.string().datetime().optional(),
-  actual_start_date: z.string().datetime().optional(),
-  actual_end_date: z.string().datetime().optional(),
+  scheduled_start_date: z.string().optional(),
+  scheduled_end_date: z.string().optional(),
+  actual_start_date: z.string().optional(),
+  actual_end_date: z.string().optional(),
   actual_hours: z.number().optional(),
   estimated_hours: z.number().optional(),
   notes: z.string().optional(),
@@ -20,11 +20,11 @@ const updateProductionSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const job = await db.production_jobs.findFirst({
       where: { id, company_id: companyId },
@@ -49,11 +49,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const existing = await db.production_jobs.findFirst({
@@ -78,7 +78,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -92,11 +92,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const existing = await db.production_jobs.findFirst({
       where: { id, company_id: companyId },
@@ -111,10 +111,10 @@ export async function DELETE(
 
     await db.production_jobs.update({
       where: { id },
-      data: { status: 'blocked' },
+      data: { status: 'cancelled' },
     });
 
-    return NextResponse.json({ message: 'Production job blocked' });
+    return NextResponse.json({ message: 'Production job cancelled' });
   } catch (error) {
     console.error('Error deleting production job:', error);
     return NextResponse.json(

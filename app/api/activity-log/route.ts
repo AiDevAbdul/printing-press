@@ -15,14 +15,14 @@ export async function GET(req: NextRequest) {
     if (entityType) where.entity_type = entityType;
 
     const [data, total] = await Promise.all([
-      db.activityLogs.findMany({
+      db.user_activity_log.findMany({
         where,
-        include: { user: { select: { id: true, full_name: true, email: true } } },
+        include: { users: { select: { id: true, full_name: true, email: true } } },
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
       }),
-      db.activityLogs.count({ where }),
+      db.user_activity_log.count({ where }),
     ]);
 
     return NextResponse.json({ data, total, page, limit, pages: Math.ceil(total / limit) });

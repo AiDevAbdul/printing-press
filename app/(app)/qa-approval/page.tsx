@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function QA Approval() {
+export default function QAApproval() {
   return (
     <div className="space-y-6">
       <div>

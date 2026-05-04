@@ -8,10 +8,11 @@ const createInvoiceSchema = z.object({
   customer_id: z.string().uuid(),
   invoice_date: z.string().datetime(),
   due_date: z.string().datetime(),
+  subtotal: z.number().default(0),
   total_amount: z.number().positive(),
   tax_amount: z.number().default(0),
   description: z.string().optional(),
-  status: z.enum(['draft', 'sent', 'pending', 'paid', 'overdue']).default('draft'),
+  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).default('draft'),
 });
 
 const updateInvoiceSchema = createInvoiceSchema.partial();
@@ -65,6 +66,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createInvoiceSchema.parse(body);
@@ -100,7 +109,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

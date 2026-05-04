@@ -74,6 +74,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { companyId, userId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     const validated = createQuotationSchema.parse(body);
@@ -100,7 +108,7 @@ export async function POST(req: NextRequest) {
         ...validated,
         quotation_number,
         company_id: companyId,
-        created_by: userId,
+        created_by_id: userId,
       },
       include: { customers: true },
     });
@@ -109,7 +117,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

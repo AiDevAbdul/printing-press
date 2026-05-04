@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const createCompanySchema = z.object({
-  name: z.string().min(1).unique(),
+  name: z.string().min(1),
   email: z.string().email().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -19,6 +19,13 @@ const updateCompanySchema = createCompanySchema.partial();
 export async function GET(req: NextRequest) {
   try {
     const { companyId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
 
     const company = await db.companies.findUnique({
       where: { id: companyId },
@@ -44,6 +51,14 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { companyId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
 
     // Validate request body
@@ -58,7 +73,7 @@ export async function PATCH(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

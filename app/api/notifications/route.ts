@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const createNotificationSchema = z.object({
   user_id: z.string().uuid(),
-  type: z.enum(['info', 'warning', 'error', 'success']),
+  type: z.enum(['approval_request', 'stage_approved', 'stage_rejected', 'stage_assigned', 'substitute_assigned', 'general']),
   title: z.string().min(1),
   message: z.string().min(1),
   link: z.string().optional(),
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

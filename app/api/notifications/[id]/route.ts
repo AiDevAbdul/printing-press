@@ -9,11 +9,11 @@ const updateNotificationSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId, userId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const notification = await db.notifications.findFirst({
       where: { id, user_id: userId, users: { company_id: companyId } },
@@ -38,11 +38,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId, userId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     // Verify notification belongs to user
@@ -68,7 +68,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -82,11 +82,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId, userId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     // Verify notification belongs to user
     const existing = await db.notifications.findFirst({

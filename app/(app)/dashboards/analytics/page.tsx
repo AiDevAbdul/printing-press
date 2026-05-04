@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function Analytics DashUoard() {
+export default function AnalyticsDashboard() {
   return (
     <div className="space-y-6">
       <div>

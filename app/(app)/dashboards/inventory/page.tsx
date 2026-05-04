@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 
-export default function Inventory DashUoard() {
+export default function InventoryDashboard() {
   return (
     <div className="space-y-6">
       <div>

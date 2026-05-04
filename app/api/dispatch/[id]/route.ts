@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/tenant';
 import { db } from '@/lib/db';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { companyId } = await getTenantContext(req);
+    const { id } = await params;
     const delivery = await db.deliveries.findFirst({
-      where: { id: params.id, company_id: companyId },
+      where: { id, company_id: companyId },
     });
     if (!delivery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(delivery);
@@ -15,12 +16,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { companyId } = await getTenantContext(req);
+    const { id } = await params;
     const body = await req.json();
     const delivery = await db.deliveries.update({
-      where: { id: params.id },
+      where: { id },
       data: body,
     });
     return NextResponse.json(delivery);
@@ -29,11 +31,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await db.deliveries.update({
-      where: { id: params.id },
-      data: { status: 'failed' },
+      where: { id },
+      data: { delivery_status: 'failed' },
     });
     return NextResponse.json({ message: 'Delivery cancelled' });
   } catch (error) {

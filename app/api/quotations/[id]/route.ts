@@ -13,11 +13,11 @@ const updateQuotationSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const quotation = await db.quotations.findFirst({
       where: { id, company_id: companyId },
@@ -43,11 +43,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const existing = await db.quotations.findFirst({
@@ -73,7 +73,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -87,11 +87,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const existing = await db.quotations.findFirst({
       where: { id, company_id: companyId },

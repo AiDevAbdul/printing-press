@@ -17,11 +17,11 @@ const updateUserSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const user = await db.users.findFirst({
       where: { id, company_id: companyId },
@@ -58,11 +58,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     // Verify user exists and belongs to company
@@ -106,7 +106,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -120,11 +120,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     // Verify user exists and belongs to company
     const existing = await db.users.findFirst({

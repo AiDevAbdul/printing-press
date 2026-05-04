@@ -5,6 +5,14 @@ import { db } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const { companyId } = await getTenantContext(req);
+
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Company not selected' },
+        { status: 400 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const endpoint = searchParams.get('endpoint');
 
@@ -45,7 +53,7 @@ async function getProductionStatus(companyId: string) {
   try {
     const [inProgress, scheduledToday, overdue] = await Promise.all([
       db.production_jobs.count({
-        where: { company_id: companyId, status: 'running' },
+        where: { company_id: companyId, status: 'in_progress' },
       }),
       db.production_jobs.count({
         where: {
@@ -62,7 +70,7 @@ async function getProductionStatus(companyId: string) {
           scheduled_end_date: {
             lt: new Date(),
           },
-          status: { in: ['queued', 'running'] },
+          status: { in: ['queued', 'in_progress'] },
         },
       }),
     ]);
@@ -155,7 +163,7 @@ async function getDashboardStats(companyId: string) {
       db.invoices.aggregate({
         where: {
           company_id: companyId,
-          status: 'pending',
+          status: 'sent',
         },
         _sum: {
           total_amount: true,

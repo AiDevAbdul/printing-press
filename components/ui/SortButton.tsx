@@ -5,7 +5,7 @@ import { Button } from './Button';
 
 type SortOrder = 'asc' | 'desc';
 
-interface SortButtonProps {
+export interface SortButtonProps {
   label: string;
   isActive: boolean;
   sortOrder?: SortOrder;

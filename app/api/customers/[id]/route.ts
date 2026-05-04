@@ -22,15 +22,15 @@ const updateCustomerSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     const customer = await db.customers.findFirst({
       where: { id, company_id: companyId },
-      include: { created_by: true },
+      include: { users: true },
     });
 
     if (!customer) {
@@ -52,11 +52,11 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     // Verify customer exists and belongs to company
@@ -77,14 +77,14 @@ export async function PATCH(
     const customer = await db.customers.update({
       where: { id },
       data: validated,
-      include: { created_by: true },
+      include: { users: true },
     });
 
     return NextResponse.json(customer);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
@@ -98,11 +98,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { companyId } = await getTenantContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     // Verify customer exists and belongs to company
     const existing = await db.customers.findFirst({
