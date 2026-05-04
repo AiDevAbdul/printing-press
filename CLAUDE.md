@@ -1,6 +1,6 @@
 # Printing Press Management System
 
-**Status:** ✅ **Infrastructure Complete** — Phases 0-5 done. Phase 6 planning ready.
+**Status:** ✅ **Migration Complete** — All 6 phases done. Unified Next.js app live on Vercel.
 
 - [x] Phase 0 — Project Scaffold (Next.js, Tailwind, Prisma, auth utilities)
 - [x] Phase 1 — Auth Routes (login, select-company, refresh, me, logout)
@@ -17,21 +17,25 @@
   - Client-side hooks and components
   - File utilities and validation
   - Documentation complete
-- 🔄 Phase 6 — Cutover & Cleanup (Final migration)
+- [x] Phase 6 — Cutover & Cleanup (Final migration)
+  - Deployed to Vercel (preview URL active)
+  - Removed old frontend/backend directories
+  - Updated configuration for Next.js
 
 Multi-tenant printing SaaS for 4 companies. See `docs/NEXTJS_MIGRATION.md` for detailed migration plan and progress.
 
-## Quick Start (During Migration)
+## Quick Start
 
-**Currently running as two separate apps:**
-- **Old Frontend**: `npm run dev` in `frontend/` (port 5173)
-- **Old Backend**: `npm run start:dev` in `backend/` (port 3000)
-- **Admin creds**: `admin@printingpress.com` / `admin123`
+**Local Development:**
+```bash
+npm install
+npm run dev
+# Open http://localhost:3000
+```
 
-**After migration (target):**
-- Single `npm run dev` at repo root
-- Single `package.json`
-- Single Vercel deployment
+**Production:**
+- Deployed on Vercel: https://printing-press-abdul-wahabs-projects-a4261fff.vercel.app
+- Test credentials: `admin@printingpress.com` / `admin123`
 
 ## Architecture (Post-Migration)
 - **Framework**: Next.js 15 App Router (unified frontend + API)
