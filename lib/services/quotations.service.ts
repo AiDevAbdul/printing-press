@@ -12,10 +12,20 @@ export interface Quotation {
   product_type: string;
   quantity: number;
   unit: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  dimension_unit?: string;
+  paper_type?: string;
+  gsm?: number;
+  color_front?: number;
+  color_back?: number;
+  special_instructions?: string;
   total_amount?: number;
   final_price?: number;
-  customers?: { name: string; company_name?: string };
+  customers?: { id: string; name: string; company_name?: string; email?: string; phone?: string };
   created_at: string;
+  updated_at?: string;
 }
 
 export interface QuotationsResponse {
@@ -35,6 +45,34 @@ export const quotationsService = {
     if (params.search) q.set('search', params.search);
     const res = await fetch(`${API_BASE}/quotations?${q}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Failed to fetch quotations');
+    return res.json();
+  },
+
+  async getById(id: string): Promise<Quotation> {
+    const res = await fetch(`${API_BASE}/quotations/${id}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch quotation');
+    return res.json();
+  },
+
+  async create(data: Partial<Quotation>): Promise<Quotation> {
+    const res = await fetch(`${API_BASE}/quotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create quotation');
+    return res.json();
+  },
+
+  async update(id: string, data: Partial<Quotation>): Promise<Quotation> {
+    const res = await fetch(`${API_BASE}/quotations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update quotation');
     return res.json();
   },
 };
