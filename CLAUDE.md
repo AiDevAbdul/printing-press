@@ -5,11 +5,12 @@
 - [x] Phase 0 — Project Scaffold (Next.js, Tailwind, Prisma, auth utilities)
 - [x] Phase 1 — Auth Routes (login, select-company, refresh, me, logout)
 - [x] Phase 2 — Frontend Shell (layouts, providers, company context)
-- [x] Phase 3 — Page Migration (All 28 pages stubbed + Dashboard fully implemented)
+- [x] Phase 3 — Page Migration (All 28 pages stubbed + core CPP pages fully implemented)
   - [x] Step 1: Auth pages (Login, CompanySelector)
   - [x] Step 2: Layout components (Header, Sidebar, Breadcrumb, CompanySwitcher, MobileNav, iconMap)
   - [x] Step 3: UI components (Button, Input, Modal, Card, Badge, Tabs, Select, Checkbox, Radio, Alert, Skeleton, EmptyState, Pagination, SortButton)
-  - [x] Step 4: All 28 pages (1 fully implemented, 27 stubs with mapping guide)
+  - [x] Step 4: Core CPP pages fully implemented — Orders (list + detail + create form), Pre-Press (list + detail + create form), Production (list + detail), Customers, Quality, Dashboard
+  - [x] Step 5: API enhancements — Orders schema expanded (~30 fields), Prepress GET search/status filters, relation includes on detail routes
 - [x] Phase 4 — API Route Handlers (19/19 modules complete)
   - Customers, Users, Orders, Quotations, Invoices, Dashboard, Inventory, Costing, Production, Quality, Prepress, Dispatch, Notifications, Companies, Machines, Workflow, Approvals, Activity Log, Export
 - [x] Phase 5 — File Storage (Vercel Blob)

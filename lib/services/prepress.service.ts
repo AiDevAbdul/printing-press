@@ -1,5 +1,21 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
+export interface DesignApproval {
+  id: string;
+  status: string;
+  comments?: string;
+  created_at: string;
+  users: { id: string; full_name: string };
+}
+
+export interface DesignAttachment {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type?: string;
+  created_at: string;
+}
+
 export interface Design {
   id: string;
   name: string;
@@ -13,6 +29,9 @@ export interface Design {
   designer_id?: string;
   created_at: string;
   updated_at: string;
+  users?: { id: string; full_name: string; email: string };
+  design_approvals?: DesignApproval[];
+  design_attachments?: DesignAttachment[];
 }
 
 export interface PrepressResponse {

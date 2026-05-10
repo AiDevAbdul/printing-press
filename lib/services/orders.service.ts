@@ -6,14 +6,47 @@ export interface Order {
   status: string;
   priority: string;
   product_name: string;
+  product_type?: string;
   quantity: number;
   unit: string;
   delivery_date: string;
   order_date: string;
   quoted_price?: number;
+  final_price?: number;
   printing_type?: string;
-  customers?: { name: string; company_name?: string };
+  substrate?: string;
+  gsm?: string;
+  colors?: string;
+  size_length?: number;
+  size_width?: number;
+  size_unit?: string;
+  finishing_requirements?: string;
+  special_instructions?: string;
+  is_repeat_order?: boolean;
+  lamination_type?: string;
+  varnish_type?: string;
+  varnish_details?: string;
+  uv_emboss_details?: string;
+  has_back_printing?: boolean;
+  has_barcode?: boolean;
+  plate_reference?: string;
+  designer_name?: string;
+  design_approved_by?: string;
+  number_of_plates?: number;
+  plate_size?: string;
+  die_type?: string;
+  die_reference?: string;
+  batch_number?: string;
+  color_p1?: string;
+  color_p2?: string;
+  color_p3?: string;
+  color_p4?: string;
+  specifications?: string;
+  group_name?: string;
+  production_status?: string;
+  customers?: { name: string; company_name?: string; id?: string };
   created_at: string;
+  updated_at?: string;
 }
 
 export interface OrdersResponse {

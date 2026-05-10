@@ -1,5 +1,25 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
+export interface WorkflowStage {
+  id: number;
+  stage_name: string;
+  stage_order: number;
+  status: string;
+  started_at?: string;
+  completed_at?: string;
+  paused_at?: string;
+  active_duration_minutes: number;
+  pause_duration_minutes: number;
+  total_duration_minutes?: number;
+  operator_name?: string;
+  machine?: string;
+  waste_quantity?: number;
+  notes?: string;
+  pause_reason?: string;
+  qa_approval_required: boolean;
+  qa_approval_status?: string;
+}
+
 export interface ProductionJob {
   id: string;
   job_number: string;
@@ -14,7 +34,24 @@ export interface ProductionJob {
   estimated_hours?: number;
   actual_hours?: number;
   notes?: string;
+  current_stage?: string;
+  current_process?: string;
+  progress_percent?: number;
+  queue_position?: number;
+  quality_status?: string;
   created_at: string;
+  orders?: {
+    id: string;
+    order_number: string;
+    product_name: string;
+    quantity: number;
+    unit: string;
+    delivery_date: string;
+    priority: string;
+    customers?: { name: string; company_name?: string };
+  };
+  users?: { id: string; full_name: string; email: string };
+  production_workflow_stages?: WorkflowStage[];
 }
 
 export interface ProductionResponse {

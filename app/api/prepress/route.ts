@@ -5,8 +5,11 @@ import { z } from 'zod';
 
 const createPrepressSchema = z.object({
   name: z.string().min(1),
-  specs_sheet_url: z.string().optional(),
+  design_type: z.enum(['box', 'label', 'literature', 'logo', 'other']).default('other'),
+  product_category: z.enum(['commercial', 'logo', 'product', 'other']).default('other'),
+  product_name: z.string().optional(),
   notes: z.string().optional(),
+  specs_sheet_url: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -17,14 +20,27 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+
+    const where: any = { company_id: companyId };
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { product_name: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       db.designs.findMany({
-        where: { company_id: companyId },
+        where,
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
+        include: { users: { select: { id: true, full_name: true } } },
       }),
-      db.designs.count({ where: { company_id: companyId } }),
+      db.designs.count({ where }),
     ]);
 
     return NextResponse.json({ data, total, page, limit, pages: Math.ceil(total / limit) });
@@ -48,7 +64,7 @@ export async function POST(req: NextRequest) {
     const validated = createPrepressSchema.parse(body);
 
     const design = await db.designs.create({
-      data: { ...validated, company_id: companyId, designer_id: userId, design_type: 'other', product_category: 'other' },
+      data: { ...validated, company_id: companyId, designer_id: userId },
     });
 
     return NextResponse.json(design, { status: 201 });

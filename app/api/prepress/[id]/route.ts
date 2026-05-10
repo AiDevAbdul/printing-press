@@ -8,6 +8,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const design = await db.designs.findFirst({
       where: { id, company_id: companyId },
+      include: {
+        users: { select: { id: true, full_name: true, email: true } },
+        design_approvals: {
+          include: { users: { select: { id: true, full_name: true } } },
+          orderBy: { created_at: 'desc' },
+        },
+        design_attachments: {
+          orderBy: { created_at: 'desc' },
+        },
+      },
     });
     if (!design) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(design);

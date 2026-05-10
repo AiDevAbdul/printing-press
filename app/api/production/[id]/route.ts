@@ -28,6 +28,13 @@ export async function GET(
 
     const job = await db.production_jobs.findFirst({
       where: { id, company_id: companyId },
+      include: {
+        orders: { include: { customers: true } },
+        users: { select: { id: true, full_name: true, email: true } },
+        production_workflow_stages: {
+          orderBy: { stage_order: 'asc' },
+        },
+      },
     });
 
     if (!job) {
