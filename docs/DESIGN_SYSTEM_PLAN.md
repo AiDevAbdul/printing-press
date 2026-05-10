@@ -567,13 +567,14 @@ Super-admin sees a company switcher in the header. Design:
 
 ---
 
-### Phase 5 — SILVO & Best Foil Themes (Day 20–23)
-**Files to change:**
-- `index.css` — finalize SILVO and Best Foil token overrides
-- `CompanySwitcher.tsx` — company card design
-- Header/Sidebar — logo swap per company
+### ✅ Phase 5 — SILVO & Best Foil Themes (Complete)
+**Files changed:**
+- ✅ `globals.css` — SILVO teal + Best Foil amber token overrides (already present)
+- ✅ `lib/company-context.tsx` — fetches active company from /api/auth/me on mount; correct slug mapping (silvo/bestfoil/cpp); exposes companySlug in context
+- ✅ `CompanySwitcher.tsx` — company-specific Lucide icons + per-brand color dots in dropdown; trigger pill styled with current brand color
+- ✅ `Sidebar.tsx` — logo row shows per-company abbreviated mark (CPP/SLV/BF) + company name + "PrintFlow" subline; brand color auto-updates via CSS tokens
 
-**Deliverable**: All 3 companies have distinct, polished brand themes.
+**Deliverable**: All 3 companies have distinct, polished brand themes end-to-end.
 
 ---
 
