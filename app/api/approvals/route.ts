@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
@@ -65,6 +68,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(approval, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

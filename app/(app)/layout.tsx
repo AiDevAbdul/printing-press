@@ -33,6 +33,10 @@ const NAV_ITEMS: SidebarItem[] = [
 
 async function fetchMe() {
   const res = await fetch('/api/auth/me', { credentials: 'include' })
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') window.location.href = '/login'
+    return null
+  }
   if (!res.ok) return null
   return res.json()
 }

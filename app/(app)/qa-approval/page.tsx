@@ -28,7 +28,7 @@ async function fetchApprovals(page: number, status: string) {
   const q = new URLSearchParams({ page: String(page), limit: '15' });
   if (status) q.set('status', status);
   const res = await fetch(`${API_BASE}/approvals?${q}`, { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch approvals');
+  if (!res.ok) throw new Error(`${res.status}: Failed to fetch approvals`);
   return res.json();
 }
 
@@ -39,7 +39,7 @@ async function submitApproval(data: { design_id: string; status: 'approved' | 'r
     credentials: 'include',
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to submit approval');
+  if (!res.ok) throw new Error(`${res.status}: Failed to submit approval`);
   return res.json();
 }
 
