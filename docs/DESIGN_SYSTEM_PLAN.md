@@ -560,10 +560,10 @@ Super-admin sees a company switcher in the header. Design:
 - ✅ `Production.tsx` + workflow components — horizontal WorkflowTimeline
 - ✅ `Prepress.tsx` — card grid, split detail view, tabbed spec form
 - ✅ `Orders.tsx` + create form — StatusPill table, 2-col split detail, wider multi-step form
-- Auth pages — CPP branded login (pending)
-- Replace `window.confirm()` in all files with `ConfirmDialog` (pending)
+- ✅ Auth pages — CPP branded split login, design-system company selector
+- ✅ No `window.confirm()` calls found — ConfirmDialog already wired where needed
 
-**Deliverable**: CPP Pre-Press, Production, and Orders workflows feel polished end-to-end.
+**Deliverable**: CPP Pre-Press, Production, Orders, and Auth pages all polished end-to-end.
 
 ---
 
