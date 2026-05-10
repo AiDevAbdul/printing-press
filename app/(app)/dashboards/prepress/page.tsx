@@ -2,9 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Layers, CheckCircle2, Clock, XCircle, AlertCircle } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Layers, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Card, CardTitle } from '@/components/ui/Card';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusPill, StatusPillStatus } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
@@ -23,90 +24,108 @@ async function fetchPendingApprovals() {
   return res.json();
 }
 
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
+}
+
+function ppStatusPill(status?: string) {
+  const map: Record<string, [StatusPillStatus, string]> = {
+    in_design:         ['in_progress', 'In Design'],
+    pending_approval:  ['pending',     'Pending'],
+    approved:          ['approved',    'Approved'],
+    rejected:          ['blocked',     'Rejected'],
+    revision_required: ['paused',      'Revision Needed'],
+  };
+  const [s, l] = map[status ?? ''] ?? ['queued' as StatusPillStatus, status ?? '—'];
+  return <StatusPill status={s} label={l} />;
+}
+
 export default function PrePressDashboard() {
   const router = useRouter();
   const { data: allDesigns, isLoading: allLoading } = useQuery({ queryKey: ['pp-all'], queryFn: () => fetchDesigns() });
   const { data: inDesign, isLoading: inDesignLoading } = useQuery({ queryKey: ['pp-in-design'], queryFn: () => fetchDesigns('in_design') });
   const { data: approvals, isLoading: approvalsLoading } = useQuery({ queryKey: ['pp-approvals'], queryFn: fetchPendingApprovals });
 
-  function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
-  }
+  const loading = allLoading || inDesignLoading || approvalsLoading;
+  const approvedCount = (allDesigns?.total ?? 0) - (inDesign?.total ?? 0) - (approvals?.total ?? 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Pre-Press Dashboard</h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Pre-Press Dashboard</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">Design queue, approvals, and workflow status</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Designs', value: allLoading ? null : allDesigns?.total, icon: <Layers className="w-5 h-5 text-white" />, color: 'from-blue-500 to-blue-600' },
-          { label: 'In Design', value: inDesignLoading ? null : inDesign?.total, icon: <Clock className="w-5 h-5 text-white" />, color: 'from-orange-500 to-orange-600' },
-          { label: 'Pending Approval', value: approvalsLoading ? null : approvals?.total, icon: <AlertCircle className="w-5 h-5 text-white" />, color: 'from-yellow-500 to-yellow-600' },
-          { label: 'Approved', value: null, icon: <CheckCircle2 className="w-5 h-5 text-white" />, color: 'from-green-500 to-green-600' },
-        ].map((card, i) => (
-          <Card key={i} variant="elevated" padding="md">
-            <div className="flex items-start justify-between gap-2">
-              <div className={`w-10 h-10 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center shrink-0`}>{card.icon}</div>
-              <div className="text-right">
-                <p className="text-xs text-[var(--color-text-secondary)]">{card.label}</p>
-                {(allLoading || inDesignLoading || approvalsLoading) ? <Skeleton variant="text" className="h-8 w-10 mt-1" /> : (
-                  <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{card.value ?? '—'}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {loading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="card" className="h-28" />) : (<>
+          <StatCard label="Total Designs" value={allDesigns?.total ?? 0} icon={<Layers />} accent="brand" href="/prepress" />
+          <StatCard label="In Design" value={inDesign?.total ?? 0} icon={<Clock />} accent="info" />
+          <StatCard label="Pending Approval" value={approvals?.total ?? 0} icon={<AlertCircle />} accent="warning" />
+          <StatCard label="Approved" value={Math.max(0, approvedCount)} icon={<CheckCircle2 />} accent="success" />
+        </>)}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)]">Pending Approvals</h2>
-            <button onClick={() => router.push('/qa-approval')} className="text-xs text-brand hover:underline">Review all →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>In Design</CardTitle>
+            <button onClick={() => router.push('/prepress')} className="text-xs text-[var(--color-brand)] hover:underline">View all →</button>
           </div>
-          {approvalsLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
-          ) : !(approvals?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-success">No pending approvals</div>
+          {inDesignLoading ? (
+            <div className="p-5 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12" />)}</div>
+          ) : !(inDesign?.data?.length) ? (
+            <div className="px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">No active designs</div>
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {approvals.data.map((a: any) => (
-                <div key={a.id} onClick={() => router.push('/qa-approval')} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{a.designs?.name || '—'}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{a.designs?.design_type} · {formatDate(a.created_at)}</p>
-                  </div>
-                  <Badge variant="warning">Pending</Badge>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Design Name', 'Type', 'Designer', 'Updated'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {inDesign.data.map((d: any) => (
+                  <tr key={d.id} onClick={() => router.push(`/prepress/${d.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-[var(--color-text-primary)]">{d.name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{d.design_type || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{d.designer_name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-tertiary)]">{d.updated_at ? fmt(d.updated_at) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
 
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)]">Active Designs</h2>
-            <button onClick={() => router.push('/prepress')} className="text-xs text-brand hover:underline">View all →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>Pending Approvals</CardTitle>
+            <button onClick={() => router.push('/prepress')} className="text-xs text-[var(--color-brand)] hover:underline">Review all →</button>
           </div>
-          {inDesignLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
-          ) : !(inDesign?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-[var(--color-text-secondary)]">No active designs</div>
+          {approvalsLoading ? (
+            <div className="p-5 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
+          ) : !(approvals?.data?.length) ? (
+            <div className="px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">No pending approvals</div>
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {inDesign.data.map((d: any) => (
-                <div key={d.id} onClick={() => router.push(`/prepress/${d.id}`)} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)]">{d.name}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{d.product_name || d.design_type} · {formatDate(d.created_at)}</p>
-                  </div>
-                  <Badge variant="info">In Design</Badge>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Design', 'Requested', 'Status'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {approvals.data.map((a: any) => (
+                  <tr key={a.id} onClick={() => router.push(`/prepress/${a.design_id || a.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-[var(--color-text-primary)]">{a.designs?.name || a.design_name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-tertiary)]">{a.created_at ? fmt(a.created_at) : '—'}</td>
+                    <td className="px-5 py-4">{ppStatusPill(a.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
       </div>

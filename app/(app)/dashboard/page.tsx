@@ -2,18 +2,46 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
+import { Package, Factory, AlertTriangle, FileText, AlertCircle, Clock } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusPill, type StatusPillStatus } from '@/components/ui/StatusPill';
 import { dashboardService } from '@/lib/services/dashboard.service';
 import { formatCurrency } from '@/lib/formatters';
-import {
-  Package,
-  Factory,
-  AlertTriangle,
-  FileText,
-  AlertCircle
-} from 'lucide-react';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+async function fetchRecentOrders() {
+  const res = await fetch(`${API_BASE}/orders?limit=6&page=1`, { credentials: 'include' });
+  if (!res.ok) return { data: [] };
+  return res.json();
+}
+
+function orderStatusToPill(s: string): { status: StatusPillStatus; label: string } {
+  switch (s) {
+    case 'pending':       return { status: 'pending',    label: 'Pending' };
+    case 'approved':      return { status: 'approved',   label: 'Approved' };
+    case 'in_production': return { status: 'in_progress',label: 'In Production' };
+    case 'completed':     return { status: 'completed',  label: 'Completed' };
+    case 'delivered':     return { status: 'completed',  label: 'Delivered' };
+    case 'cancelled':     return { status: 'cancelled',  label: 'Cancelled' };
+    default:              return { status: 'queued',     label: s };
+  }
+}
+
+function fmt(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -23,216 +51,193 @@ export default function Dashboard() {
     queryFn: dashboardService.getStats,
   });
 
-  const { data: productionStatus, isLoading: productionLoading, error: productionError } = useQuery({
+  const { data: productionStatus, isLoading: productionLoading } = useQuery({
     queryKey: ['production-status'],
     queryFn: dashboardService.getProductionStatus,
   });
 
+  const { data: recentOrders, isLoading: ordersLoading } = useQuery({
+    queryKey: ['dashboard-recent-orders'],
+    queryFn: fetchRecentOrders,
+  });
+
   if (statsLoading || productionLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton variant="text" className="h-10 w-80" />
-            <Skeleton variant="text" className="h-4 w-60" />
-          </div>
-        </div>
+      <div className="space-y-5">
+        <Skeleton variant="text" className="h-10 w-72" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Skeleton variant="card" />
-          <Skeleton variant="card" />
-          <Skeleton variant="card" />
-          <Skeleton variant="card" />
+          {[0,1,2,3].map(i => <Skeleton key={i} variant="card" className="h-32" />)}
         </div>
+        <Skeleton variant="card" className="h-52" />
         <Skeleton variant="card" className="h-64" />
       </div>
     );
   }
 
-  if (statsError || productionError) {
-    return (
-      <EmptyState
-        icon={<AlertCircle />}
-        title="Error loading dashboard"
-        description="There was an error loading the dashboard data. Please try again."
-      />
-    );
+  if (statsError) {
+    return <EmptyState icon={<AlertCircle />} title="Error loading dashboard" description="Check your connection and try again." />;
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  const today = new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)]">
-            Dashboard
-          </h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{currentDate}</p>
-        </div>
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">{greeting()}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{today}</p>
       </div>
 
-      {/* Key Metrics Cards */}
+      {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card
-          variant="elevated"
-          padding="md"
-          hover
-          onClick={() => router.push('/orders')}
-          className="cursor-pointer"
-        >
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Package className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Orders</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.orders.total || 0}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-1 px-3 py-1.5 bg-[var(--color-warning-bg)] text-[var(--color-warning)] rounded-lg text-xs font-medium text-center">
-                Pending: {stats?.orders.pending || 0}
-              </span>
-              <span className="flex-1 px-3 py-1.5 bg-[var(--color-info-bg)] text-[var(--color-info)] rounded-lg text-xs font-medium text-center">
-                Active: {stats?.orders.in_production || 0}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card
-          variant="elevated"
-          padding="md"
-          hover
-          onClick={() => router.push('/production')}
-          className="cursor-pointer"
-        >
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Factory className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Production Jobs</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.production_jobs.total || 0}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex-1 px-3 py-1.5 bg-[var(--color-success-bg)] text-[var(--color-success)] rounded-lg text-xs font-medium text-center">
-                Active: {productionStatus?.in_progress || 0}
-              </span>
-              <span className="flex-1 px-3 py-1.5 bg-[var(--color-warning-bg)] text-[var(--color-warning)] rounded-lg text-xs font-medium text-center">
-                Queued: {stats?.production_jobs.queued || 0}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card
-          variant="elevated"
-          padding="md"
-          hover
-          onClick={() => router.push('/inventory')}
-          className="cursor-pointer"
-        >
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <AlertTriangle className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Low Stock Alert</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{stats?.low_stock_items || 0}</p>
-              </div>
-            </div>
-            <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-warning-bg)] px-3 py-1.5 rounded-lg text-center">
-              Items need reordering
-            </p>
-          </div>
-        </Card>
-
-        <Card
-          variant="elevated"
-          padding="md"
-          hover
-          onClick={() => router.push('/invoices')}
-          className="cursor-pointer"
-        >
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Pending Invoices</p>
-                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{formatCurrency(stats?.pending_invoices_amount || 0)}</p>
-              </div>
-            </div>
-            <p className="text-xs text-[var(--color-text-secondary)] bg-blue-50 px-3 py-1.5 rounded-lg text-center">
-              Outstanding amount
-            </p>
-          </div>
-        </Card>
+        <StatCard
+          label="Total Orders"
+          value={stats?.orders.total ?? 0}
+          icon={<Package />}
+          accent="brand"
+          href="/orders"
+          badges={[
+            { label: `${stats?.orders.pending ?? 0} pending`, variant: 'warning' },
+            { label: `${stats?.orders.in_production ?? 0} active`, variant: 'info' },
+          ]}
+        />
+        <StatCard
+          label="Production Jobs"
+          value={stats?.production_jobs.total ?? 0}
+          icon={<Factory />}
+          accent="success"
+          href="/production"
+          badges={[
+            { label: `${productionStatus?.in_progress ?? 0} running`, variant: 'success' },
+            { label: `${stats?.production_jobs.queued ?? 0} queued`, variant: 'warning' },
+          ]}
+        />
+        <StatCard
+          label="Low Stock Alerts"
+          value={stats?.low_stock_items ?? 0}
+          icon={<AlertTriangle />}
+          accent={(stats?.low_stock_items ?? 0) > 0 ? 'danger' : 'success'}
+          href="/dashboards/inventory"
+          badges={[{ label: (stats?.low_stock_items ?? 0) > 0 ? 'Needs reordering' : 'All stocked', variant: (stats?.low_stock_items ?? 0) > 0 ? 'danger' : 'success' }]}
+        />
+        <StatCard
+          label="Pending Invoices"
+          value={formatCurrency(stats?.pending_invoices_amount ?? 0)}
+          icon={<FileText />}
+          accent="warning"
+          href="/invoices"
+          badges={[{ label: 'Outstanding', variant: 'warning' }]}
+        />
       </div>
 
-      {/* Production Status Section */}
+      {/* Production overview */}
       {productionStatus && (
         <Card variant="elevated" padding="lg">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Production Overview</h2>
-            <button
-              onClick={() => router.push('/production')}
-              className="text-sm text-brand hover:text-brand-dark font-medium"
-            >
-              View All →
-            </button>
-          </div>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Production Overview</CardTitle>
+              <button
+                onClick={() => router.push('/production')}
+                className="text-xs font-semibold text-[var(--color-brand)] hover:underline"
+              >
+                View all →
+              </button>
+            </div>
+          </CardHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {productionStatus.in_progress || 0}
+            {[
+              {
+                count: productionStatus.in_progress ?? 0,
+                label: 'In Progress',
+                sub: 'Active jobs on floor',
+                accent: 'var(--color-success)',
+                bg: 'var(--color-success-bg)',
+              },
+              {
+                count: productionStatus.scheduled_today ?? 0,
+                label: 'Scheduled Today',
+                sub: 'Starting today',
+                accent: 'var(--color-info)',
+                bg: 'var(--color-info-bg)',
+              },
+              {
+                count: productionStatus.overdue ?? 0,
+                label: 'Overdue',
+                sub: 'Needs attention',
+                accent: 'var(--color-danger)',
+                bg: 'var(--color-danger-bg)',
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-4 p-4 rounded-xl border"
+                style={{ background: item.bg, borderColor: item.accent + '33' }}
+              >
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
+                  style={{ background: item.accent }}
+                >
+                  {item.count}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-green-900">In Progress</p>
-                  <p className="text-xs text-green-700">Active production jobs</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{item.label}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{item.sub}</p>
                 </div>
               </div>
-            </Card>
-
-            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {productionStatus.scheduled_today || 0}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">Scheduled Today</p>
-                  <p className="text-xs text-blue-700">Jobs starting today</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card variant="outlined" padding="md" className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {productionStatus.overdue || 0}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-red-900">Overdue</p>
-                  <p className="text-xs text-red-700">Require immediate attention</p>
-                </div>
-              </div>
-            </Card>
+            ))}
           </div>
         </Card>
       )}
+
+      {/* Recent orders */}
+      <Card variant="elevated" padding="none">
+        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Recent Orders</h2>
+          <button onClick={() => router.push('/orders')} className="text-xs font-semibold text-[var(--color-brand)] hover:underline">
+            View all →
+          </button>
+        </div>
+        {ordersLoading ? (
+          <div className="p-5 space-y-3">{[0,1,2].map(i => <Skeleton key={i} variant="text" className="h-12" />)}</div>
+        ) : !recentOrders?.data?.length ? (
+          <div className="p-6"><EmptyState icon={<Package />} title="No orders yet" description="Create your first order to get started." /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Order', 'Customer', 'Product', 'Delivery', 'Status'].map(h => (
+                    <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.data.map((o: any) => {
+                  const pill = orderStatusToPill(o.status);
+                  const overdue = !['delivered','completed','cancelled'].includes(o.status) && new Date(o.delivery_date) < new Date();
+                  return (
+                    <tr
+                      key={o.id}
+                      onClick={() => router.push(`/orders/${o.id}`)}
+                      className="border-b border-[var(--color-border-subtle)] last:border-0 hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors"
+                    >
+                      <td className="px-5 py-3 font-mono text-xs text-[var(--color-brand)] font-semibold">{o.order_number}</td>
+                      <td className="px-5 py-3 text-[var(--color-text-primary)]">{o.customers?.name ?? '—'}</td>
+                      <td className="px-5 py-3 text-[var(--color-text-secondary)] max-w-[180px] truncate">{o.product_name}</td>
+                      <td className="px-5 py-3">
+                        <span className={overdue ? 'text-[var(--color-danger)] font-medium flex items-center gap-1' : 'text-[var(--color-text-secondary)]'}>
+                          {overdue && <Clock className="w-3 h-3" />}{fmt(o.delivery_date)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3"><StatusPill status={pill.status} label={pill.label} /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

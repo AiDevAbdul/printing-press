@@ -2,9 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Factory, Clock, CheckCircle2, PauseCircle, AlertTriangle } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Factory, Clock, CalendarCheck, AlertTriangle } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { dashboardService } from '@/lib/services/dashboard.service';
 
@@ -31,6 +32,16 @@ function elapsedSince(dateStr?: string) {
   return `${mins}m`;
 }
 
+function jobStatusPill(status?: string) {
+  switch (status) {
+    case 'in_progress': return <StatusPill status="in_progress" label="In Progress" />;
+    case 'queued':      return <StatusPill status="queued" label="Queued" />;
+    case 'completed':   return <StatusPill status="completed" label="Done" />;
+    case 'paused':      return <StatusPill status="paused" label="Paused" />;
+    default:            return <StatusPill status="queued" />;
+  }
+}
+
 export default function ProductionDashboard() {
   const router = useRouter();
   const { data: stats, isLoading: statsLoading } = useQuery({ queryKey: ['dashboard-stats'], queryFn: dashboardService.getStats });
@@ -38,94 +49,92 @@ export default function ProductionDashboard() {
   const { data: activeJobs, isLoading: activeLoading } = useQuery({ queryKey: ['active-jobs'], queryFn: fetchActiveJobs });
   const { data: queuedJobs, isLoading: queuedLoading } = useQuery({ queryKey: ['queued-jobs'], queryFn: fetchQueuedJobs });
 
+  const loading = statsLoading || statusLoading;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Production Dashboard</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Live production status and job queue</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Production Dashboard</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Active jobs and machine queue</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'In Progress', value: statusLoading ? null : productionStatus?.in_progress, icon: <Clock className="w-5 h-5 text-white" />, color: 'from-blue-500 to-blue-600' },
-          { label: 'Queued', value: statsLoading ? null : stats?.production_jobs.queued, icon: <Factory className="w-5 h-5 text-white" />, color: 'from-gray-500 to-gray-600' },
-          { label: 'Scheduled Today', value: statusLoading ? null : productionStatus?.scheduled_today, icon: <CheckCircle2 className="w-5 h-5 text-white" />, color: 'from-green-500 to-green-600' },
-          { label: 'Overdue', value: statusLoading ? null : productionStatus?.overdue, icon: <AlertTriangle className="w-5 h-5 text-white" />, color: 'from-red-500 to-red-600' },
-        ].map((card, i) => (
-          <Card key={i} variant="elevated" padding="md">
-            <div className="flex items-start justify-between gap-2">
-              <div className={`w-10 h-10 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center shrink-0`}>{card.icon}</div>
-              <div className="text-right">
-                <p className="text-xs text-[var(--color-text-secondary)]">{card.label}</p>
-                {(statsLoading || statusLoading) ? <Skeleton variant="text" className="h-8 w-10 mt-1" /> : (
-                  <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{card.value ?? 0}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {loading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="card" className="h-28" />) : (<>
+          <StatCard label="Total Jobs" value={stats?.production_jobs?.total ?? 0} icon={<Factory />} accent="brand" href="/production" />
+          <StatCard
+            label="In Progress"
+            value={productionStatus?.in_progress ?? 0}
+            icon={<Clock />}
+            accent="success"
+            badges={stats?.production_jobs?.queued ? [{ label: `${stats.production_jobs.queued} queued`, variant: 'warning' }] : undefined}
+          />
+          <StatCard label="Scheduled Today" value={productionStatus?.scheduled_today ?? 0} icon={<CalendarCheck />} accent="info" />
+          <StatCard label="Overdue" value={productionStatus?.overdue ?? 0} icon={<AlertTriangle />} accent="danger" />
+        </>)}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-500" />Active Jobs
-            </h2>
-            <button onClick={() => router.push('/shop-floor')} className="text-xs text-brand hover:underline">Shop floor →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>Active Jobs</CardTitle>
+            <button onClick={() => router.push('/production')} className="text-xs text-[var(--color-brand)] hover:underline">View all →</button>
           </div>
           {activeLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12" />)}</div>
+            <div className="p-5 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12" />)}</div>
           ) : !(activeJobs?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-[var(--color-text-secondary)]">No active jobs</div>
+            <div className="px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">No active jobs</div>
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {activeJobs.data.map((job: any) => (
-                <div key={job.id} onClick={() => router.push(`/production/${job.id}`)} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div>
-                    <p className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">{job.job_number}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{job.assigned_machine || 'No machine'}</p>
-                  </div>
-                  <div className="text-right shrink-0 ml-3">
-                    <Badge variant="info" dot>In Progress</Badge>
-                    {job.actual_start_date && (
-                      <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{elapsedSince(job.actual_start_date)}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Job #', 'Product', 'Machine', 'Stage', 'Elapsed'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {activeJobs.data.map((job: any) => (
+                  <tr key={job.id} onClick={() => router.push(`/production/${job.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 font-mono font-semibold text-sm text-[var(--color-brand)]">{job.job_number}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-primary)]">{job.product_name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{job.machine_name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{job.current_stage || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-tertiary)]">{elapsedSince(job.actual_start_date) ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
 
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)]">Job Queue</h2>
-            <button onClick={() => router.push('/planning')} className="text-xs text-brand hover:underline">Planning view →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>Queue</CardTitle>
+            <button onClick={() => router.push('/production')} className="text-xs text-[var(--color-brand)] hover:underline">View all →</button>
           </div>
           {queuedLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
+            <div className="p-5 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
           ) : !(queuedJobs?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-[var(--color-text-secondary)]">Queue is empty</div>
+            <div className="px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">Queue is empty</div>
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {queuedJobs.data.map((job: any, idx: number) => (
-                <div key={job.id} onClick={() => router.push(`/production/${job.id}`)} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-[var(--color-text-tertiary)] w-5 text-right shrink-0">#{idx + 1}</span>
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">{job.job_number}</p>
-                      {job.scheduled_start_date && (
-                        <p className="text-xs text-[var(--color-text-tertiary)]">
-                          Starts {new Date(job.scheduled_start_date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant="default">Queued</Badge>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Job #', 'Product', 'Priority'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {queuedJobs.data.map((job: any, idx: number) => (
+                  <tr key={job.id} onClick={() => router.push(`/production/${job.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 font-mono font-semibold text-sm text-[var(--color-brand)]">{job.job_number}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-primary)]">{job.product_name || '—'}</td>
+                    <td className="px-5 py-4">{jobStatusPill(job.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
       </div>

@@ -2,10 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { ShieldCheck, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Card, CardTitle } from '@/components/ui/Card';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -23,7 +25,7 @@ async function fetchDefects() {
   return res.json();
 }
 
-function formatDate(d: string) {
+function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
 }
 
@@ -38,110 +40,86 @@ export default function QualityDashboard() {
     ? Math.round((passed.total / all.total) * 100)
     : null;
 
+  const loading = allLoading || pendingLoading || passedLoading || failedLoading;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Quality Dashboard</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Inspections, defects, and pass rates</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Quality Dashboard</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Inspection results and defect tracking</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Inspections', value: allLoading ? null : all?.total, icon: <ShieldCheck className="w-5 h-5 text-white" />, color: 'from-blue-500 to-blue-600' },
-          { label: 'Pending', value: pendingLoading ? null : pending?.total, icon: <Clock className="w-5 h-5 text-white" />, color: 'from-yellow-500 to-yellow-600' },
-          { label: 'Passed', value: passedLoading ? null : passed?.total, icon: <CheckCircle2 className="w-5 h-5 text-white" />, color: 'from-green-500 to-green-600' },
-          { label: 'Failed', value: failedLoading ? null : failed?.total, icon: <XCircle className="w-5 h-5 text-white" />, color: 'from-red-500 to-red-600' },
-        ].map((card, i) => (
-          <Card key={i} variant="elevated" padding="md">
-            <div className="flex items-start justify-between gap-2">
-              <div className={`w-10 h-10 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center shrink-0`}>{card.icon}</div>
-              <div className="text-right">
-                <p className="text-xs text-[var(--color-text-secondary)]">{card.label}</p>
-                {(allLoading || pendingLoading || passedLoading || failedLoading) ? <Skeleton variant="text" className="h-8 w-10 mt-1" /> : (
-                  <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{card.value ?? 0}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {loading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="card" className="h-28" />) : (<>
+          <StatCard label="Total Inspections" value={all?.total ?? 0} icon={<ShieldCheck />} accent="brand" href="/quality" />
+          <StatCard label="Pass Rate" value={passRate != null ? `${passRate}%` : '—'} icon={<CheckCircle2 />} accent="success" />
+          <StatCard label="Pending" value={pending?.total ?? 0} icon={<Clock />} accent="warning" href="/quality" />
+          <StatCard label="Failed" value={failed?.total ?? 0} icon={<XCircle />} accent="danger" />
+        </>)}
       </div>
 
-      {passRate !== null && (
-        <Card variant="elevated" padding="lg">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-[var(--color-text-primary)]">Overall Pass Rate</h2>
-            <span className="text-2xl font-bold" style={{ color: passRate >= 90 ? 'var(--color-success)' : passRate >= 70 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
-              {passRate}%
-            </span>
-          </div>
-          <div className="h-3 bg-[var(--color-border-subtle)] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${passRate}%`,
-                backgroundColor: passRate >= 90 ? 'var(--color-success)' : passRate >= 70 ? 'var(--color-warning)' : 'var(--color-danger)',
-              }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-[var(--color-text-tertiary)]">
-            <span>0%</span>
-            <span className="text-orange-500">70% acceptable</span>
-            <span className="text-green-500">90% target</span>
-            <span>100%</span>
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-              <Clock className="w-4 h-4 text-yellow-500" />Pending Inspections
-            </h2>
-            <button onClick={() => router.push('/quality')} className="text-xs text-brand hover:underline">View all →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>Pending Inspections</CardTitle>
+            <button onClick={() => router.push('/quality')} className="text-xs text-[var(--color-brand)] hover:underline">View all →</button>
           </div>
           {pendingLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
+            <div className="p-5 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12" />)}</div>
           ) : !(pending?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-success">No pending inspections</div>
+            <EmptyState title="No pending inspections" description="All caught up" className="py-8" />
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {pending.data.map((ins: any) => (
-                <div key={ins.id} onClick={() => router.push(`/quality/${ins.id}`)} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div>
-                    <p className="font-mono text-xs font-medium text-[var(--color-text-primary)]">{ins.inspection_number || ins.id.slice(0, 8)}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{formatDate(ins.created_at)}</p>
-                  </div>
-                  <Badge variant="warning" dot>Pending</Badge>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Job #', 'Product', 'Order Ref', 'Date'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {pending.data.map((ins: any) => (
+                  <tr key={ins.id} onClick={() => router.push(`/quality/${ins.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 font-mono text-sm font-semibold text-[var(--color-text-primary)]">{ins.inspection_number || ins.id?.slice(0, 8)}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{ins.product_name || ins.production_jobs?.product_name || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">{ins.order_number || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-tertiary)]">{ins.created_at ? fmt(ins.created_at) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
 
         <Card variant="elevated" padding="none">
-          <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between">
-            <h2 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-danger" />Recent Failures
-            </h2>
-            <button onClick={() => router.push('/quality')} className="text-xs text-brand hover:underline">View all →</button>
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--color-border-subtle)]">
+            <CardTitle>Recent Failures</CardTitle>
+            <button onClick={() => router.push('/quality')} className="text-xs text-[var(--color-brand)] hover:underline">View all →</button>
           </div>
           {failedLoading ? (
-            <div className="p-4 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-10" />)}</div>
+            <div className="p-5 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" className="h-12" />)}</div>
           ) : !(failed?.data?.length) ? (
-            <div className="p-5 text-center text-sm text-success">No recent failures</div>
+            <EmptyState title="No recent failures" description="Quality is on track" className="py-8" />
           ) : (
-            <div className="divide-y divide-[var(--color-border-subtle)]">
-              {failed.data.map((ins: any) => (
-                <div key={ins.id} onClick={() => router.push(`/quality/${ins.id}`)} className="px-4 py-3 flex items-center justify-between hover:bg-[var(--color-border-subtle)] cursor-pointer">
-                  <div>
-                    <p className="font-mono text-xs font-medium text-[var(--color-text-primary)]">{ins.inspection_number || ins.id.slice(0, 8)}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{ins.notes ? ins.notes.slice(0, 40) + '…' : formatDate(ins.created_at)}</p>
-                  </div>
-                  <Badge variant="danger" dot>Failed</Badge>
-                </div>
-              ))}
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--color-border-subtle)]">
+                  {['Job #', 'Defect / Description', 'Date', 'Status'].map(h => (
+                    <th key={h} className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                {failed.data.map((ins: any) => (
+                  <tr key={ins.id} onClick={() => router.push(`/quality/${ins.id}`)} className="hover:bg-[var(--color-brand-light)] cursor-pointer transition-colors">
+                    <td className="px-5 py-4 font-mono text-sm font-semibold text-[var(--color-text-primary)]">{ins.inspection_number || ins.id?.slice(0, 8)}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)] max-w-[180px] truncate">{ins.defect_type || ins.notes?.slice(0, 40) || '—'}</td>
+                    <td className="px-5 py-4 text-sm text-[var(--color-text-tertiary)]">{ins.created_at ? fmt(ins.created_at) : '—'}</td>
+                    <td className="px-5 py-4"><StatusPill status="blocked" label="Failed" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </Card>
       </div>

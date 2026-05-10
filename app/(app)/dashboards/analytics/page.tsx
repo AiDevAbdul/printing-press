@@ -2,12 +2,23 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { BarChart3, TrendingUp, Package, Factory, Users } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { Package, Factory, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { StatCard } from '@/components/ui/StatCard';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { dashboardService } from '@/lib/services/dashboard.service';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' });
+}
+
+function fmtPKR(n?: number) {
+  if (!n) return '—';
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(n);
+}
 
 async function fetchRevenueTrend() {
   const res = await fetch(`${API_BASE}/dashboard?endpoint=revenue-trend`, { credentials: 'include' });
@@ -24,56 +35,38 @@ export default function AnalyticsDashboard() {
   const maxRevenue = trendData.length > 0 ? Math.max(...trendData.map(t => Number(t.revenue) || 0), 1) : 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Analytics Dashboard</h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">Analytics</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">Cross-functional business overview</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Orders', value: stats?.orders.total, icon: <Package className="w-5 h-5 text-white" />, color: 'from-blue-500 to-blue-600' },
-          { label: 'Production Jobs', value: stats?.production_jobs.total, icon: <Factory className="w-5 h-5 text-white" />, color: 'from-green-500 to-green-600' },
-          { label: 'Low Stock Items', value: stats?.low_stock_items, icon: <BarChart3 className="w-5 h-5 text-white" />, color: 'from-red-500 to-red-600' },
-          { label: 'Completed Jobs', value: stats?.production_jobs.completed, icon: <TrendingUp className="w-5 h-5 text-white" />, color: 'from-purple-500 to-purple-600' },
-        ].map((card, i) => (
-          <Card key={i} variant="elevated" padding="md">
-            <div className="flex items-start justify-between gap-2">
-              <div className={`w-10 h-10 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center shrink-0`}>{card.icon}</div>
-              <div className="text-right">
-                <p className="text-xs text-[var(--color-text-secondary)]">{card.label}</p>
-                {statsLoading ? <Skeleton variant="text" className="h-8 w-12 mt-1" /> : (
-                  <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-1">{card.value ?? 0}</p>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {statsLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="card" className="h-28" />) : (<>
+          <StatCard label="Total Orders" value={stats?.orders?.total ?? 0} icon={<Package />} accent="brand" href="/orders" />
+          <StatCard label="Production Jobs" value={stats?.production_jobs?.total ?? 0} icon={<Factory />} accent="info" href="/production" />
+          <StatCard label="Low Stock" value={stats?.low_stock_items ?? 0} icon={<AlertTriangle />} accent="danger" />
+          <StatCard label="Completed Jobs" value={stats?.production_jobs?.completed ?? 0} icon={<CheckCircle2 />} accent="success" />
+        </>)}
       </div>
 
       <Card variant="elevated" padding="lg">
-        <h2 className="font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />Revenue Trend
-        </h2>
+        <CardHeader>
+          <CardTitle>Revenue Trend</CardTitle>
+        </CardHeader>
         {trendLoading ? (
-          <Skeleton variant="card" className="h-48" />
+          <Skeleton variant="card" className="h-40" />
         ) : !trendData.length ? (
-          <div className="h-48 flex items-center justify-center text-sm text-[var(--color-text-secondary)]">
-            No revenue data available
-          </div>
+          <EmptyState title="No revenue data" description="Revenue trend data will appear here once orders are invoiced" />
         ) : (
-          <div className="h-48 flex items-end gap-2">
-            {trendData.map((point: any, i: number) => {
-              const height = maxRevenue > 0 ? Math.max(4, Math.round((Number(point.revenue) / maxRevenue) * 100)) : 4;
+          <div className="flex items-end gap-1 h-40">
+            {trendData.map((t, i) => {
+              const pct = (Number(t.revenue) || 0) / maxRevenue * 100;
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] leading-none">
-                    {point.revenue > 0 ? `${Math.round(Number(point.revenue) / 1000)}k` : ''}
-                  </p>
-                  <div className="w-full bg-brand rounded-t-sm" style={{ height: `${height}%` }} />
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] leading-none truncate w-full text-center">
-                    {point.month || point.date || `M${i + 1}`}
-                  </p>
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                  <span className="text-[9px] text-[var(--color-text-tertiary)] truncate">{fmtPKR(t.revenue)}</span>
+                  <div className="w-full rounded-t-md" style={{ height: `${Math.max(pct, 2)}%`, backgroundColor: 'var(--color-brand)', opacity: 0.8 + (i / trendData.length) * 0.2 }} />
+                  <span className="text-[9px] text-[var(--color-text-tertiary)] truncate">{fmt(t.date)}</span>
                 </div>
               );
             })}
@@ -81,19 +74,30 @@ export default function AnalyticsDashboard() {
         )}
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Orders', sub: 'Completed', value: stats?.orders.completed, link: '/orders', color: 'text-blue-600' },
-          { label: 'Production', sub: 'In Progress', value: stats?.production_jobs.in_progress, link: '/production', color: 'text-green-600' },
-          { label: 'Quality', sub: 'Inspections', value: 0, link: '/quality', color: 'text-purple-600' },
-        ].map((item, i) => (
-          <Card key={i} variant="outlined" padding="md" hover onClick={() => router.push(item.link)} className="cursor-pointer">
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">{item.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: item.color }}>{statsLoading ? '—' : item.value ?? 0}</p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{item.sub}</p>
-          </Card>
-        ))}
-      </div>
+      <Card variant="elevated" padding="lg">
+        <CardHeader>
+          <CardTitle>Summary</CardTitle>
+        </CardHeader>
+        {statsLoading ? (
+          <Skeleton variant="card" className="h-24" />
+        ) : (
+          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+            {[
+              { label: 'Total Orders',    value: stats?.orders?.total ?? 0 },
+              { label: 'In Production',   value: stats?.production_jobs?.in_progress ?? 0 },
+              { label: 'Queued Jobs',     value: stats?.production_jobs?.queued ?? 0 },
+              { label: 'Completed Jobs',  value: stats?.production_jobs?.completed ?? 0 },
+              { label: 'Low Stock Items', value: stats?.low_stock_items ?? 0 },
+              { label: 'Pending Orders',  value: stats?.orders?.pending ?? 0 },
+            ].map(({ label, value }) => (
+              <div key={label} className="space-y-0.5">
+                <dt className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{label}</dt>
+                <dd className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </Card>
     </div>
   );
 }
