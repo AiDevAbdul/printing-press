@@ -13,3 +13,8 @@ export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { Pagination, type PaginationProps } from './Pagination';
 export { SortButton, type SortButtonProps } from './SortButton';
 export { FileUpload, type FileUploadProps } from './FileUpload';
+export { StatusPill, type StatusPillProps, type StatusPillStatus } from './StatusPill';
+export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
+export { NotificationBell } from './NotificationBell';
+export { CompanyBadge, type CompanyBadgeProps, type CompanySlug } from './CompanyBadge';
+export { WorkflowTimeline, type WorkflowTimelineProps, type WorkflowStage } from './WorkflowTimeline';

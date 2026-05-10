@@ -2,9 +2,10 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, User, LogOut, Settings, ChevronDown, Menu } from 'lucide-react'
+import { User, LogOut, Settings, ChevronDown, Menu } from 'lucide-react'
 import { Breadcrumb } from './Breadcrumb'
 import { CompanySwitcher } from './CompanySwitcher'
+import { NotificationBell } from '@/components/ui/NotificationBell'
 import { toast } from 'sonner'
 
 export interface HeaderProps {
@@ -72,13 +73,7 @@ export function Header({ onMenuToggle, user, className = '' }: HeaderProps) {
         <div className="flex items-center gap-1">
           <CompanySwitcher />
 
-          {/* Notifications - placeholder */}
-          <button
-            className="relative p-2 rounded-md text-text-secondary hover:bg-border transition-colors duration-200"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-          </button>
+          <NotificationBell />
 
           {/* User menu */}
           <div className="relative" ref={userMenuRef}>
