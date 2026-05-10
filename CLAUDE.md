@@ -39,7 +39,7 @@ npm run dev
 - Test credentials: `admin@printingpress.com` / `admin123`
 
 ## Architecture (Post-Migration)
-- **Framework**: Next.js 15 App Router (unified frontend + API)
+- **Framework**: Next.js 16 App Router (unified frontend + API)
 - **Backend**: Route Handlers replacing NestJS
 - **ORM**: Prisma (replacing TypeORM)
 - **Auth**: jose + httpOnly cookies (replacing localStorage JWTs)
@@ -53,10 +53,11 @@ See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 ## Critical Patterns (Next.js)
 - **Tailwind v4**: CSS-first config, `@import "tailwindcss"` at top of `globals.css`
 - **Multi-tenant**: All Route Handlers extract `company_id` from auth token, filter Prisma queries
-- **Auth**: JWT in httpOnly cookie `auth_token`, validated in `middleware.ts` before requests reach handlers
+- **Auth**: JWT in httpOnly cookie `auth_token`, validated in `proxy.ts` before requests reach handlers
 - **Auto-fields**: Never set `inline_status`, `queue_position`, `searchable_text` manually (business logic enforces)
 - **Workflow**: Stages have non-sequential orders; operator/machine inherited from previous stage
 - **File uploads**: All go through `/api/upload` → Vercel Blob (no local disk in production)
+- **Proxy (not Middleware)**: Next.js 16 uses `proxy.ts` with `export async function proxy()`. Do NOT rename to `middleware.ts` — it throws `MIDDLEWARE_INVOCATION_FAILED` at runtime on Vercel.
 
 ## Key Files (Post-Migration)
 - `app/(auth)/` - Login, company selector pages
@@ -66,7 +67,7 @@ See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 - `lib/auth.ts` - JWT sign/verify with jose
 - `lib/db.ts` - Prisma client singleton
 - `lib/tenant.ts` - Extract company_id from request
-- `middleware.ts` - Auth guard and request routing
+- `proxy.ts` - Auth guard and request routing (Next.js 16 proxy convention)
 - `prisma/schema.prisma` - Entire DB schema
 - `docs/NEXTJS_MIGRATION.md` - Migration plan & progress
 - `docs/MULTI_TENANT.md` - Full multi-tenant details
@@ -75,9 +76,15 @@ See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 ## Common Pitfalls (Next.js)
 - ⚠️ Forget `company_id` filter in Prisma queries → data leakage between companies
 - ⚠️ Set auto-fields manually → breaks business logic
-- ⚠️ Skip `middleware.ts` validation → auth token not verified
+- ⚠️ Rename `proxy.ts` to `middleware.ts` → `MIDDLEWARE_INVOCATION_FAILED` on Vercel (Next.js 16 uses `proxy.ts`)
 - ⚠️ Store auth token in localStorage → vulnerability (use httpOnly cookies)
 - ⚠️ Client Components trying to read DB directly → use Route Handlers instead
+
+## Deployment
+- **CI/CD**: GitHub Actions (`.github/workflows/deploy.yml`) runs `vercel build` + `vercel deploy --prebuilt --prod` on every push to `main`
+- **Manual deploy**: `vercel build --prod && vercel deploy --prebuilt --prod`
+- **Vercel project**: `sourceless=true` — Vercel does NOT build from source on GitHub push; GitHub Actions handles the build
+- **Project settings**: `framework=nextjs`, `outputDirectory=null` — do not change these
 
 ## Documentation Philosophy
 **Keep it short and to-the-point.** No huge documentation files. Each doc file should be concise, focused, and actionable. Link to other docs for details. Avoid repetition. Update docs as code changes—don't let them drift.
