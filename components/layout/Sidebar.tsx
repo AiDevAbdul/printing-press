@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { MODULE_ICONS } from '@/utils/iconMap'
+import { useCompany, type CompanySlug } from '@/lib/company-context'
 
 export interface SidebarItem {
   id: string
@@ -24,6 +25,12 @@ export interface SidebarProps {
   className?: string
 }
 
+const COMPANY_IDENTITY: Record<CompanySlug, { abbr: string; label: string }> = {
+  cpp:      { abbr: 'CPP', label: 'Capital Print & Pack' },
+  silvo:    { abbr: 'SLV', label: 'SILVO Enterprises' },
+  bestfoil: { abbr: 'BF',  label: 'Best Foil' },
+}
+
 export function Sidebar({
   items,
   activeItem,
@@ -34,6 +41,8 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname()
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const { companySlug } = useCompany()
+  const identity = COMPANY_IDENTITY[companySlug]
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -67,13 +76,13 @@ export function Sidebar({
               aria-expanded={hasChildren ? isExpanded : undefined}
               aria-label={`${item.label}${item.badge ? `, ${item.badge} items` : ''}${hasChildren ? ', submenu' : ''}`}
               className={[
-                'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md mx-1',
-                'transition-all duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+                'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg mx-1',
+                'transition-all duration-150',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]',
                 level > 0 ? 'ml-5' : '',
                 isActive
-                  ? 'bg-brand/10 text-brand'
-                  : 'text-text-secondary hover:bg-border hover:text-text-primary',
+                  ? 'bg-[var(--color-brand-light)] text-[var(--color-brand)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)] hover:text-[var(--color-text-primary)]',
               ].join(' ')}
             >
               {IconComponent && <IconComponent className="w-[18px] h-[18px] flex-shrink-0" />}
@@ -81,7 +90,7 @@ export function Sidebar({
                 <>
                   <span className="flex-1 text-left truncate">{item.label}</span>
                   {item.badge != null && (
-                    <span className="bg-danger text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    <span className="bg-[var(--color-danger)] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
                       {item.badge > 9 ? '9+' : item.badge}
                     </span>
                   )}
@@ -99,11 +108,11 @@ export function Sidebar({
             onClick={() => handleItemClick(item)}
             aria-expanded={hasChildren ? isExpanded : undefined}
             className={[
-              'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md mx-1',
-              'transition-all duration-200',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+              'w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg mx-1',
+              'transition-all duration-150',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]',
               level > 0 ? 'ml-5' : '',
-              'text-text-secondary hover:bg-border hover:text-text-primary',
+              'text-[var(--color-text-secondary)] hover:bg-[var(--color-border-subtle)] hover:text-[var(--color-text-primary)]',
             ].join(' ')}
           >
             {IconComponent && <IconComponent className="w-[18px] h-[18px] flex-shrink-0" />}
@@ -133,7 +142,7 @@ export function Sidebar({
     <aside
       className={[
         collapsed ? 'w-[60px]' : 'w-64',
-        'bg-surface border-r border-border',
+        'bg-[var(--color-surface)] border-r border-[var(--color-border)]',
         'transition-all duration-200 flex flex-col h-screen overflow-y-auto',
         'flex-shrink-0',
         className,
@@ -141,27 +150,42 @@ export function Sidebar({
       role="complementary"
       aria-label="Main navigation"
     >
-      {/* Logo row */}
-      <div className="flex items-center justify-between px-3 py-4 border-b border-border">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 px-1">
-            <div className="w-7 h-7 rounded-md bg-brand flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">P</span>
+      {/* Logo / company identity row */}
+      <div className="flex items-center justify-between px-3 py-4 border-b border-[var(--color-border)]">
+        {collapsed ? (
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--color-brand)' }}
+            title={identity.label}
+          >
+            <span className="text-white text-[10px] font-bold">{identity.abbr[0]}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 px-1 min-w-0 flex-1">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--color-brand)' }}
+            >
+              <span className="text-white text-[9px] font-bold tracking-tight">{identity.abbr}</span>
             </div>
-            <span className="text-sm font-semibold text-text-primary truncate">PrintFlow</span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate leading-tight">
+                {identity.label}
+              </p>
+              <p className="text-[10px] text-[var(--color-text-tertiary)] leading-tight">PrintFlow</p>
+            </div>
           </div>
         )}
+
         <button
           onClick={() => onCollapsedChange?.(!collapsed)}
-          className="p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-border transition-colors duration-200 ml-auto"
+          className="p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)] transition-colors duration-150 flex-shrink-0"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!collapsed}
         >
-          {collapsed ? (
-            <PanelLeftOpen className="w-4 h-4" />
-          ) : (
-            <PanelLeftClose className="w-4 h-4" />
-          )}
+          {collapsed
+            ? <PanelLeftOpen className="w-4 h-4" />
+            : <PanelLeftClose className="w-4 h-4" />}
         </button>
       </div>
 
@@ -176,8 +200,8 @@ export function Sidebar({
 
       {/* Footer */}
       {!collapsed && (
-        <div className="px-4 py-3 border-t border-border">
-          <p className="text-xs text-text-tertiary text-center">© 2026 PrintFlow</p>
+        <div className="px-4 py-3 border-t border-[var(--color-border)]">
+          <p className="text-[10px] text-[var(--color-text-tertiary)] text-center">© 2026 PrintFlow</p>
         </div>
       )}
     </aside>
