@@ -135,7 +135,7 @@ async function getPendingDeliveries(companyId: string) {
     const orders = await db.orders.findMany({
       where: {
         company_id: companyId,
-        status: { in: ['ready_for_delivery', 'in_production', 'pending'] },
+        status: { in: ['in_production', 'pending', 'approved'] },
       },
       select: {
         id: true,
