@@ -13,6 +13,8 @@ const createCustomerSchema = z.object({
   state: z.string().optional(),
   postal_code: z.string().optional(),
   customer_group: z.string().optional(),
+  customer_type: z.string().optional(),
+  folder_name: z.string().optional(),
   strn: z.string().optional(),
   ntn: z.string().optional(),
   credit_limit: z.number().default(0),

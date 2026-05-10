@@ -9,8 +9,10 @@ const createOrderSchema = z.object({
   delivery_date: z.string(),
   product_name: z.string().min(1),
   product_type: z.enum(['cpp_carton', 'silvo_blister', 'bent_foil', 'alu_alu']).optional(),
+  product_type_text: z.string().optional(),
   quantity: z.number().int().positive(),
   unit: z.string().min(1),
+  double_sheet: z.string().optional(),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
   is_repeat_order: z.boolean().optional(),
   special_instructions: z.string().optional(),
@@ -24,6 +26,13 @@ const createOrderSchema = z.object({
   size_width: z.number().optional(),
   size_unit: z.string().optional(),
   card_size: z.string().optional(),
+  // Color process
+  four_color_process: z.boolean().optional(),
+  inside_printing: z.boolean().optional(),
+  cmyk_cyan: z.boolean().optional(),
+  cmyk_magenta: z.boolean().optional(),
+  cmyk_yellow: z.boolean().optional(),
+  cmyk_black: z.boolean().optional(),
   // Printing
   printing_type: z.enum(['offset', 'digital', 'flexo']).optional(),
   colors: z.string().optional(),
@@ -33,15 +42,40 @@ const createOrderSchema = z.object({
   color_p4: z.string().optional(),
   has_back_printing: z.boolean().optional(),
   has_barcode: z.boolean().optional(),
+  // Printing details
+  dye_req: z.string().optional(),
+  batch_no_printing: z.boolean().optional(),
+  mfg_date: z.string().optional(),
+  exp_date: z.string().optional(),
+  mrp_rs: z.number().optional(),
   // Finishing
   lamination_type: z.enum(['shine', 'matt', 'metalize', 'rainbow', 'none']).optional(),
   lamination_size: z.string().optional(),
   varnish_type: z.enum(['water_base', 'duck', 'plain_uv', 'spot_uv', 'drip_off_uv', 'matt_uv', 'rough_uv', 'none']).optional(),
   varnish_details: z.string().optional(),
   uv_emboss_details: z.string().optional(),
+  gold_leaf_panny: z.boolean().optional(),
+  bleach_card: z.boolean().optional(),
+  box_board_card: z.boolean().optional(),
+  art_card: z.boolean().optional(),
   die_type: z.enum(['new_die', 'old_die', 'none']).optional(),
   die_reference: z.string().optional(),
   finishing_requirements: z.string().optional(),
+  // Cost formula
+  ups: z.number().optional(),
+  paper_ups: z.number().optional(),
+  price_per_kg_card: z.number().optional(),
+  price_per_kg_paper: z.number().optional(),
+  conversion_percent_card: z.number().optional(),
+  conversion_percent_paper: z.number().optional(),
+  fixed_charge_ctp: z.number().optional(),
+  fixed_charge_spot_uv: z.number().optional(),
+  fixed_charge_plain_uv: z.number().optional(),
+  fixed_charge_drip_off_uv: z.number().optional(),
+  fixed_charge_metalize: z.number().optional(),
+  fixed_charge_emboss: z.number().optional(),
+  fixed_charge_lamination: z.number().optional(),
+  fixed_charge_others: z.number().optional(),
   // Pricing
   quoted_price: z.number().optional(),
 });
@@ -123,9 +157,12 @@ export async function POST(req: NextRequest) {
     const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
     const orderNumber = `ORD-${date.getFullYear()}-${dayOfYear}-${Date.now().toString().slice(-6)}`;
 
+    const { mfg_date, exp_date, ...rest } = validated;
     const order = await db.orders.create({
       data: {
-        ...validated,
+        ...rest,
+        ...(mfg_date ? { mfg_date: new Date(mfg_date) } : {}),
+        ...(exp_date ? { exp_date: new Date(exp_date) } : {}),
         order_number: orderNumber,
         company_id: companyId,
         created_by: userId,

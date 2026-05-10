@@ -11,14 +11,55 @@ const createQuotationSchema = z.object({
   product_type: z.string().default('cpp_carton'),
   quantity: z.number().positive(),
   unit: z.string().min(1),
+  double_sheet: z.string().optional(),
   length: z.number().optional(),
   width: z.number().optional(),
   height: z.number().optional(),
   dimension_unit: z.string().optional(),
   paper_type: z.string().optional(),
   gsm: z.number().optional(),
+  // Color process
+  four_color_process: z.boolean().optional(),
+  inside_printing: z.boolean().optional(),
+  cmyk_cyan: z.boolean().optional(),
+  cmyk_magenta: z.boolean().optional(),
+  cmyk_yellow: z.boolean().optional(),
+  cmyk_black: z.boolean().optional(),
+  pantone_cmyk_1: z.string().optional(),
+  pantone_cmyk_2: z.string().optional(),
+  pantone_cmyk_3: z.string().optional(),
+  pantone_cmyk_4: z.string().optional(),
   color_front: z.number().default(0),
   color_back: z.number().default(0),
+  // Printing details
+  bar_code: z.string().optional(),
+  dye_req: z.string().optional(),
+  batch_no_printing: z.boolean().optional(),
+  batch_no: z.string().optional(),
+  mfg_date: z.string().optional(),
+  exp_date: z.string().optional(),
+  mrp_rs: z.number().optional(),
+  // Finishing
+  varnish_type: z.string().optional(),
+  foiling: z.boolean().optional(),
+  bleach_card: z.boolean().optional(),
+  box_board_card: z.boolean().optional(),
+  art_card: z.boolean().optional(),
+  // Cost formula inputs
+  ups: z.number().optional(),
+  paper_ups: z.number().optional(),
+  price_per_kg_card: z.number().optional(),
+  price_per_kg_paper: z.number().optional(),
+  conversion_percent_card: z.number().optional(),
+  conversion_percent_paper: z.number().optional(),
+  fixed_charge_ctp: z.number().optional(),
+  fixed_charge_spot_uv: z.number().optional(),
+  fixed_charge_plain_uv: z.number().optional(),
+  fixed_charge_drip_off_uv: z.number().optional(),
+  fixed_charge_metalize: z.number().optional(),
+  fixed_charge_emboss: z.number().optional(),
+  fixed_charge_lamination: z.number().optional(),
+  fixed_charge_others: z.number().optional(),
   special_instructions: z.string().optional(),
 });
 
@@ -103,9 +144,12 @@ export async function POST(req: NextRequest) {
     const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
     const quotation_number = `QT-${date.getFullYear()}-${dayOfYear}-${Date.now().toString().slice(-6)}`;
 
+    const { mfg_date, exp_date, ...rest } = validated;
     const quotation = await db.quotations.create({
       data: {
-        ...validated,
+        ...rest,
+        ...(mfg_date ? { mfg_date: new Date(mfg_date) } : {}),
+        ...(exp_date ? { exp_date: new Date(exp_date) } : {}),
         quotation_number,
         company_id: companyId,
         created_by_id: userId,

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, ChevronDown } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -19,6 +19,9 @@ type FormData = {
   state: string;
   postal_code: string;
   customer_group: string;
+  customer_type: string;
+  customer_type_custom: string;
+  folder_name: string;
   ntn: string;
   strn: string;
   credit_limit: string;
@@ -26,10 +29,13 @@ type FormData = {
   payment_terms: string;
 };
 
+const CUSTOMER_TYPE_OPTIONS = ['Local', 'Export', 'Govt', 'Stamp'];
+
 const EMPTY: FormData = {
   name: '', company_name: '', email: '', phone: '',
   address: '', city: '', state: '', postal_code: '',
-  customer_group: '', ntn: '', strn: '',
+  customer_group: '', customer_type: '', customer_type_custom: '',
+  folder_name: '', ntn: '', strn: '',
   credit_limit: '0', credit_days: '30', payment_terms: '',
 };
 
@@ -58,6 +64,8 @@ export default function NewCustomer() {
 
   const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  const isCustomType = form.customer_type === '__other__';
+
   const mutation = useMutation({
     mutationFn: (data: Partial<Customer>) => customersService.create(data),
     onSuccess: (customer) => {
@@ -71,12 +79,14 @@ export default function NewCustomer() {
     if (!form.name.trim()) e.name = 'Required';
     if (!form.email.trim()) e.email = 'Required';
     if (!form.phone.trim()) e.phone = 'Required';
+    if (isCustomType && !form.customer_type_custom.trim()) e.customer_type_custom = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function handleSubmit() {
     if (!validate()) return;
+    const resolvedType = isCustomType ? form.customer_type_custom.trim() : form.customer_type;
     const payload: Partial<Customer> = {
       name: form.name,
       email: form.email,
@@ -88,6 +98,8 @@ export default function NewCustomer() {
     if (form.state) (payload as any).state = form.state;
     if (form.postal_code) (payload as any).postal_code = form.postal_code;
     if (form.customer_group) payload.customer_group = form.customer_group;
+    if (resolvedType) payload.customer_type = resolvedType;
+    if (form.folder_name) payload.folder_name = form.folder_name;
     if (form.ntn) payload.ntn = form.ntn;
     if (form.strn) payload.strn = form.strn;
     if (form.payment_terms) (payload as any).payment_terms = form.payment_terms;
@@ -123,6 +135,52 @@ export default function NewCustomer() {
             <div>
               <Label text="Company Name" />
               <Input value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="e.g. ABC Pharma Ltd" fullWidth />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Customer Type" />
+              <div className="relative">
+                <select
+                  value={form.customer_type}
+                  onChange={e => {
+                    set('customer_type', e.target.value);
+                    if (e.target.value !== '__other__') set('customer_type_custom', '');
+                  }}
+                  className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 pr-8 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors"
+                >
+                  <option value="">Select type…</option>
+                  {CUSTOMER_TYPE_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                  <option value="__other__">Other…</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
+              </div>
+            </div>
+
+            {isCustomType && (
+              <div>
+                <Label text="Specify Type" required />
+                <Input
+                  value={form.customer_type_custom}
+                  onChange={e => set('customer_type_custom', e.target.value)}
+                  placeholder="Enter customer type"
+                  fullWidth
+                  error={errors.customer_type_custom}
+                />
+              </div>
+            )}
+
+            <div>
+              <Label text="Folder Name" />
+              <Input
+                value={form.folder_name}
+                onChange={e => set('folder_name', e.target.value)}
+                placeholder="Files folder name"
+                fullWidth
+              />
             </div>
           </div>
 

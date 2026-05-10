@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,39 +11,26 @@ import { Select } from '@/components/ui/Select';
 import { ordersService, type Order } from '@/lib/services/orders.service';
 import { customersService } from '@/lib/services/customers.service';
 
-const STEPS = [
-  { label: 'Basic Info',       desc: 'Customer, product, dates' },
-  { label: 'Size & Material',  desc: 'Substrate, dimensions' },
-  { label: 'Printing',         desc: 'Type, colours, options' },
-  { label: 'Finishing',        desc: 'Lamination, varnish, die' },
-  { label: 'Review',           desc: 'Confirm and submit' },
+const PRODUCT_TYPES = [
+  'Unit Carton', 'Label', 'Leaflet', 'Literature', 'Sticker',
+  'Inner', 'Aluminium Foil', 'Alu Alu Foil', 'Sachet Foil',
+  'Meggie Foil', 'Food Foil', 'Others',
 ];
 
-const PRODUCT_TYPE_OPTIONS = [
-  { value: '', label: 'Select type...' },
-  { value: 'cpp_carton', label: 'CPP Carton' },
-  { value: 'silvo_blister', label: 'Silvo Blister' },
-  { value: 'bent_foil', label: 'Bent Foil' },
-  { value: 'alu_alu', label: 'Alu-Alu' },
-];
+const PAPER_TYPE_MAP: Record<string, string[]> = {
+  'Unit Carton': ['Bleach Card', 'Box Board', 'Art Card'],
+  'Label': ['Art Paper', 'Matt Paper'],
+  'Leaflet': ['News Paper', 'Printing Paper', 'VRG Paper', 'Offset Paper'],
+  'Literature': ['Art Paper', 'Matt Paper', 'Art Card'],
+  'Booklet': ['Art Paper', 'Matt Paper'],
+  'Stationary': ['Carbonless', 'ColorBond', 'Writing Paper', 'Offset Paper'],
+  'Sticker': ['China', 'Branded', 'PVC', 'Silver'],
+};
 
-const PRINTING_TYPE_OPTIONS = [
-  { value: '', label: 'Select...' },
-  { value: 'offset', label: 'Offset' },
-  { value: 'digital', label: 'Digital' },
-  { value: 'flexo', label: 'Flexo' },
-];
+const GSM_OPTIONS = [190, 200, 206, 210, 215, 230, 240, 250, 270, 290, 300, 320, 350];
 
-const LAMINATION_OPTIONS = [
-  { value: '', label: 'None / Not applicable' },
-  { value: 'shine', label: 'Shine' },
-  { value: 'matt', label: 'Matt' },
-  { value: 'metalize', label: 'Metalize' },
-  { value: 'rainbow', label: 'Rainbow' },
-];
-
-const VARNISH_OPTIONS = [
-  { value: '', label: 'None / Not applicable' },
+const COATING_OPTIONS = [
+  { value: 'none', label: 'None' },
   { value: 'water_base', label: 'Water Base' },
   { value: 'duck', label: 'Duck' },
   { value: 'plain_uv', label: 'Plain UV' },
@@ -51,6 +38,14 @@ const VARNISH_OPTIONS = [
   { value: 'drip_off_uv', label: 'Drip Off UV' },
   { value: 'matt_uv', label: 'Matt UV' },
   { value: 'rough_uv', label: 'Rough UV' },
+];
+
+const LAMINATION_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'shine', label: 'Shine' },
+  { value: 'matt', label: 'Matt' },
+  { value: 'metalize', label: 'Metalize' },
+  { value: 'rainbow', label: 'Rainbow' },
 ];
 
 const DIE_TYPE_OPTIONS = [
@@ -73,59 +68,99 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
+const DOUBLE_SHEET_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'Bleach', label: 'Bleach' },
+  { value: 'Box Board', label: 'Box Board' },
+];
+
 type FormData = {
   customer_id: string;
-  product_name: string;
-  product_type: string;
   order_date: string;
   delivery_date: string;
-  quantity: string;
-  unit: string;
   priority: string;
   is_repeat_order: boolean;
-  special_instructions: string;
-  specifications: string;
+  product_name: string;
+  product_type_text: string;
+  product_type_custom: string;
+  quantity: string;
+  unit: string;
+  double_sheet: string;
   batch_number: string;
-  substrate: string;
-  gsm: string;
   size_length: string;
   size_width: string;
   size_unit: string;
-  card_size: string;
-  printing_type: string;
-  colors: string;
+  substrate: string;
+  gsm: string;
+  four_color_process: boolean;
+  inside_printing: boolean;
+  cmyk_cyan: boolean;
+  cmyk_magenta: boolean;
+  cmyk_yellow: boolean;
+  cmyk_black: boolean;
   color_p1: string;
   color_p2: string;
   color_p3: string;
   color_p4: string;
-  has_back_printing: boolean;
-  has_barcode: boolean;
-  lamination_type: string;
+  has_barcode: string;
+  dye_req: string;
+  batch_no_printing: boolean;
+  mfg_date: string;
+  exp_date: string;
+  mrp_rs: string;
   varnish_type: string;
-  varnish_details: string;
-  uv_emboss_details: string;
+  lamination_type: string;
+  gold_leaf_panny: boolean;
+  bleach_card: boolean;
+  box_board_card: boolean;
+  art_card: boolean;
   die_type: string;
   die_reference: string;
-  finishing_requirements: string;
+  ups: string;
+  price_per_kg_card: string;
+  conversion_percent_card: string;
+  fixed_charge_ctp: string;
+  fixed_charge_spot_uv: string;
+  fixed_charge_plain_uv: string;
+  fixed_charge_drip_off_uv: string;
+  fixed_charge_metalize: string;
+  fixed_charge_emboss: string;
+  fixed_charge_lamination: string;
+  paper_ups: string;
+  price_per_kg_paper: string;
+  conversion_percent_paper: string;
+  fixed_charge_others: string;
   quoted_price: string;
+  special_instructions: string;
 };
 
 const today = new Date().toISOString().split('T')[0];
 
 const EMPTY: FormData = {
-  customer_id: '', product_name: '', product_type: '',
-  order_date: today, delivery_date: '', quantity: '1', unit: 'pcs',
-  priority: 'normal', is_repeat_order: false, special_instructions: '',
-  specifications: '', batch_number: '',
-  substrate: '', gsm: '', size_length: '', size_width: '', size_unit: 'mm', card_size: '',
-  printing_type: 'offset', colors: '', color_p1: '', color_p2: '', color_p3: '', color_p4: '',
-  has_back_printing: false, has_barcode: false,
-  lamination_type: '', varnish_type: '', varnish_details: '', uv_emboss_details: '',
-  die_type: '', die_reference: '', finishing_requirements: '',
-  quoted_price: '',
+  customer_id: '', order_date: today, delivery_date: '',
+  priority: 'normal', is_repeat_order: false,
+  product_name: '', product_type_text: '', product_type_custom: '',
+  quantity: '1', unit: 'pcs', double_sheet: '', batch_number: '',
+  size_length: '', size_width: '', size_unit: 'mm',
+  substrate: '', gsm: '',
+  four_color_process: false, inside_printing: false,
+  cmyk_cyan: false, cmyk_magenta: false, cmyk_yellow: false, cmyk_black: false,
+  color_p1: '', color_p2: '', color_p3: '', color_p4: '',
+  has_barcode: '', dye_req: '',
+  batch_no_printing: false, mfg_date: '', exp_date: '', mrp_rs: '',
+  varnish_type: 'none', lamination_type: '',
+  gold_leaf_panny: false, bleach_card: false, box_board_card: false, art_card: false,
+  die_type: '', die_reference: '',
+  ups: '', price_per_kg_card: '', conversion_percent_card: '',
+  fixed_charge_ctp: '', fixed_charge_spot_uv: '', fixed_charge_plain_uv: '',
+  fixed_charge_drip_off_uv: '', fixed_charge_metalize: '',
+  fixed_charge_emboss: '', fixed_charge_lamination: '',
+  paper_ups: '', price_per_kg_paper: '', conversion_percent_paper: '',
+  fixed_charge_others: '',
+  quoted_price: '', special_instructions: '',
 };
 
-function FieldLabel({ text, required }: { text: string; required?: boolean }) {
+function Label({ text, required }: { text: string; required?: boolean }) {
   return (
     <label className="block text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-1.5">
       {text}{required && <span className="text-[var(--color-danger)] ml-0.5">*</span>}
@@ -133,15 +168,7 @@ function FieldLabel({ text, required }: { text: string; required?: boolean }) {
   );
 }
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>;
-}
-
-function FieldGroup({ children }: { children: React.ReactNode }) {
-  return <div>{children}</div>;
-}
-
-function SectionDivider({ title }: { title: string }) {
+function Divider({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3 pt-2">
       <span className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{title}</span>
@@ -150,33 +177,39 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-function StyledCheckbox({ id, checked, onChange, label }: {
-  id: string; checked: boolean; onChange: (v: boolean) => void; label: string;
-}) {
+function CheckboxRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label htmlFor={id} className="flex items-center gap-3 cursor-pointer group">
-      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
-        checked
-          ? 'bg-[var(--color-brand)] border-[var(--color-brand)]'
-          : 'border-[var(--color-border)] group-hover:border-[var(--color-brand)]'
-      }`}>
-        {checked && <Check className="w-3 h-3 text-white" />}
-      </div>
+    <label className="flex items-center gap-2 cursor-pointer select-none">
       <input
         type="checkbox"
-        id={id}
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        className="sr-only"
+        className="w-4 h-4 rounded accent-[var(--color-brand)]"
       />
-      <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+      <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
     </label>
   );
 }
 
+function CalcField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <Label text={label} />
+      <div className="px-3 py-2.5 rounded-xl bg-[var(--color-border-subtle)] text-sm text-[var(--color-text-secondary)] font-mono">
+        {value || '—'}
+      </div>
+    </div>
+  );
+}
+
+function fmt(n: number, decimals = 4): string {
+  if (!isFinite(n) || isNaN(n)) return '—';
+  return n.toFixed(decimals);
+}
+
 export default function NewOrder() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const qc = useQueryClient();
   const [form, setForm] = useState<FormData>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
@@ -196,9 +229,36 @@ export default function NewOrder() {
     })),
   ];
 
+  const paperTypeOptions = PAPER_TYPE_MAP[form.product_type_text] ?? [];
+
+  // Cost formula calculations — Card/Sticker
+  const L = parseFloat(form.size_length) || 0;
+  const W = parseFloat(form.size_width) || 0;
+  const G = parseFloat(form.gsm) || 0;
+  const Q = parseFloat(form.quantity) || 0;
+  const cardUps = parseInt(form.ups) || 0;
+  const cardPkg = parseFloat(form.price_per_kg_card) || 0;
+  const cardPacketWeight = L > 0 && W > 0 && G > 0 ? (L * W * G) / 15500 : 0;
+  const cardTotalUps = cardUps * 100;
+  const cardPacketsRequired = cardUps > 0 ? Q / cardUps : 0;
+  const cardTotalCost = cardPacketsRequired * cardPacketWeight * cardPkg;
+  const cardCostPerUnit = cardUps > 0 ? cardTotalCost / cardUps : 0;
+
+  // Cost formula calculations — Paper
+  const paperUps = parseInt(form.paper_ups) || 0;
+  const paperPkg = parseFloat(form.price_per_kg_paper) || 0;
+  const paperReamWeight = L > 0 && W > 0 && G > 0 ? (L * W * G) / 3100 : 0;
+  const paperTotalUps = paperUps * 500;
+  const paperReamsRequired = paperUps > 0 ? Q / paperUps : 0;
+  const paperTotalCost = paperReamsRequired * paperReamWeight * paperPkg;
+  const paperCostPerUnit = paperUps > 0 ? paperTotalCost / paperUps : 0;
+
   const mutation = useMutation({
     mutationFn: (data: Partial<Order>) => ordersService.create(data),
-    onSuccess: (order) => router.push(`/orders/${order.id}`),
+    onSuccess: (order) => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      router.push(`/orders/${order.id}`);
+    },
   });
 
   function validate(): boolean {
@@ -211,18 +271,18 @@ export default function NewOrder() {
     return Object.keys(e).length === 0;
   }
 
-  function handleNext() {
-    if (step === 0 && !validate()) return;
-    setStep(s => s + 1);
-  }
-
   function handleSubmit() {
-    if (!validate()) { setStep(0); return; }
+    if (!validate()) return;
 
-    const payload: any = {
-      product_name: form.product_name,
+    const effectiveProductType = form.product_type_text === 'Others'
+      ? (form.product_type_custom || 'Others')
+      : form.product_type_text;
+
+    const payload: Partial<Order> = {
       order_date: form.order_date,
       delivery_date: form.delivery_date,
+      product_name: form.product_name,
+      product_type_text: effectiveProductType,
       quantity: parseInt(form.quantity),
       unit: form.unit,
       priority: form.priority,
@@ -230,432 +290,486 @@ export default function NewOrder() {
     };
 
     if (form.customer_id) payload.customer_id = form.customer_id;
-    if (form.product_type) payload.product_type = form.product_type;
-    if (form.special_instructions) payload.special_instructions = form.special_instructions;
-    if (form.specifications) payload.specifications = form.specifications;
+    if (form.double_sheet) payload.double_sheet = form.double_sheet;
     if (form.batch_number) payload.batch_number = form.batch_number;
-    if (form.substrate) payload.substrate = form.substrate;
-    if (form.gsm) payload.gsm = form.gsm;
     if (form.size_length) payload.size_length = parseFloat(form.size_length);
     if (form.size_width) payload.size_width = parseFloat(form.size_width);
     if (form.size_unit) payload.size_unit = form.size_unit;
-    if (form.card_size) payload.card_size = form.card_size;
-    if (form.printing_type) payload.printing_type = form.printing_type;
-    if (form.colors) payload.colors = form.colors;
+    if (form.substrate) payload.substrate = form.substrate;
+    if (form.gsm) payload.gsm = form.gsm;
+
+    // Color process
+    payload.four_color_process = form.four_color_process;
+    payload.inside_printing = form.inside_printing;
+    payload.cmyk_cyan = form.cmyk_cyan;
+    payload.cmyk_magenta = form.cmyk_magenta;
+    payload.cmyk_yellow = form.cmyk_yellow;
+    payload.cmyk_black = form.cmyk_black;
     if (form.color_p1) payload.color_p1 = form.color_p1;
     if (form.color_p2) payload.color_p2 = form.color_p2;
     if (form.color_p3) payload.color_p3 = form.color_p3;
     if (form.color_p4) payload.color_p4 = form.color_p4;
-    payload.has_back_printing = form.has_back_printing;
-    payload.has_barcode = form.has_barcode;
-    if (form.lamination_type) payload.lamination_type = form.lamination_type;
+
+    // Printing details
+    if (form.has_barcode) payload.has_barcode = form.has_barcode === 'yes';
+    if (form.dye_req) payload.dye_req = form.dye_req;
+    payload.batch_no_printing = form.batch_no_printing;
+    if (form.batch_number) payload.batch_number = form.batch_number;
+    if (form.mfg_date) payload.mfg_date = new Date(form.mfg_date).toISOString();
+    if (form.exp_date) payload.exp_date = new Date(form.exp_date).toISOString();
+    if (form.mrp_rs) payload.mrp_rs = parseFloat(form.mrp_rs);
+
+    // Finishing
     if (form.varnish_type) payload.varnish_type = form.varnish_type;
-    if (form.varnish_details) payload.varnish_details = form.varnish_details;
-    if (form.uv_emboss_details) payload.uv_emboss_details = form.uv_emboss_details;
+    if (form.lamination_type) payload.lamination_type = form.lamination_type;
+    payload.gold_leaf_panny = form.gold_leaf_panny;
+    payload.bleach_card = form.bleach_card;
+    payload.box_board_card = form.box_board_card;
+    payload.art_card = form.art_card;
     if (form.die_type) payload.die_type = form.die_type;
     if (form.die_reference) payload.die_reference = form.die_reference;
-    if (form.finishing_requirements) payload.finishing_requirements = form.finishing_requirements;
+
+    // Card cost
+    if (form.ups) payload.ups = parseInt(form.ups);
+    if (form.price_per_kg_card) payload.price_per_kg_card = parseFloat(form.price_per_kg_card);
+    if (form.conversion_percent_card) payload.conversion_percent_card = parseFloat(form.conversion_percent_card);
+    if (form.fixed_charge_ctp) payload.fixed_charge_ctp = parseFloat(form.fixed_charge_ctp);
+    if (form.fixed_charge_spot_uv) payload.fixed_charge_spot_uv = parseFloat(form.fixed_charge_spot_uv);
+    if (form.fixed_charge_plain_uv) payload.fixed_charge_plain_uv = parseFloat(form.fixed_charge_plain_uv);
+    if (form.fixed_charge_drip_off_uv) payload.fixed_charge_drip_off_uv = parseFloat(form.fixed_charge_drip_off_uv);
+    if (form.fixed_charge_metalize) payload.fixed_charge_metalize = parseFloat(form.fixed_charge_metalize);
+    if (form.fixed_charge_emboss) payload.fixed_charge_emboss = parseFloat(form.fixed_charge_emboss);
+    if (form.fixed_charge_lamination) payload.fixed_charge_lamination = parseFloat(form.fixed_charge_lamination);
+
+    // Paper cost
+    if (form.paper_ups) payload.paper_ups = parseInt(form.paper_ups);
+    if (form.price_per_kg_paper) payload.price_per_kg_paper = parseFloat(form.price_per_kg_paper);
+    if (form.conversion_percent_paper) payload.conversion_percent_paper = parseFloat(form.conversion_percent_paper);
+    if (form.fixed_charge_others) payload.fixed_charge_others = parseFloat(form.fixed_charge_others);
+
     if (form.quoted_price) payload.quoted_price = parseFloat(form.quoted_price);
+    if (form.special_instructions) payload.special_instructions = form.special_instructions;
 
     mutation.mutate(payload);
   }
 
+  const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] transition';
+
   return (
     <div className="max-w-3xl space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.push('/orders')}
           className="p-1.5 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)] transition-colors"
-          aria-label="Back to orders"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">New Order</h1>
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{STEPS[step].desc}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">Create a new production order</p>
         </div>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-start gap-0">
-        {STEPS.map((s, i) => (
-          <div key={s.label} className="flex items-start flex-1 last:flex-none">
-            <button
-              onClick={() => i < step && setStep(i)}
-              disabled={i >= step}
-              className="flex flex-col items-center gap-1.5 min-w-0 w-full disabled:cursor-default"
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                i < step
-                  ? 'bg-[var(--color-brand)] text-white shadow-sm'
-                  : i === step
-                  ? 'bg-[var(--color-brand)] text-white ring-4 ring-[var(--color-brand-light)]'
-                  : 'bg-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]'
-              }`}>
-                {i < step ? <Check className="w-4 h-4" /> : i + 1}
-              </div>
-              <span className={`text-[10px] font-semibold uppercase tracking-wide hidden sm:block truncate max-w-[72px] text-center leading-tight ${
-                i === step
-                  ? 'text-[var(--color-brand)]'
-                  : i < step
-                  ? 'text-[var(--color-text-secondary)]'
-                  : 'text-[var(--color-text-tertiary)]'
-              }`}>
-                {s.label}
-              </span>
-            </button>
-            {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mt-4 mx-1 rounded-full transition-colors ${
-                i < step ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-border-subtle)]'
-              }`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Step content */}
+      {/* ── Order Details ── */}
       <Card variant="elevated" padding="lg">
-        <CardHeader>
-          <CardTitle>{STEPS[step].label}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div>
+            <Label text="Customer" />
+            <Select options={customerOptions} value={form.customer_id} onChange={e => set('customer_id', e.target.value)} fullWidth />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Order Date" required />
+              <Input type="date" value={form.order_date} onChange={e => set('order_date', e.target.value)} fullWidth error={errors.order_date} />
+            </div>
+            <div>
+              <Label text="Delivery Date" required />
+              <Input type="date" value={form.delivery_date} onChange={e => set('delivery_date', e.target.value)} fullWidth error={errors.delivery_date} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Priority" />
+              <Select options={PRIORITY_OPTIONS} value={form.priority} onChange={e => set('priority', e.target.value)} fullWidth />
+            </div>
+          </div>
+          <CheckboxRow label="This is a repeat order" checked={form.is_repeat_order} onChange={v => set('is_repeat_order', v)} />
+        </div>
+      </Card>
 
-        {/* ── Step 0: Basic Info ── */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <FieldGroup>
-              <FieldLabel text="Customer" />
-              <Select options={customerOptions} value={form.customer_id} onChange={e => set('customer_id', e.target.value)} fullWidth />
-            </FieldGroup>
-
-            <SectionDivider title="Product" />
-
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Product Name" required />
-                <Input
-                  value={form.product_name}
-                  onChange={e => set('product_name', e.target.value)}
-                  placeholder="e.g. Amoxicillin 500mg Carton"
-                  fullWidth
-                  error={errors.product_name}
-                />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Product Type" />
-                <Select options={PRODUCT_TYPE_OPTIONS} value={form.product_type} onChange={e => set('product_type', e.target.value)} fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <SectionDivider title="Dates & Quantity" />
-
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Order Date" required />
-                <Input type="date" value={form.order_date} onChange={e => set('order_date', e.target.value)} fullWidth error={errors.order_date} />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Delivery Date" required />
-                <Input type="date" value={form.delivery_date} onChange={e => set('delivery_date', e.target.value)} fullWidth error={errors.delivery_date} />
-              </FieldGroup>
-            </Row>
-
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Quantity" required />
-                <Input
-                  type="number" min="1"
-                  value={form.quantity}
-                  onChange={e => set('quantity', e.target.value)}
-                  fullWidth error={errors.quantity}
-                />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Unit" />
-                <Select options={UNIT_OPTIONS} value={form.unit} onChange={e => set('unit', e.target.value)} fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <SectionDivider title="Details" />
-
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Priority" />
-                <Select options={PRIORITY_OPTIONS} value={form.priority} onChange={e => set('priority', e.target.value)} fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Batch Number" />
-                <Input value={form.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="Optional" fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <FieldGroup>
-              <FieldLabel text="Special Instructions" />
-              <textarea
-                value={form.special_instructions}
-                onChange={e => set('special_instructions', e.target.value)}
-                placeholder="Any special requirements..."
-                rows={3}
-                className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none transition"
+      {/* ── Product ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Product</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Product Name" required />
+              <Input value={form.product_name} onChange={e => set('product_name', e.target.value)} placeholder="e.g. Amoxicillin 500mg Carton" fullWidth error={errors.product_name} />
+            </div>
+            <div>
+              <Label text="Product Type" />
+              <input
+                list="order-product-type-list"
+                value={form.product_type_text}
+                onChange={e => {
+                  set('product_type_text', e.target.value);
+                  set('substrate', '');
+                }}
+                placeholder="Search product type..."
+                className={inputCls}
               />
-            </FieldGroup>
+              <datalist id="order-product-type-list">
+                {PRODUCT_TYPES.map(t => <option key={t} value={t} />)}
+              </datalist>
+              {form.product_type_text === 'Others' && (
+                <div className="mt-2">
+                  <Input
+                    value={form.product_type_custom}
+                    onChange={e => set('product_type_custom', e.target.value)}
+                    placeholder="Specify product type..."
+                    fullWidth
+                  />
+                </div>
+              )}
+            </div>
+          </div>
 
-            <StyledCheckbox
-              id="repeat"
-              checked={form.is_repeat_order}
-              onChange={v => set('is_repeat_order', v)}
-              label="This is a repeat order"
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label text="Quantity" required />
+              <Input type="number" min="1" value={form.quantity} onChange={e => set('quantity', e.target.value)} fullWidth error={errors.quantity} />
+            </div>
+            <div>
+              <Label text="Unit" />
+              <Select options={UNIT_OPTIONS} value={form.unit} onChange={e => set('unit', e.target.value)} fullWidth />
+            </div>
+            <div>
+              <Label text="Double Sheet" />
+              <Select options={DOUBLE_SHEET_OPTIONS} value={form.double_sheet} onChange={e => set('double_sheet', e.target.value)} fullWidth />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Batch Number" />
+              <Input value={form.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="Optional" fullWidth />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Dimensions & Material ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Dimensions &amp; Material</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label text="Length (Grain)" />
+              <Input type="number" value={form.size_length} onChange={e => set('size_length', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <div>
+              <Label text="Width" />
+              <Input type="number" value={form.size_width} onChange={e => set('size_width', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <div>
+              <Label text="Unit" />
+              <Select
+                options={[{ value: 'mm', label: 'mm' }, { value: 'cm', label: 'cm' }, { value: 'inch', label: 'inch' }]}
+                value={form.size_unit}
+                onChange={e => set('size_unit', e.target.value)}
+                fullWidth
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Paper Type" />
+              {paperTypeOptions.length > 0 ? (
+                <Select
+                  options={[{ value: '', label: 'Select paper type...' }, ...paperTypeOptions.map(t => ({ value: t, label: t }))]}
+                  value={form.substrate}
+                  onChange={e => set('substrate', e.target.value)}
+                  fullWidth
+                />
+              ) : (
+                <Input value={form.substrate} onChange={e => set('substrate', e.target.value)} placeholder="e.g. Art Paper, Duplex" fullWidth />
+              )}
+            </div>
+            <div>
+              <Label text="GSM" />
+              <Select
+                options={[{ value: '', label: 'Select GSM...' }, ...GSM_OPTIONS.map(g => ({ value: String(g), label: String(g) }))]}
+                value={form.gsm}
+                onChange={e => set('gsm', e.target.value)}
+                fullWidth
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Color Process ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Color Process</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-5">
+            <CheckboxRow label="4 Color Process" checked={form.four_color_process} onChange={v => set('four_color_process', v)} />
+            <CheckboxRow label="Inside Printing" checked={form.inside_printing} onChange={v => set('inside_printing', v)} />
+          </div>
+
+          <Divider title="CMYK Special" />
+          <div className="flex flex-wrap gap-5">
+            <CheckboxRow label="Cyan" checked={form.cmyk_cyan} onChange={v => set('cmyk_cyan', v)} />
+            <CheckboxRow label="Magenta" checked={form.cmyk_magenta} onChange={v => set('cmyk_magenta', v)} />
+            <CheckboxRow label="Yellow" checked={form.cmyk_yellow} onChange={v => set('cmyk_yellow', v)} />
+            <CheckboxRow label="Black" checked={form.cmyk_black} onChange={v => set('cmyk_black', v)} />
+          </div>
+
+          <Divider title="Pantone" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {(['1', '2', '3', '4'] as const).map(n => (
+              <div key={n}>
+                <Label text={`Pantone ${n}`} />
+                <Input
+                  value={(form as any)[`color_p${n}`]}
+                  onChange={e => set(`color_p${n}` as keyof FormData, e.target.value)}
+                  placeholder="e.g. PMS 485"
+                  fullWidth
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Printing Details ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Printing Details</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Bar Code" />
+              <Select
+                options={[{ value: '', label: 'Select...' }, { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
+                value={form.has_barcode}
+                onChange={e => set('has_barcode', e.target.value)}
+                fullWidth
+              />
+            </div>
+            <div>
+              <Label text="Dye Req" />
+              <Select
+                options={[{ value: '', label: 'Select...' }, { value: 'old', label: 'Old' }, { value: 'new', label: 'New' }]}
+                value={form.dye_req}
+                onChange={e => set('dye_req', e.target.value)}
+                fullWidth
+              />
+            </div>
+          </div>
+
+          <div>
+            <CheckboxRow
+              label="Batch No Printing"
+              checked={form.batch_no_printing}
+              onChange={v => set('batch_no_printing', v)}
             />
           </div>
-        )}
 
-        {/* ── Step 1: Size & Material ── */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Substrate" />
-                <Input value={form.substrate} onChange={e => set('substrate', e.target.value)} placeholder="e.g. Art Paper, Duplex" fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="GSM" />
-                <Input value={form.gsm} onChange={e => set('gsm', e.target.value)} placeholder="e.g. 350" fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <SectionDivider title="Dimensions" />
-
-            <div className="grid grid-cols-3 gap-4">
-              <FieldGroup>
-                <FieldLabel text="Length" />
-                <Input type="number" value={form.size_length} onChange={e => set('size_length', e.target.value)} placeholder="0.00" fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Width" />
-                <Input type="number" value={form.size_width} onChange={e => set('size_width', e.target.value)} placeholder="0.00" fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Unit" />
-                <Select
-                  options={[{ value: 'mm', label: 'mm' }, { value: 'cm', label: 'cm' }, { value: 'inch', label: 'inch' }]}
-                  value={form.size_unit}
-                  onChange={e => set('size_unit', e.target.value)}
-                  fullWidth
-                />
-              </FieldGroup>
-            </div>
-
-            <FieldGroup>
-              <FieldLabel text="Card Size" />
-              <Input value={form.card_size} onChange={e => set('card_size', e.target.value)} placeholder="e.g. A4, Custom" fullWidth />
-            </FieldGroup>
-
-            <SectionDivider title="Technical Specs" />
-
-            <FieldGroup>
-              <FieldLabel text="Specifications" />
-              <textarea
-                value={form.specifications}
-                onChange={e => set('specifications', e.target.value)}
-                placeholder="Technical specifications..."
-                rows={3}
-                className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none transition"
-              />
-            </FieldGroup>
-          </div>
-        )}
-
-        {/* ── Step 2: Printing ── */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Printing Type" />
-                <Select options={PRINTING_TYPE_OPTIONS} value={form.printing_type} onChange={e => set('printing_type', e.target.value)} fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="No. of Colors" />
-                <Input value={form.colors} onChange={e => set('colors', e.target.value)} placeholder="e.g. 4+1" fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <SectionDivider title="Colour Breakdown" />
-
-            <div className="grid grid-cols-2 gap-4">
-              {(['color_p1', 'color_p2', 'color_p3', 'color_p4'] as const).map((k, i) => (
-                <FieldGroup key={k}>
-                  <FieldLabel text={`Color ${i + 1}`} />
-                  <Input value={form[k]} onChange={e => set(k, e.target.value)} placeholder="e.g. PANTONE 285 C" fullWidth />
-                </FieldGroup>
-              ))}
-            </div>
-
-            <SectionDivider title="Options" />
-
-            <div className="flex flex-col gap-3">
-              <StyledCheckbox
-                id="back_printing"
-                checked={form.has_back_printing}
-                onChange={v => set('has_back_printing', v)}
-                label="Has back printing"
-              />
-              <StyledCheckbox
-                id="barcode"
-                checked={form.has_barcode}
-                onChange={v => set('has_barcode', v)}
-                label="Has barcode"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 3: Finishing ── */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Lamination" />
-                <Select options={LAMINATION_OPTIONS} value={form.lamination_type} onChange={e => set('lamination_type', e.target.value)} fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Varnish" />
-                <Select options={VARNISH_OPTIONS} value={form.varnish_type} onChange={e => set('varnish_type', e.target.value)} fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <FieldGroup>
-              <FieldLabel text="Varnish Details" />
-              <Input value={form.varnish_details} onChange={e => set('varnish_details', e.target.value)} placeholder="Optional details" fullWidth />
-            </FieldGroup>
-
-            <FieldGroup>
-              <FieldLabel text="UV / Emboss Details" />
-              <Input value={form.uv_emboss_details} onChange={e => set('uv_emboss_details', e.target.value)} placeholder="Optional details" fullWidth />
-            </FieldGroup>
-
-            <SectionDivider title="Die" />
-
-            <Row>
-              <FieldGroup>
-                <FieldLabel text="Die Type" />
-                <Select options={DIE_TYPE_OPTIONS} value={form.die_type} onChange={e => set('die_type', e.target.value)} fullWidth />
-              </FieldGroup>
-              <FieldGroup>
-                <FieldLabel text="Die Reference" />
-                <Input value={form.die_reference} onChange={e => set('die_reference', e.target.value)} placeholder="e.g. D-1042" fullWidth />
-              </FieldGroup>
-            </Row>
-
-            <FieldGroup>
-              <FieldLabel text="Other Finishing Requirements" />
-              <Input value={form.finishing_requirements} onChange={e => set('finishing_requirements', e.target.value)} placeholder="Other finishing notes" fullWidth />
-            </FieldGroup>
-
-            <SectionDivider title="Pricing" />
-
-            <FieldGroup>
-              <FieldLabel text="Quoted Price (PKR)" />
-              <Input type="number" value={form.quoted_price} onChange={e => set('quoted_price', e.target.value)} placeholder="0" fullWidth />
-            </FieldGroup>
-          </div>
-        )}
-
-        {/* ── Step 4: Review ── */}
-        {step === 4 && (
-          <div className="space-y-4">
-            {mutation.isError && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-sm">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                Failed to create order. Please try again.
+          {form.batch_no_printing && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6 border-l-2 border-[var(--color-brand)]">
+              <div>
+                <Label text="Batch No" />
+                <Input value={form.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="e.g. BN-2024-001" fullWidth />
               </div>
-            )}
-
-            <ReviewSection title="Basic Info">
-              <ReviewRow label="Product" value={form.product_name} />
-              <ReviewRow label="Product Type" value={PRODUCT_TYPE_OPTIONS.find(o => o.value === form.product_type)?.label} />
-              <ReviewRow label="Order Date" value={form.order_date} />
-              <ReviewRow label="Delivery Date" value={form.delivery_date} />
-              <ReviewRow label="Quantity" value={`${form.quantity} ${form.unit}`} />
-              <ReviewRow label="Priority" value={form.priority} />
-              {form.batch_number && <ReviewRow label="Batch" value={form.batch_number} />}
-              {form.is_repeat_order && <ReviewRow label="Repeat Order" value="Yes" />}
-            </ReviewSection>
-
-            {(form.substrate || form.gsm || form.size_length) && (
-              <ReviewSection title="Size & Material">
-                {form.substrate && <ReviewRow label="Substrate" value={form.substrate} />}
-                {form.gsm && <ReviewRow label="GSM" value={form.gsm} />}
-                {form.size_length && <ReviewRow label="Size" value={`${form.size_length} × ${form.size_width} ${form.size_unit}`} />}
-                {form.card_size && <ReviewRow label="Card Size" value={form.card_size} />}
-              </ReviewSection>
-            )}
-
-            {(form.printing_type || form.colors) && (
-              <ReviewSection title="Printing">
-                {form.printing_type && <ReviewRow label="Type" value={form.printing_type} />}
-                {form.colors && <ReviewRow label="Colors" value={form.colors} />}
-                {form.color_p1 && <ReviewRow label="Color 1" value={form.color_p1} />}
-                {form.color_p2 && <ReviewRow label="Color 2" value={form.color_p2} />}
-                {form.color_p3 && <ReviewRow label="Color 3" value={form.color_p3} />}
-                {form.color_p4 && <ReviewRow label="Color 4" value={form.color_p4} />}
-                {form.has_back_printing && <ReviewRow label="Back Printing" value="Yes" />}
-                {form.has_barcode && <ReviewRow label="Barcode" value="Yes" />}
-              </ReviewSection>
-            )}
-
-            {(form.lamination_type || form.varnish_type || form.die_type || form.quoted_price) && (
-              <ReviewSection title="Finishing & Pricing">
-                {form.lamination_type && <ReviewRow label="Lamination" value={form.lamination_type} />}
-                {form.varnish_type && <ReviewRow label="Varnish" value={form.varnish_type} />}
-                {form.die_type && <ReviewRow label="Die" value={form.die_type} />}
-                {form.die_reference && <ReviewRow label="Die Ref." value={form.die_reference} />}
-                {form.quoted_price && <ReviewRow label="Quoted (PKR)" value={parseFloat(form.quoted_price).toLocaleString()} />}
-              </ReviewSection>
-            )}
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-[var(--color-border-subtle)]">
-          {step > 0 ? (
-            <Button variant="ghost" icon={<ArrowLeft className="w-4 h-4" />} onClick={() => setStep(s => s - 1)}>
-              Back
-            </Button>
-          ) : (
-            <Button variant="ghost" onClick={() => router.push('/orders')}>Cancel</Button>
-          )}
-          {step < STEPS.length - 1 ? (
-            <Button onClick={handleNext}>
-              Next <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} isLoading={mutation.isPending}>
-              Create Order
-            </Button>
+              <div>
+                <Label text="MFG Date" />
+                <Input type="date" value={form.mfg_date} onChange={e => set('mfg_date', e.target.value)} fullWidth />
+              </div>
+              <div>
+                <Label text="EXP Date" />
+                <Input type="date" value={form.exp_date} onChange={e => set('exp_date', e.target.value)} fullWidth />
+              </div>
+              <div>
+                <Label text="MRP Rs." />
+                <Input type="number" value={form.mrp_rs} onChange={e => set('mrp_rs', e.target.value)} placeholder="0.00" fullWidth />
+              </div>
+            </div>
           )}
         </div>
       </Card>
-    </div>
-  );
-}
 
-function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-2">{title}</h3>
-      <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden divide-y divide-[var(--color-border-subtle)]">
-        {children}
-      </div>
-    </div>
-  );
-}
+      {/* ── Finishing ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Finishing</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Coating" />
+              <Select options={COATING_OPTIONS} value={form.varnish_type} onChange={e => set('varnish_type', e.target.value)} fullWidth />
+            </div>
+            <div>
+              <Label text="Lamination" />
+              <Select options={LAMINATION_OPTIONS} value={form.lamination_type} onChange={e => set('lamination_type', e.target.value)} fullWidth />
+            </div>
+          </div>
 
-function ReviewRow({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
-  return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-[var(--color-text-tertiary)]">{label}</span>
-      <span className="text-sm text-[var(--color-text-primary)] font-medium">{value}</span>
+          <div className="flex flex-wrap gap-5">
+            <CheckboxRow label="Gold Leaf Panny" checked={form.gold_leaf_panny} onChange={v => set('gold_leaf_panny', v)} />
+            <CheckboxRow label="Bleach Card" checked={form.bleach_card} onChange={v => set('bleach_card', v)} />
+            <CheckboxRow label="Box Board Card" checked={form.box_board_card} onChange={v => set('box_board_card', v)} />
+            <CheckboxRow label="Art Card" checked={form.art_card} onChange={v => set('art_card', v)} />
+          </div>
+
+          <Divider title="Die" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label text="Die Type" />
+              <Select options={DIE_TYPE_OPTIONS} value={form.die_type} onChange={e => set('die_type', e.target.value)} fullWidth />
+            </div>
+            <div>
+              <Label text="Die Reference" />
+              <Input value={form.die_reference} onChange={e => set('die_reference', e.target.value)} placeholder="e.g. D-1042" fullWidth />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Card / Sticker Cost Formula ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Card / Sticker Cost</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Formula: L × W × GSM ÷ 15500 = packet weight (kg) · 1 pack = 100 sheets
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <CalcField label="Packet Weight (kg)" value={cardPacketWeight > 0 ? fmt(cardPacketWeight) : ''} />
+            <div>
+              <Label text="Ups (input)" />
+              <Input type="number" value={form.ups} onChange={e => set('ups', e.target.value)} placeholder="e.g. 8" fullWidth />
+            </div>
+            <CalcField label="Total Ups" value={cardTotalUps > 0 ? String(cardTotalUps) : ''} />
+            <CalcField label="Packets Required" value={cardPacketsRequired > 0 ? fmt(cardPacketsRequired, 2) : ''} />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <Label text="Price / kg (input)" />
+              <Input type="number" value={form.price_per_kg_card} onChange={e => set('price_per_kg_card', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <CalcField label="Total Cost" value={cardTotalCost > 0 ? fmt(cardTotalCost, 2) : ''} />
+            <CalcField label="Cost per Unit" value={cardCostPerUnit > 0 ? fmt(cardCostPerUnit, 4) : ''} />
+            <div>
+              <Label text="Conversion %" />
+              <Input type="number" value={form.conversion_percent_card} onChange={e => set('conversion_percent_card', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+          </div>
+
+          <Divider title="Fixed Charges" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              ['CTP', 'fixed_charge_ctp'],
+              ['Spot UV', 'fixed_charge_spot_uv'],
+              ['Plain UV', 'fixed_charge_plain_uv'],
+              ['Drip Off UV', 'fixed_charge_drip_off_uv'],
+              ['Metalize', 'fixed_charge_metalize'],
+              ['Emboss', 'fixed_charge_emboss'],
+              ['Lamination', 'fixed_charge_lamination'],
+            ].map(([lbl, key]) => (
+              <div key={key}>
+                <Label text={lbl} />
+                <Input
+                  type="number"
+                  value={(form as any)[key]}
+                  onChange={e => set(key as keyof FormData, e.target.value)}
+                  placeholder="0.00"
+                  fullWidth
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Paper Cost Formula ── */}
+      <Card variant="elevated" padding="lg">
+        <CardHeader><CardTitle>Paper Cost</CardTitle></CardHeader>
+        <div className="space-y-4">
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Formula: L × W × GSM ÷ 3100 = ream weight (kg) · 1 ream = 500 sheets
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <CalcField label="Ream Weight (kg)" value={paperReamWeight > 0 ? fmt(paperReamWeight) : ''} />
+            <div>
+              <Label text="Ups (input)" />
+              <Input type="number" value={form.paper_ups} onChange={e => set('paper_ups', e.target.value)} placeholder="e.g. 8" fullWidth />
+            </div>
+            <CalcField label="Total Ups" value={paperTotalUps > 0 ? String(paperTotalUps) : ''} />
+            <CalcField label="Reams Required" value={paperReamsRequired > 0 ? fmt(paperReamsRequired, 2) : ''} />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <Label text="Price / kg (input)" />
+              <Input type="number" value={form.price_per_kg_paper} onChange={e => set('price_per_kg_paper', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <CalcField label="Total Cost" value={paperTotalCost > 0 ? fmt(paperTotalCost, 2) : ''} />
+            <CalcField label="Cost per Unit" value={paperCostPerUnit > 0 ? fmt(paperCostPerUnit, 4) : ''} />
+            <div>
+              <Label text="Conversion %" />
+              <Input type="number" value={form.conversion_percent_paper} onChange={e => set('conversion_percent_paper', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+          </div>
+
+          <Divider title="Fixed Charges" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div>
+              <Label text="CTP" />
+              <Input type="number" value={form.fixed_charge_ctp} onChange={e => set('fixed_charge_ctp', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+            <div>
+              <Label text="Others" />
+              <Input type="number" value={form.fixed_charge_others} onChange={e => set('fixed_charge_others', e.target.value)} placeholder="0.00" fullWidth />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Pricing & Notes ── */}
+      <Card variant="elevated" padding="lg">
+        <div className="space-y-4">
+          <div>
+            <Label text="Quoted Price (PKR)" />
+            <Input type="number" value={form.quoted_price} onChange={e => set('quoted_price', e.target.value)} placeholder="0" fullWidth />
+          </div>
+
+          <div>
+            <Label text="Special Instructions" />
+            <textarea
+              value={form.special_instructions}
+              onChange={e => set('special_instructions', e.target.value)}
+              rows={3}
+              placeholder="Any special requirements..."
+              className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none transition"
+            />
+          </div>
+
+          {mutation.isError && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              Failed to create order. Please try again.
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2 border-t border-[var(--color-border-subtle)]">
+            <Button onClick={handleSubmit} isLoading={mutation.isPending}>Create Order</Button>
+            <Button variant="ghost" onClick={() => router.push('/orders')}>Cancel</Button>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

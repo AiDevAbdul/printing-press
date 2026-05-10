@@ -295,6 +295,8 @@ export default function CustomerDetail() {
             </CardHeader>
             <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
               <SpecField label="Customer Group" value={customer.customer_group} />
+              <SpecField label="Customer Type" value={(customer as any).customer_type} />
+              <SpecField label="Folder Name" value={(customer as any).folder_name} />
               <SpecField label="NTN" value={customer.ntn} />
               <SpecField label="STRN" value={customer.strn} />
               <SpecField label="Credit Limit" value={fmtCurrency(customer.credit_limit)} />

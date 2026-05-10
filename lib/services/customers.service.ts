@@ -12,6 +12,8 @@ export interface Customer {
   credit_limit: number;
   credit_days: number;
   customer_group?: string;
+  customer_type?: string;
+  folder_name?: string;
   ntn?: string;
   strn?: string;
   created_at: string;

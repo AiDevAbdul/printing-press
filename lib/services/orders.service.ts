@@ -5,10 +5,13 @@ export interface Order {
   order_number: string;
   status: string;
   priority: string;
+  customer_id?: string;
   product_name: string;
   product_type?: string;
+  product_type_text?: string;
   quantity: number;
   unit: string;
+  double_sheet?: string;
   delivery_date: string;
   order_date: string;
   quoted_price?: number;
@@ -20,6 +23,13 @@ export interface Order {
   size_length?: number;
   size_width?: number;
   size_unit?: string;
+  // Color process
+  four_color_process?: boolean;
+  inside_printing?: boolean;
+  cmyk_cyan?: boolean;
+  cmyk_magenta?: boolean;
+  cmyk_yellow?: boolean;
+  cmyk_black?: boolean;
   finishing_requirements?: string;
   special_instructions?: string;
   is_repeat_order?: boolean;
@@ -29,6 +39,17 @@ export interface Order {
   uv_emboss_details?: string;
   has_back_printing?: boolean;
   has_barcode?: boolean;
+  // Printing details
+  dye_req?: string;
+  batch_no_printing?: boolean;
+  mfg_date?: string;
+  exp_date?: string;
+  mrp_rs?: number;
+  // Finishing
+  gold_leaf_panny?: boolean;
+  bleach_card?: boolean;
+  box_board_card?: boolean;
+  art_card?: boolean;
   plate_reference?: string;
   designer_name?: string;
   design_approved_by?: string;
@@ -44,6 +65,21 @@ export interface Order {
   specifications?: string;
   group_name?: string;
   production_status?: string;
+  // Cost formula
+  ups?: number;
+  paper_ups?: number;
+  price_per_kg_card?: number;
+  price_per_kg_paper?: number;
+  conversion_percent_card?: number;
+  conversion_percent_paper?: number;
+  fixed_charge_ctp?: number;
+  fixed_charge_spot_uv?: number;
+  fixed_charge_plain_uv?: number;
+  fixed_charge_drip_off_uv?: number;
+  fixed_charge_metalize?: number;
+  fixed_charge_emboss?: number;
+  fixed_charge_lamination?: number;
+  fixed_charge_others?: number;
   customers?: { name: string; company_name?: string; id?: string };
   created_at: string;
   updated_at?: string;
