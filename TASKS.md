@@ -13,27 +13,28 @@
 
 ## Phase 4 — Page Redesigns (Design System Plan)
 
-### Task 1 — Commit new UI components ✅ ready to commit
-- [ ] StatusPill, ConfirmDialog, NotificationBell, CompanyBadge, WorkflowTimeline
-- [ ] Header.tsx updated to use NotificationBell
-- [ ] components/ui/index.ts exports updated
+### Task 1 — Commit new UI components ✅ done — `4b01927`
+- [x] StatusPill, ConfirmDialog, NotificationBell, CompanyBadge, WorkflowTimeline
+- [x] Header.tsx updated to use NotificationBell
+- [x] components/ui/index.ts exports updated
 **Files:** `components/ui/*.tsx`, `components/layout/Header.tsx`, `components/ui/index.ts`
 
 ---
 
-### Task 2 — Production page redesign
-- [ ] Replace card list → horizontal `WorkflowTimeline` stepper
-- [ ] Stage cards: operator, machine, start time, elapsed time
-- [ ] Action buttons on active stage only (start / pause / complete / flag)
-- [ ] Inline QA approval status per stage using `StatusPill`
+### Task 2 — Production page redesign ✅ done — `10168f7`
+- [x] Replace card list → horizontal `WorkflowTimeline` stepper
+- [x] Stage cards: operator, machine, start time, elapsed time
+- [x] Action buttons on active stage only (start / pause / complete / flag)
+- [x] StatusPill for all status displays, all CSS variables (no hardcoded colors)
+- [x] New `/api/production/[id]/stages/[stageId]` PATCH endpoint
 **Files:** `app/(app)/production/page.tsx`, `app/(app)/production/[id]/page.tsx`
 
 ---
 
-### Task 3 — Pre-Press page redesign
-- [ ] Design list → card grid (thumbnail placeholder, StatusPill, age)
-- [ ] Design detail: split view (file preview left, approval thread right)
-- [ ] Spec form: tabbed sections (Basic → Printing → Finishing → Approvals)
+### Task 3 — Pre-Press page redesign ✅ done
+- [x] Design list → card grid (thumbnail placeholder, StatusPill, age)
+- [x] Design detail: split view (file preview left, approval thread right)
+- [x] Spec form: tabbed sections (Basic → Printing → Finishing → Approvals)
 **Files:** `app/(app)/prepress/page.tsx`, `app/(app)/prepress/[id]/page.tsx`, `app/(app)/prepress/new/page.tsx`
 
 ---
