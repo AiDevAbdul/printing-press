@@ -15,6 +15,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const inspection = await db.quality_inspections.findFirst({
       where: { id, company_id: companyId },
+      include: {
+        quality_defects: { orderBy: { created_at: 'asc' } },
+        quality_checkpoints: { select: { id: true, name: true, stage: true, severity: true, checklist_items: true } },
+      },
     });
     if (!inspection) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(inspection);

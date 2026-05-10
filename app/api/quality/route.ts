@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 const createQualitySchema = z.object({
   job_id: z.string().uuid(),
+  checkpoint_id: z.string().uuid(),
   inspection_type: z.string().min(1),
   status: z.enum(['pending', 'passed', 'failed', 'rework']).default('pending'),
   notes: z.string().optional(),
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
         ...validated,
         inspection_number,
         company_id: companyId,
-        checkpoint_id: '', // TODO: Add checkpoint selection
+        checkpoint_id: validated.checkpoint_id,
         inspector_id: validated.inspector_id || userId,
         job_id: validated.job_id,
       },
