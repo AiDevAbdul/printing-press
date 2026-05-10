@@ -90,4 +90,20 @@ export const productionService = {
     if (!res.ok) throw new Error('Failed to update production job');
     return res.json();
   },
+
+  async updateStage(
+    jobId: string,
+    stageId: number,
+    action: 'start' | 'pause' | 'complete' | 'flag',
+    extras?: { notes?: string; pause_reason?: string }
+  ): Promise<WorkflowStage> {
+    const res = await fetch(`${API_BASE}/production/${jobId}/stages/${stageId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action, ...extras }),
+    });
+    if (!res.ok) throw new Error('Failed to update stage');
+    return res.json();
+  },
 };

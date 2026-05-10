@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Factory, Search, AlertCircle, Clock, CheckCircle2, PauseCircle } from 'lucide-react';
+import { Factory, Search, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from '@/components/ui/Pagination';
@@ -28,12 +28,32 @@ function formatDate(dateStr?: string) {
   return new Date(dateStr).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function StatusIcon({ status }: { status: string }) {
-  if (status === 'in_progress') return <Clock className="w-4 h-4 text-blue-500" />;
-  if (status === 'completed') return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-  if (status === 'paused') return <PauseCircle className="w-4 h-4 text-yellow-500" />;
-  return null;
-}
+const STAT_CARDS = [
+  {
+    key: 'in_progress',
+    label: 'In Progress',
+    icon: Clock,
+    colorBg: 'var(--color-info-bg)',
+    colorIcon: 'var(--color-info)',
+    colorText: 'var(--color-info)',
+  },
+  {
+    key: 'queued',
+    label: 'Queued',
+    icon: Factory,
+    colorBg: 'var(--color-border-subtle)',
+    colorIcon: 'var(--color-text-tertiary)',
+    colorText: 'var(--color-text-secondary)',
+  },
+  {
+    key: 'completed',
+    label: 'Completed',
+    icon: CheckCircle2,
+    colorBg: 'var(--color-success-bg)',
+    colorIcon: 'var(--color-success)',
+    colorText: 'var(--color-success)',
+  },
+] as const;
 
 export default function Production() {
   const router = useRouter();
@@ -53,59 +73,42 @@ export default function Production() {
     setPage(1);
   }
 
-  const totalPages = data?.pages ?? 1;
-
-  // Summary counts from current page for quick stats
-  const inProgressCount = data?.data.filter(j => j.status === 'in_progress').length ?? 0;
-  const queuedCount = data?.data.filter(j => j.status === 'queued').length ?? 0;
-  const completedCount = data?.data.filter(j => j.status === 'completed').length ?? 0;
+  const counts = {
+    in_progress: data?.data.filter(j => j.status === 'in_progress').length ?? 0,
+    queued: data?.data.filter(j => j.status === 'queued').length ?? 0,
+    completed: data?.data.filter(j => j.status === 'completed').length ?? 0,
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Production</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {data ? `${data.total} total jobs` : 'Track production jobs'}
-          </p>
-        </div>
+      {/* Page header */}
+      <div>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Production</h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+          {data ? `${data.total} total jobs` : 'Track and manage production jobs'}
+        </p>
       </div>
 
-      {/* Quick stats */}
+      {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4">
-        <Card variant="elevated" padding="md" className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
+        {STAT_CARDS.map(({ key, label, icon: Icon, colorBg, colorIcon, colorText }) => (
+          <Card key={key} variant="elevated" padding="md">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: colorBg }}
+              >
+                <Icon className="w-4.5 h-4.5" style={{ color: colorIcon }} />
+              </div>
+              <div>
+                <p className="text-xl font-bold leading-none" style={{ color: 'var(--color-text-primary)' }}>
+                  {isLoading ? '—' : counts[key]}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: colorText }}>{label}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-blue-900">{isLoading ? '—' : inProgressCount}</p>
-              <p className="text-xs text-blue-700">In Progress</p>
-            </div>
-          </div>
-        </Card>
-        <Card variant="elevated" padding="md" className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-400 rounded-xl flex items-center justify-center">
-              <Factory className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{isLoading ? '—' : queuedCount}</p>
-              <p className="text-xs text-gray-600">Queued</p>
-            </div>
-          </div>
-        </Card>
-        <Card variant="elevated" padding="md" className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-900">{isLoading ? '—' : completedCount}</p>
-              <p className="text-xs text-green-700">Completed</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
@@ -155,44 +158,47 @@ export default function Production() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-page-bg)]">
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Job #</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Machine</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Operator</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Scheduled Start</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Scheduled End</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Est. Hours</th>
-                    <th className="px-4 py-3 text-left font-medium text-[var(--color-text-secondary)]">Status</th>
+                  <tr
+                    className="border-b"
+                    style={{ borderColor: 'var(--color-border-subtle)', backgroundColor: 'var(--color-page-bg)' }}
+                  >
+                    {['Job #', 'Machine', 'Operator', 'Scheduled Start', 'Scheduled End', 'Est. Hours', 'Status'].map(h => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                <tbody style={{ borderColor: 'var(--color-border-subtle)' }}>
                   {data.data.map((job: ProductionJob) => (
                     <tr
                       key={job.id}
                       onClick={() => router.push(`/production/${job.id}`)}
-                      className="hover:bg-[var(--color-border-subtle)] cursor-pointer transition-colors"
+                      className="border-b cursor-pointer transition-colors duration-150"
+                      style={{ borderColor: 'var(--color-border-subtle)' }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-border-subtle)')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--color-text-primary)]">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                         {job.job_number}
                       </td>
-                      <td className="px-4 py-3 text-[var(--color-text-primary)]">
-                        {job.assigned_machine || <span className="text-[var(--color-text-tertiary)]">Unassigned</span>}
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-primary)' }}>
+                        {job.assigned_machine ?? <span style={{ color: 'var(--color-text-tertiary)' }}>Unassigned</span>}
                       </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">
-                        {job.assigned_operator || <span className="text-[var(--color-text-tertiary)]">—</span>}
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                        {job.assigned_operator ?? <span style={{ color: 'var(--color-text-tertiary)' }}>—</span>}
                       </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatDate(job.scheduled_start_date)}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">{formatDate(job.scheduled_end_date)}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>{formatDate(job.scheduled_start_date)}</td>
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>{formatDate(job.scheduled_end_date)}</td>
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
                         {job.estimated_hours ? `${job.estimated_hours}h` : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <StatusIcon status={job.status} />
-                          <Badge variant="status" status={job.status as any} dot>
-                            {job.status.replace(/_/g, ' ')}
-                          </Badge>
-                        </div>
+                        <StatusPill status={job.status as any} />
                       </td>
                     </tr>
                   ))}
@@ -200,11 +206,11 @@ export default function Production() {
               </table>
             </div>
 
-            {totalPages > 1 && (
-              <div className="px-4 py-4 border-t border-[var(--color-border-subtle)]">
+            {(data?.pages ?? 1) > 1 && (
+              <div className="px-4 py-4 border-t" style={{ borderColor: 'var(--color-border-subtle)' }}>
                 <Pagination
                   currentPage={page}
-                  totalPages={totalPages}
+                  totalPages={data.pages}
                   onPageChange={setPage}
                   totalItems={data.total}
                   itemsPerPage={15}
