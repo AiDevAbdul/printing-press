@@ -11,7 +11,13 @@ import { Select } from '@/components/ui/Select';
 import { ordersService, type Order } from '@/lib/services/orders.service';
 import { customersService } from '@/lib/services/customers.service';
 
-const STEPS = ['Basic Info', 'Size & Material', 'Printing', 'Finishing', 'Review'];
+const STEPS = [
+  { label: 'Basic Info',       desc: 'Customer, product, dates' },
+  { label: 'Size & Material',  desc: 'Substrate, dimensions' },
+  { label: 'Printing',         desc: 'Type, colours, options' },
+  { label: 'Finishing',        desc: 'Lamination, varnish, die' },
+  { label: 'Review',           desc: 'Confirm and submit' },
+];
 
 const PRODUCT_TYPE_OPTIONS = [
   { value: '', label: 'Select type...' },
@@ -119,9 +125,9 @@ const EMPTY: FormData = {
   quoted_price: '',
 };
 
-function label(text: string, required = false) {
+function FieldLabel({ text, required }: { text: string; required?: boolean }) {
   return (
-    <label className="block text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide mb-1">
+    <label className="block text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-1.5">
       {text}{required && <span className="text-[var(--color-danger)] ml-0.5">*</span>}
     </label>
   );
@@ -131,8 +137,41 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>;
 }
 
-function Field({ children }: { children: React.ReactNode }) {
+function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div>{children}</div>;
+}
+
+function SectionDivider({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <span className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">{title}</span>
+      <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
+    </div>
+  );
+}
+
+function StyledCheckbox({ id, checked, onChange, label }: {
+  id: string; checked: boolean; onChange: (v: boolean) => void; label: string;
+}) {
+  return (
+    <label htmlFor={id} className="flex items-center gap-3 cursor-pointer group">
+      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+        checked
+          ? 'bg-[var(--color-brand)] border-[var(--color-brand)]'
+          : 'border-[var(--color-border)] group-hover:border-[var(--color-brand)]'
+      }`}>
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </div>
+      <input
+        type="checkbox"
+        id={id}
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+    </label>
+  );
 }
 
 export default function NewOrder() {
@@ -222,43 +261,54 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => router.push('/orders')}
-          className="p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)] transition-colors"
+          className="p-1.5 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-subtle)] transition-colors"
           aria-label="Back to orders"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">New Order</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">New Order</h1>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{STEPS[step].desc}</p>
+        </div>
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-0">
+      <div className="flex items-start gap-0">
         {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center flex-1 last:flex-none">
+          <div key={s.label} className="flex items-start flex-1 last:flex-none">
             <button
               onClick={() => i < step && setStep(i)}
-              disabled={i > step}
-              className="flex flex-col items-center gap-1 min-w-0"
+              disabled={i >= step}
+              className="flex flex-col items-center gap-1.5 min-w-0 w-full disabled:cursor-default"
             >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
-                i < step ? 'bg-[var(--color-brand)] text-white' :
-                i === step ? 'bg-[var(--color-brand)] text-white ring-2 ring-[var(--color-brand)] ring-offset-2' :
-                'bg-[var(--color-border)] text-[var(--color-text-tertiary)]'
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                i < step
+                  ? 'bg-[var(--color-brand)] text-white shadow-sm'
+                  : i === step
+                  ? 'bg-[var(--color-brand)] text-white ring-4 ring-[var(--color-brand-light)]'
+                  : 'bg-[var(--color-border-subtle)] text-[var(--color-text-tertiary)]'
               }`}>
-                {i < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                {i < step ? <Check className="w-4 h-4" /> : i + 1}
               </div>
-              <span className={`text-xs hidden sm:block truncate max-w-[70px] ${
-                i === step ? 'text-[var(--color-brand)] font-medium' : 'text-[var(--color-text-tertiary)]'
+              <span className={`text-[10px] font-semibold uppercase tracking-wide hidden sm:block truncate max-w-[72px] text-center leading-tight ${
+                i === step
+                  ? 'text-[var(--color-brand)]'
+                  : i < step
+                  ? 'text-[var(--color-text-secondary)]'
+                  : 'text-[var(--color-text-tertiary)]'
               }`}>
-                {s}
+                {s.label}
               </span>
             </button>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${i < step ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-border)]'}`} />
+              <div className={`flex-1 h-0.5 mt-4 mx-1 rounded-full transition-colors ${
+                i < step ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-border-subtle)]'
+              }`} />
             )}
           </div>
         ))}
@@ -267,18 +317,22 @@ export default function NewOrder() {
       {/* Step content */}
       <Card variant="elevated" padding="lg">
         <CardHeader>
-          <CardTitle>{STEPS[step]}</CardTitle>
+          <CardTitle>{STEPS[step].label}</CardTitle>
         </CardHeader>
 
+        {/* ── Step 0: Basic Info ── */}
         {step === 0 && (
           <div className="space-y-4">
-            <Field>
-              {label('Customer')}
+            <FieldGroup>
+              <FieldLabel text="Customer" />
               <Select options={customerOptions} value={form.customer_id} onChange={e => set('customer_id', e.target.value)} fullWidth />
-            </Field>
+            </FieldGroup>
+
+            <SectionDivider title="Product" />
+
             <Row>
-              <Field>
-                {label('Product Name', true)}
+              <FieldGroup>
+                <FieldLabel text="Product Name" required />
                 <Input
                   value={form.product_name}
                   onChange={e => set('product_name', e.target.value)}
@@ -286,209 +340,236 @@ export default function NewOrder() {
                   fullWidth
                   error={errors.product_name}
                 />
-              </Field>
-              <Field>
-                {label('Product Type')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Product Type" />
                 <Select options={PRODUCT_TYPE_OPTIONS} value={form.product_type} onChange={e => set('product_type', e.target.value)} fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
+
+            <SectionDivider title="Dates & Quantity" />
+
             <Row>
-              <Field>
-                {label('Order Date', true)}
+              <FieldGroup>
+                <FieldLabel text="Order Date" required />
                 <Input type="date" value={form.order_date} onChange={e => set('order_date', e.target.value)} fullWidth error={errors.order_date} />
-              </Field>
-              <Field>
-                {label('Delivery Date', true)}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Delivery Date" required />
                 <Input type="date" value={form.delivery_date} onChange={e => set('delivery_date', e.target.value)} fullWidth error={errors.delivery_date} />
-              </Field>
+              </FieldGroup>
             </Row>
+
             <Row>
-              <Field>
-                {label('Quantity', true)}
+              <FieldGroup>
+                <FieldLabel text="Quantity" required />
                 <Input
                   type="number" min="1"
                   value={form.quantity}
                   onChange={e => set('quantity', e.target.value)}
                   fullWidth error={errors.quantity}
                 />
-              </Field>
-              <Field>
-                {label('Unit')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Unit" />
                 <Select options={UNIT_OPTIONS} value={form.unit} onChange={e => set('unit', e.target.value)} fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
+
+            <SectionDivider title="Details" />
+
             <Row>
-              <Field>
-                {label('Priority')}
+              <FieldGroup>
+                <FieldLabel text="Priority" />
                 <Select options={PRIORITY_OPTIONS} value={form.priority} onChange={e => set('priority', e.target.value)} fullWidth />
-              </Field>
-              <Field>
-                {label('Batch Number')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Batch Number" />
                 <Input value={form.batch_number} onChange={e => set('batch_number', e.target.value)} placeholder="Optional" fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
-            <Field>
-              {label('Special Instructions')}
+
+            <FieldGroup>
+              <FieldLabel text="Special Instructions" />
               <textarea
                 value={form.special_instructions}
                 onChange={e => set('special_instructions', e.target.value)}
                 placeholder="Any special requirements..."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none"
+                className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none transition"
               />
-            </Field>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="repeat"
-                checked={form.is_repeat_order}
-                onChange={e => set('is_repeat_order', e.target.checked)}
-                className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-brand)]"
-              />
-              <label htmlFor="repeat" className="text-sm text-[var(--color-text-primary)]">Repeat order</label>
-            </div>
+            </FieldGroup>
+
+            <StyledCheckbox
+              id="repeat"
+              checked={form.is_repeat_order}
+              onChange={v => set('is_repeat_order', v)}
+              label="This is a repeat order"
+            />
           </div>
         )}
 
+        {/* ── Step 1: Size & Material ── */}
         {step === 1 && (
           <div className="space-y-4">
             <Row>
-              <Field>
-                {label('Substrate')}
+              <FieldGroup>
+                <FieldLabel text="Substrate" />
                 <Input value={form.substrate} onChange={e => set('substrate', e.target.value)} placeholder="e.g. Art Paper, Duplex" fullWidth />
-              </Field>
-              <Field>
-                {label('GSM')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="GSM" />
                 <Input value={form.gsm} onChange={e => set('gsm', e.target.value)} placeholder="e.g. 350" fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
-            <Row>
-              <Field>
-                {label('Length')}
+
+            <SectionDivider title="Dimensions" />
+
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup>
+                <FieldLabel text="Length" />
                 <Input type="number" value={form.size_length} onChange={e => set('size_length', e.target.value)} placeholder="0.00" fullWidth />
-              </Field>
-              <Field>
-                {label('Width')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Width" />
                 <Input type="number" value={form.size_width} onChange={e => set('size_width', e.target.value)} placeholder="0.00" fullWidth />
-              </Field>
-            </Row>
-            <Row>
-              <Field>
-                {label('Size Unit')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Unit" />
                 <Select
                   options={[{ value: 'mm', label: 'mm' }, { value: 'cm', label: 'cm' }, { value: 'inch', label: 'inch' }]}
                   value={form.size_unit}
                   onChange={e => set('size_unit', e.target.value)}
                   fullWidth
                 />
-              </Field>
-              <Field>
-                {label('Card Size')}
-                <Input value={form.card_size} onChange={e => set('card_size', e.target.value)} placeholder="e.g. A4, Custom" fullWidth />
-              </Field>
-            </Row>
-            <Field>
-              {label('Specifications')}
+              </FieldGroup>
+            </div>
+
+            <FieldGroup>
+              <FieldLabel text="Card Size" />
+              <Input value={form.card_size} onChange={e => set('card_size', e.target.value)} placeholder="e.g. A4, Custom" fullWidth />
+            </FieldGroup>
+
+            <SectionDivider title="Technical Specs" />
+
+            <FieldGroup>
+              <FieldLabel text="Specifications" />
               <textarea
                 value={form.specifications}
                 onChange={e => set('specifications', e.target.value)}
                 placeholder="Technical specifications..."
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none"
+                className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)] resize-none transition"
               />
-            </Field>
+            </FieldGroup>
           </div>
         )}
 
+        {/* ── Step 2: Printing ── */}
         {step === 2 && (
           <div className="space-y-4">
             <Row>
-              <Field>
-                {label('Printing Type')}
+              <FieldGroup>
+                <FieldLabel text="Printing Type" />
                 <Select options={PRINTING_TYPE_OPTIONS} value={form.printing_type} onChange={e => set('printing_type', e.target.value)} fullWidth />
-              </Field>
-              <Field>
-                {label('No. of Colors')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="No. of Colors" />
                 <Input value={form.colors} onChange={e => set('colors', e.target.value)} placeholder="e.g. 4+1" fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
+
+            <SectionDivider title="Colour Breakdown" />
+
             <div className="grid grid-cols-2 gap-4">
               {(['color_p1', 'color_p2', 'color_p3', 'color_p4'] as const).map((k, i) => (
-                <Field key={k}>
-                  {label(`Color ${i + 1}`)}
-                  <Input value={form[k]} onChange={e => set(k, e.target.value)} placeholder={`e.g. PANTONE 285 C`} fullWidth />
-                </Field>
+                <FieldGroup key={k}>
+                  <FieldLabel text={`Color ${i + 1}`} />
+                  <Input value={form[k]} onChange={e => set(k, e.target.value)} placeholder="e.g. PANTONE 285 C" fullWidth />
+                </FieldGroup>
               ))}
             </div>
+
+            <SectionDivider title="Options" />
+
             <div className="flex flex-col gap-3">
-              {[
-                { id: 'back_printing', key: 'has_back_printing' as const, label: 'Has back printing' },
-                { id: 'barcode', key: 'has_barcode' as const, label: 'Has barcode' },
-              ].map(item => (
-                <div key={item.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id={item.id}
-                    checked={form[item.key] as boolean}
-                    onChange={e => set(item.key, e.target.checked)}
-                    className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-brand)]"
-                  />
-                  <label htmlFor={item.id} className="text-sm text-[var(--color-text-primary)]">{item.label}</label>
-                </div>
-              ))}
+              <StyledCheckbox
+                id="back_printing"
+                checked={form.has_back_printing}
+                onChange={v => set('has_back_printing', v)}
+                label="Has back printing"
+              />
+              <StyledCheckbox
+                id="barcode"
+                checked={form.has_barcode}
+                onChange={v => set('has_barcode', v)}
+                label="Has barcode"
+              />
             </div>
           </div>
         )}
 
+        {/* ── Step 3: Finishing ── */}
         {step === 3 && (
           <div className="space-y-4">
             <Row>
-              <Field>
-                {label('Lamination')}
+              <FieldGroup>
+                <FieldLabel text="Lamination" />
                 <Select options={LAMINATION_OPTIONS} value={form.lamination_type} onChange={e => set('lamination_type', e.target.value)} fullWidth />
-              </Field>
-              <Field>
-                {label('Varnish')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Varnish" />
                 <Select options={VARNISH_OPTIONS} value={form.varnish_type} onChange={e => set('varnish_type', e.target.value)} fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
-            <Field>
-              {label('Varnish Details')}
+
+            <FieldGroup>
+              <FieldLabel text="Varnish Details" />
               <Input value={form.varnish_details} onChange={e => set('varnish_details', e.target.value)} placeholder="Optional details" fullWidth />
-            </Field>
-            <Field>
-              {label('UV / Emboss Details')}
+            </FieldGroup>
+
+            <FieldGroup>
+              <FieldLabel text="UV / Emboss Details" />
               <Input value={form.uv_emboss_details} onChange={e => set('uv_emboss_details', e.target.value)} placeholder="Optional details" fullWidth />
-            </Field>
+            </FieldGroup>
+
+            <SectionDivider title="Die" />
+
             <Row>
-              <Field>
-                {label('Die Type')}
+              <FieldGroup>
+                <FieldLabel text="Die Type" />
                 <Select options={DIE_TYPE_OPTIONS} value={form.die_type} onChange={e => set('die_type', e.target.value)} fullWidth />
-              </Field>
-              <Field>
-                {label('Die Reference')}
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel text="Die Reference" />
                 <Input value={form.die_reference} onChange={e => set('die_reference', e.target.value)} placeholder="e.g. D-1042" fullWidth />
-              </Field>
+              </FieldGroup>
             </Row>
-            <Field>
-              {label('Finishing Requirements')}
+
+            <FieldGroup>
+              <FieldLabel text="Other Finishing Requirements" />
               <Input value={form.finishing_requirements} onChange={e => set('finishing_requirements', e.target.value)} placeholder="Other finishing notes" fullWidth />
-            </Field>
-            <Field>
-              {label('Quoted Price (PKR)')}
+            </FieldGroup>
+
+            <SectionDivider title="Pricing" />
+
+            <FieldGroup>
+              <FieldLabel text="Quoted Price (PKR)" />
               <Input type="number" value={form.quoted_price} onChange={e => set('quoted_price', e.target.value)} placeholder="0" fullWidth />
-            </Field>
+            </FieldGroup>
           </div>
         )}
 
+        {/* ── Step 4: Review ── */}
         {step === 4 && (
           <div className="space-y-4">
             {mutation.isError && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-sm">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 Failed to create order. Please try again.
               </div>
             )}
+
             <ReviewSection title="Basic Info">
               <ReviewRow label="Product" value={form.product_name} />
               <ReviewRow label="Product Type" value={PRODUCT_TYPE_OPTIONS.find(o => o.value === form.product_type)?.label} />
@@ -499,6 +580,7 @@ export default function NewOrder() {
               {form.batch_number && <ReviewRow label="Batch" value={form.batch_number} />}
               {form.is_repeat_order && <ReviewRow label="Repeat Order" value="Yes" />}
             </ReviewSection>
+
             {(form.substrate || form.gsm || form.size_length) && (
               <ReviewSection title="Size & Material">
                 {form.substrate && <ReviewRow label="Substrate" value={form.substrate} />}
@@ -507,6 +589,7 @@ export default function NewOrder() {
                 {form.card_size && <ReviewRow label="Card Size" value={form.card_size} />}
               </ReviewSection>
             )}
+
             {(form.printing_type || form.colors) && (
               <ReviewSection title="Printing">
                 {form.printing_type && <ReviewRow label="Type" value={form.printing_type} />}
@@ -519,8 +602,9 @@ export default function NewOrder() {
                 {form.has_barcode && <ReviewRow label="Barcode" value="Yes" />}
               </ReviewSection>
             )}
-            {(form.lamination_type || form.varnish_type || form.die_type) && (
-              <ReviewSection title="Finishing">
+
+            {(form.lamination_type || form.varnish_type || form.die_type || form.quoted_price) && (
+              <ReviewSection title="Finishing & Pricing">
                 {form.lamination_type && <ReviewRow label="Lamination" value={form.lamination_type} />}
                 {form.varnish_type && <ReviewRow label="Varnish" value={form.varnish_type} />}
                 {form.die_type && <ReviewRow label="Die" value={form.die_type} />}
@@ -532,7 +616,7 @@ export default function NewOrder() {
         )}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--color-border-subtle)]">
+        <div className="flex items-center justify-between mt-6 pt-5 border-t border-[var(--color-border-subtle)]">
           {step > 0 ? (
             <Button variant="ghost" icon={<ArrowLeft className="w-4 h-4" />} onClick={() => setStep(s => s - 1)}>
               Back
@@ -542,7 +626,7 @@ export default function NewOrder() {
           )}
           {step < STEPS.length - 1 ? (
             <Button onClick={handleNext}>
-              Next: {STEPS[step + 1]} <ArrowRight className="w-4 h-4 ml-1" />
+              Next <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} isLoading={mutation.isPending}>
@@ -558,19 +642,19 @@ export default function NewOrder() {
 function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)] mb-2">{title}</h3>
-      <div className="rounded-lg border border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
+      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] mb-2">{title}</h3>
+      <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden divide-y divide-[var(--color-border-subtle)]">
         {children}
       </div>
     </div>
   );
 }
 
-function ReviewRow({ label: l, value }: { label: string; value?: string | null }) {
+function ReviewRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <div className="flex items-center justify-between px-3 py-2">
-      <span className="text-xs text-[var(--color-text-tertiary)]">{l}</span>
+    <div className="flex items-center justify-between px-4 py-2.5">
+      <span className="text-xs text-[var(--color-text-tertiary)]">{label}</span>
       <span className="text-sm text-[var(--color-text-primary)] font-medium">{value}</span>
     </div>
   );

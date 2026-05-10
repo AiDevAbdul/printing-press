@@ -555,15 +555,15 @@ Super-admin sees a company switcher in the header. Design:
 
 ---
 
-### Phase 4 — Page Redesigns (Next)
-**Files to change:**
-- `Production.tsx` + workflow components — horizontal timeline
-- `Prepress.tsx` — card grid, split view detail
-- `Orders.tsx` + `OrderFormModal.tsx` — multi-step form
-- Auth pages — CPP branded login
-- Replace `window.confirm()` in all files with `ConfirmDialog`
+### ✅ Phase 4 — Page Redesigns (Complete)
+**Files changed:**
+- ✅ `Production.tsx` + workflow components — horizontal WorkflowTimeline
+- ✅ `Prepress.tsx` — card grid, split detail view, tabbed spec form
+- ✅ `Orders.tsx` + create form — StatusPill table, 2-col split detail, wider multi-step form
+- Auth pages — CPP branded login (pending)
+- Replace `window.confirm()` in all files with `ConfirmDialog` (pending)
 
-**Deliverable**: CPP Pre-Press and Production workflows feel polished end-to-end.
+**Deliverable**: CPP Pre-Press, Production, and Orders workflows feel polished end-to-end.
 
 ---
 
