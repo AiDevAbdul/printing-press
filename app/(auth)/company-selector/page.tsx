@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Printer, Layers, Package, Sparkles, Building2, ArrowRight, Loader } from 'lucide-react'
 
 interface Company {
   id: string
@@ -10,32 +11,38 @@ interface Company {
 }
 
 interface CompanyWithMeta extends Company {
-  description?: string
-  accentColor?: string
-  icon?: string
+  description: string
+  accentColor: string
+  Icon: React.ElementType
 }
 
 const COMPANY_META: Record<string, Omit<CompanyWithMeta, 'id' | 'name'>> = {
   'Capital Packages': {
-    description: 'Premium packaging solutions',
-    accentColor: 'from-amber-500 to-orange-600',
-    icon: '📦',
+    description: 'Premium carton packaging and print production',
+    accentColor: '#1B4FDB',
+    Icon: Printer,
   },
   'CPP Pre Press': {
-    description: 'Design & pre-press services',
-    accentColor: 'from-blue-500 to-cyan-600',
-    icon: '🎨',
+    description: 'Design, pre-press, and plate-making services',
+    accentColor: '#1B4FDB',
+    Icon: Layers,
   },
   'BEST FOIL': {
-    description: 'Foil stamping & finishing',
-    accentColor: 'from-yellow-400 to-amber-500',
-    icon: '✨',
+    description: 'Luxury foil stamping and finishing',
+    accentColor: '#92400E',
+    Icon: Sparkles,
   },
   'SILVO Enterprises': {
-    description: 'Specialized printing services',
-    accentColor: 'from-slate-600 to-slate-700',
-    icon: '🖨️',
+    description: 'Alu-alu foil and pharmaceutical blister packaging',
+    accentColor: '#0D7490',
+    Icon: Package,
   },
+}
+
+const DEFAULT_META = {
+  description: 'Printing and packaging services',
+  accentColor: 'var(--color-brand)',
+  Icon: Building2,
 }
 
 export default function CompanySelector() {
@@ -48,32 +55,22 @@ export default function CompanySelector() {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch companies')
-        }
-
+        const response = await fetch('/api/auth/me', { credentials: 'include' })
+        if (!response.ok) throw new Error('Failed to fetch companies')
         const data = await response.json()
-        const baseCompanies = data.companies || []
 
-        const enrichedCompanies = baseCompanies.map((company: Company) => ({
-          ...company,
-          ...COMPANY_META[company.name],
+        const enriched = (data.companies || []).map((c: Company) => ({
+          ...c,
+          ...(COMPANY_META[c.name] ?? DEFAULT_META),
         }))
-
-        setCompanies(enrichedCompanies)
-      } catch (err) {
-        console.error('Error fetching companies:', err)
+        setCompanies(enriched)
+      } catch {
         setError('Failed to load companies. Please refresh the page.')
         toast.error('Failed to load companies')
       } finally {
         setIsInitializing(false)
       }
     }
-
     fetchCompanies()
   }, [])
 
@@ -106,183 +103,133 @@ export default function CompanySelector() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      router.push('/login')
-    } catch (err) {
-      console.error('Logout error:', err)
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } finally {
       router.push('/login')
     }
   }
 
   if (isInitializing) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
-          <p className="text-text-secondary">Loading companies...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-page-bg)]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="w-7 h-7 text-[var(--color-brand)] animate-spin" />
+          <p className="text-sm text-[var(--color-text-secondary)]">Loading workspaces…</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Subtle background pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 1px, transparent 2px)',
-        }}
-      />
+    <div className="min-h-screen bg-[var(--color-page-bg)] flex flex-col">
 
       {/* Header */}
-      <div className="relative pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="space-y-3">
-            <h1 className="text-5xl sm:text-6xl font-light tracking-tight text-gray-900">
-              Select Your <span className="font-semibold">Workspace</span>
-            </h1>
-            <p className="text-lg text-gray-500 font-light max-w-2xl">
-              Choose which company you'd like to access. Each workspace maintains separate operations and data.
-            </p>
+      <header className="px-6 sm:px-10 lg:px-16 pt-14 pb-10">
+        <div className="max-w-4xl mx-auto space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-brand)]">
+            PrintFlow
+          </p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-[var(--color-text-primary)] tracking-tight leading-[1.1]">
+            Select workspace
+          </h1>
+          <p className="text-base text-[var(--color-text-secondary)] pt-1 max-w-lg leading-relaxed">
+            Each workspace maintains separate operations and data.
+          </p>
+        </div>
+      </header>
+
+      {/* Error */}
+      {error && (
+        <div className="px-6 sm:px-10 lg:px-16 mb-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-[var(--color-danger-bg)] border border-[var(--color-danger)]/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-danger)] flex-shrink-0" />
+              <p className="text-sm text-[var(--color-danger)]">{error}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Main content */}
-      <div className="flex-1 px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="max-w-5xl mx-auto">
-          {/* Error message */}
-          {error && (
-            <div className="mb-8 p-4 bg-danger/10 border border-danger rounded-sm text-danger text-sm animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
+      {/* Company grid */}
+      <main className="flex-1 px-6 sm:px-10 lg:px-16 pb-12">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {companies.map((company, i) => {
+            const { Icon } = company
+            const isLoading = loading === company.id
+            const disabled = loading !== null
 
-          {/* Company grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {companies.map((company, index) => (
+            return (
               <button
                 key={company.id}
                 onClick={() => handleSelectCompany(company)}
-                disabled={loading !== null}
-                className="group relative text-left transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={disabled}
+                className="group text-left rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-brand)] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden"
                 style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                  animationDelay: `${i * 60}ms`,
+                  animation: 'fadeUp 0.4s ease both',
                 }}
               >
-                {/* Card container */}
-                <div className="relative h-full bg-white border border-gray-200 rounded-sm overflow-hidden hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
-                  {/* Accent bar */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${company.accentColor}`} />
+                {/* Accent bar */}
+                <div className="h-1 w-full" style={{ backgroundColor: company.accentColor }} />
 
-                  {/* Content */}
-                  <div className="p-8 space-y-6">
-                    {/* Icon and header */}
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
-                        <div className="text-4xl">{company.icon}</div>
-                        <h2 className="text-2xl font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
-                          {company.name}
-                        </h2>
-                      </div>
-
-                      {/* Loading spinner */}
-                      {loading === company.id && (
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="w-6 h-6 text-gray-400 animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                        </div>
-                      )}
+                <div className="p-6 space-y-5">
+                  {/* Icon + spinner row */}
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: company.accentColor + '1A' }}
+                    >
+                      <Icon
+                        className="w-5 h-5"
+                        style={{ color: company.accentColor }}
+                      />
                     </div>
-
-                    {/* Description */}
-                    <p className="text-gray-600 text-sm font-light leading-relaxed">
-                      {company.description}
-                    </p>
-
-                    {/* CTA */}
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors pt-2">
-                      <span>Access workspace</span>
-                      <svg
-                        className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </div>
+                    {isLoading && (
+                      <Loader className="w-5 h-5 animate-spin text-[var(--color-text-tertiary)]" />
+                    )}
                   </div>
 
-                  {/* Hover overlay effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50/0 to-gray-50/0 group-hover:from-gray-50/50 group-hover:to-gray-50/0 transition-all duration-300 pointer-events-none" />
+                  {/* Name + description */}
+                  <div className="space-y-1">
+                    <h2 className="text-base font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-brand)] transition-colors leading-tight">
+                      {company.name}
+                    </h2>
+                    <p className="text-sm text-[var(--color-text-secondary)] leading-snug">
+                      {company.description}
+                    </p>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-tertiary)] group-hover:text-[var(--color-brand)] transition-colors">
+                    <span>Access workspace</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
+                  </div>
                 </div>
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
-      </div>
+      </main>
 
       {/* Footer */}
-      <div className="border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-sm text-gray-500">Printing Press Management System</p>
+      <footer className="px-6 sm:px-10 lg:px-16 py-5 border-t border-[var(--color-border-subtle)]">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Printing Press Management System
+          </p>
           <button
             onClick={handleLogout}
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium"
+            className="text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
-            Back to Login
+            Sign out
           </button>
         </div>
-      </div>
+      </footer>
 
-      {/* Animation keyframes */}
       <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
