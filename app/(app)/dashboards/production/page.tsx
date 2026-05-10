@@ -9,7 +9,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { dashboardService } from '@/lib/services/dashboard.service';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 async function fetchActiveJobs() {
   const res = await fetch(`${API_BASE}/production?status=in_progress&limit=10`, { credentials: 'include' });

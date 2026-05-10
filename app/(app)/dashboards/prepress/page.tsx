@@ -8,7 +8,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { StatusPill, StatusPillStatus } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 async function fetchDesigns(status?: string) {
   const q = new URLSearchParams({ limit: '10' });

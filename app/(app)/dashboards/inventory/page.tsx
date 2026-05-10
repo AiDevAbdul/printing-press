@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { dashboardService } from '@/lib/services/dashboard.service';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 async function fetchLowStock() {
   const res = await fetch(`${API_BASE}/inventory?low_stock=true&limit=20`, { credentials: 'include' });

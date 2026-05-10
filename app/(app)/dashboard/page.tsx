@@ -11,7 +11,7 @@ import { StatusPill, type StatusPillStatus } from '@/components/ui/StatusPill';
 import { dashboardService } from '@/lib/services/dashboard.service';
 import { formatCurrency } from '@/lib/formatters';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 async function fetchRecentOrders() {
   const res = await fetch(`${API_BASE}/orders?limit=6&page=1`, { credentials: 'include' });
