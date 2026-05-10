@@ -1,6 +1,26 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyTokenEdge } from '@/lib/auth-edge'
+import { jwtVerify } from 'jose'
+
+const secret = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+)
+
+async function verifyToken(token: string | undefined) {
+  if (!token) return null
+  try {
+    const { payload } = await jwtVerify(token, secret)
+    return payload as {
+      sub: string
+      email: string
+      role: string
+      company_id?: string
+      is_super_admin: boolean
+    }
+  } catch {
+    return null
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,7 +35,7 @@ export async function middleware(request: NextRequest) {
     const tempToken =
       request.cookies.get('auth_temp')?.value ||
       request.cookies.get('auth_token')?.value
-    const payload = await verifyTokenEdge(tempToken)
+    const payload = await verifyToken(tempToken)
     if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
@@ -24,7 +44,7 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes — require a full token with company_id
   const token = request.cookies.get('auth_token')?.value
-  const payload = await verifyTokenEdge(token)
+  const payload = await verifyToken(token)
 
   if (!payload) {
     return NextResponse.redirect(new URL('/login', request.url))
