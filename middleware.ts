@@ -10,7 +10,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protected routes
+  // Company selector requires either a temp or full token
+  if (pathname === '/company-selector') {
+    const tempToken =
+      request.cookies.get('auth_temp')?.value ||
+      request.cookies.get('auth_token')?.value
+    const payload = await verifyToken(tempToken)
+    if (!payload) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return NextResponse.next()
+  }
+
+  // Protected routes — require a full token with company_id
   const token = request.cookies.get('auth_token')?.value
   const payload = await verifyToken(token)
 

@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {
-    const response = await fetch(`${API_BASE}/dashboard/stats`, {
+    const response = await fetch(`${API_BASE}/dashboard?endpoint=stats`, {
       credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to fetch dashboard stats');
@@ -12,7 +12,7 @@ export const dashboardService = {
   },
 
   async getProductionStatus(): Promise<any> {
-    const response = await fetch(`${API_BASE}/dashboard/production-status`, {
+    const response = await fetch(`${API_BASE}/dashboard?endpoint=production-status`, {
       credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to fetch production status');
@@ -20,7 +20,7 @@ export const dashboardService = {
   },
 
   async getPendingDeliveries(): Promise<any> {
-    const response = await fetch(`${API_BASE}/dashboard/pending-deliveries`, {
+    const response = await fetch(`${API_BASE}/dashboard?endpoint=pending-deliveries`, {
       credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to fetch pending deliveries');
@@ -37,7 +37,7 @@ export const dashboardService = {
   },
 
   async getRevenueTrend(): Promise<{ date: string; revenue: number }[]> {
-    const response = await fetch(`${API_BASE}/dashboard/revenue-trend`, {
+    const response = await fetch(`${API_BASE}/dashboard?endpoint=revenue-trend`, {
       credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to fetch revenue trend');

@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
       return getProductionStatus(companyId);
     } else if (endpoint === 'revenue-trend') {
       return getRevenueTrend(companyId);
+    } else if (endpoint === 'pending-deliveries') {
+      return getPendingDeliveries(companyId);
     }
 
     // Default: return all stats
@@ -123,6 +125,33 @@ async function getRevenueTrend(companyId: string) {
     console.error('Error getting revenue trend:', error);
     return NextResponse.json(
       { error: 'Failed to fetch revenue trend' },
+      { status: 500 }
+    );
+  }
+}
+
+async function getPendingDeliveries(companyId: string) {
+  try {
+    const orders = await db.orders.findMany({
+      where: {
+        company_id: companyId,
+        status: { in: ['ready_for_delivery', 'in_production', 'pending'] },
+      },
+      select: {
+        id: true,
+        order_number: true,
+        status: true,
+        delivery_date: true,
+        customers: { select: { name: true } },
+      },
+      orderBy: { delivery_date: 'asc' },
+      take: 10,
+    });
+    return NextResponse.json(orders);
+  } catch (error) {
+    console.error('Error getting pending deliveries:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch pending deliveries' },
       { status: 500 }
     );
   }
