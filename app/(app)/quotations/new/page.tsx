@@ -203,27 +203,36 @@ export default function NewQuotation() {
 
   const paperTypeOptions = PAPER_TYPE_MAP[form.product_type] ?? [];
 
+  // Convert dimensions to inches (formulas require inches)
+  const rawL = parseFloat(form.length) || 0;
+  const rawW = parseFloat(form.width) || 0;
+  const dimToInch = form.dimension_unit === 'mm' ? 1 / 25.4 : form.dimension_unit === 'cm' ? 1 / 2.54 : 1;
+  const L = rawL * dimToInch;
+  const W = rawW * dimToInch;
+
   // Cost formula calculations — Card/Sticker
-  const L = parseFloat(form.length) || 0;
-  const W = parseFloat(form.width) || 0;
+  // Formula: L(in) × W(in) × GSM ÷ 15,500 = packet weight (kg) [1 packet = 100 sheets]
+  // Packets needed = Qty ÷ (Ups × 100) | Total cost = Packets × Weight × Price/kg | Cost/unit = Total ÷ Qty
   const G = parseFloat(form.gsm) || 0;
   const Q = parseFloat(form.quantity) || 0;
   const cardUps = parseInt(form.ups) || 0;
   const cardPkg = parseFloat(form.price_per_kg_card) || 0;
   const cardPacketWeight = L > 0 && W > 0 && G > 0 ? (L * W * G) / 15500 : 0;
   const cardTotalUps = cardUps * 100;
-  const cardPacketsRequired = cardUps > 0 ? Q / cardUps : 0;
+  const cardPacketsRequired = cardTotalUps > 0 ? Q / cardTotalUps : 0;
   const cardTotalCost = cardPacketsRequired * cardPacketWeight * cardPkg;
-  const cardCostPerUnit = cardUps > 0 ? cardTotalCost / cardUps : 0;
+  const cardCostPerUnit = Q > 0 ? cardTotalCost / Q : 0;
 
   // Cost formula calculations — Paper
+  // Formula: L(in) × W(in) × GSM ÷ 3,100 = ream weight (kg) [1 ream = 500 sheets]
+  // Reams needed = Qty ÷ (Ups × 500) | Total cost = Reams × Weight × Price/kg | Cost/unit = Total ÷ Qty
   const paperUps = parseInt(form.paper_ups) || 0;
   const paperPkg = parseFloat(form.price_per_kg_paper) || 0;
   const paperReamWeight = L > 0 && W > 0 && G > 0 ? (L * W * G) / 3100 : 0;
   const paperTotalUps = paperUps * 500;
-  const paperReamsRequired = paperUps > 0 ? Q / paperUps : 0;
+  const paperReamsRequired = paperTotalUps > 0 ? Q / paperTotalUps : 0;
   const paperTotalCost = paperReamsRequired * paperReamWeight * paperPkg;
-  const paperCostPerUnit = paperUps > 0 ? paperTotalCost / paperUps : 0;
+  const paperCostPerUnit = Q > 0 ? paperTotalCost / Q : 0;
 
   const mutation = useMutation({
     mutationFn: (data: Partial<Quotation>) => quotationsService.create(data),
@@ -578,7 +587,7 @@ export default function NewQuotation() {
         <CardHeader><CardTitle>Card / Sticker Cost</CardTitle></CardHeader>
         <div className="space-y-4">
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            Formula: L × W × GSM ÷ 15500 = packet weight (kg) · 1 pack = 100 sheets
+            L(in) × W(in) × GSM ÷ 15,500 = packet weight (kg) · Packets = Qty ÷ (Ups × 100) · Cost/unit = Total ÷ Qty
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -635,7 +644,7 @@ export default function NewQuotation() {
         <CardHeader><CardTitle>Paper Cost</CardTitle></CardHeader>
         <div className="space-y-4">
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            Formula: L × W × GSM ÷ 3100 = ream weight (kg) · 1 ream = 500 sheets
+            L(in) × W(in) × GSM ÷ 3,100 = ream weight (kg) · Reams = Qty ÷ (Ups × 500) · Cost/unit = Total ÷ Qty
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

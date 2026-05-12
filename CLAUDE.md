@@ -22,6 +22,11 @@
   - Deployed to Vercel (preview URL active)
   - Removed old frontend/backend directories
   - Updated configuration for Next.js
+- [x] Phase 7 — Payments, PDF & Formula Fixes
+  - Payments model + API (`app/api/payments/`) with record-payment modal on invoice detail
+  - PDF generation for quotations via `@react-pdf/renderer` (`app/api/pdf/`, `lib/pdf/`)
+  - Fixed cost formula bugs: packets/reams = Qty ÷ (Ups × pack_size), cost/unit = Total ÷ Qty, dimension unit conversion (mm/cm → inches)
+  - Fixed React hydration mismatch in Input/Select components (`Math.random()` → `useId()`)
 
 Multi-tenant printing SaaS for 4 companies. See `docs/NEXTJS_MIGRATION.md` for detailed migration plan and progress.
 
@@ -64,14 +69,23 @@ See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 - `app/(app)/dashboard/` - Role-based dashboard routes
 - `app/api/auth/` - JWT, company selection, token refresh
 - `app/api/[module]/` - All business logic Route Handlers
+- `app/api/payments/` - Payment recording API (invoice payments)
+- `app/api/pdf/` - PDF generation endpoints (quotation PDF via @react-pdf/renderer)
 - `lib/auth.ts` - JWT sign/verify with jose
 - `lib/db.ts` - Prisma client singleton
 - `lib/tenant.ts` - Extract company_id from request
+- `lib/pdf/` - PDF template components
+- `lib/services/payments.service.ts` - Payments API client
 - `proxy.ts` - Auth guard and request routing (Next.js 16 proxy convention)
 - `prisma/schema.prisma` - Entire DB schema
 - `docs/NEXTJS_MIGRATION.md` - Migration plan & progress
 - `docs/MULTI_TENANT.md` - Full multi-tenant details
 - `docs/ARCHITECTURE.md` - System design & data flow
+
+## Cost Formulas
+- **Card/Sticker**: `L(in) × W(in) × GSM ÷ 15,500` = packet weight (kg, 100 sheets). Packets = `Qty ÷ (Ups × 100)`. Cost/unit = `Total ÷ Qty`.
+- **Paper**: `L(in) × W(in) × GSM ÷ 3,100` = ream weight (kg, 500 sheets). Reams = `Qty ÷ (Ups × 500)`. Cost/unit = `Total ÷ Qty`.
+- Dimensions entered as mm or cm are converted to inches before applying formulas.
 
 ## Common Pitfalls (Next.js)
 - ⚠️ Forget `company_id` filter in Prisma queries → data leakage between companies
@@ -79,6 +93,7 @@ See `docs/NEXTJS_MIGRATION.md` for full migration plan and status.
 - ⚠️ Rename `proxy.ts` to `middleware.ts` → `MIDDLEWARE_INVOCATION_FAILED` on Vercel (Next.js 16 uses `proxy.ts`)
 - ⚠️ Store auth token in localStorage → vulnerability (use httpOnly cookies)
 - ⚠️ Client Components trying to read DB directly → use Route Handlers instead
+- ⚠️ Use `Math.random()` for IDs in components → React hydration mismatch (use `useId()` instead)
 
 ## Deployment
 - **CI/CD**: GitHub Actions (`.github/workflows/deploy.yml`) runs `vercel build` + `vercel deploy --prebuilt --prod` on every push to `main`

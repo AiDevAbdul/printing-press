@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, AlertCircle, Calendar, Package, FileText,
-  User, Building2, Edit3, Check, X, Ruler, Palette,
+  User, Building2, Edit3, Check, X, Ruler, Palette, Download,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -120,17 +120,23 @@ export default function QuotationDetail() {
 
   return (
     <div className="max-w-5xl space-y-5">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => router.push('/quotations')}
-          className="flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Quotations
-        </button>
-        <span className="text-[var(--color-border)] text-sm">/</span>
-        <span className="text-sm text-[var(--color-text-secondary)] font-mono">{quotation.quotation_number}</span>
+      {/* Breadcrumb + actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/quotations')}
+            className="flex items-center gap-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Quotations
+          </button>
+          <span className="text-[var(--color-border)] text-sm">/</span>
+          <span className="text-sm text-[var(--color-text-secondary)] font-mono">{quotation.quotation_number}</span>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => window.open(`/api/pdf/quotation/${id}`, '_blank')} className="flex items-center gap-1.5">
+          <Download className="w-3.5 h-3.5" />
+          Download PDF
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">

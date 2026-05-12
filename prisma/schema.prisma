@@ -54,6 +54,7 @@ model companies {
   material_consumption     material_consumption[]
   orders                   orders[]
   packing_lists            packing_lists[]
+  payments                 payments[]
   product_specifications   product_specifications[]
   production_jobs          production_jobs[]
   production_stage_history production_stage_history[]
@@ -354,6 +355,7 @@ model invoices {
   strength             String?              @db.VarChar
   company_id           String               @db.Uuid
   invoice_items        invoice_items[]
+  payments             payments[]
   users                users?               @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_39a202af5d1dd1744458820ecb5")
   customers            customers?           @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_65e3145f317bd655481d3f96c74")
   orders               orders?              @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ea83c3b911906a3578de2340fdf")
@@ -626,6 +628,26 @@ model orders {
   @@index([design_file_status], map: "IDX_orders_design_file_status")
   @@index([plate_approval_status], map: "IDX_orders_plate_approval_status")
   @@index([proof_status], map: "IDX_orders_proof_status")
+}
+
+model payments {
+  id               String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  invoice_id       String                  @db.Uuid
+  company_id       String                  @db.Uuid
+  amount           Decimal                 @db.Decimal(10, 2)
+  payment_method   payment_method_enum     @default(cash)
+  payment_date     DateTime                @db.Date
+  reference_number String?                 @db.VarChar(100)
+  notes            String?
+  received_by_id   String                  @db.Uuid
+  created_at       DateTime                @default(now()) @db.Timestamp(6)
+  companies        companies               @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_payments_company_id")
+  invoices         invoices                @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_payments_invoice")
+  users            users                   @relation(fields: [received_by_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "FK_payments_received_by")
+
+  @@index([company_id], map: "IDX_payments_company_id")
+  @@index([invoice_id], map: "IDX_payments_invoice_id")
+  @@index([payment_date], map: "IDX_payments_payment_date")
 }
 
 model packing_lists {
@@ -1205,6 +1227,7 @@ model users {
   specification_approvals                                                     specification_approvals[]
   stage_approvals                                                             stage_approvals[]
   stock_transactions                                                          stock_transactions[]
+  payments                                                                    payments[]
   user_activity_log                                                           user_activity_log[]
   companies                                                                   companies                    @relation(fields: [company_id], references: [id], onUpdate: NoAction, map: "FK_users_company_id")
   users                                                                       users?                       @relation("usersTousers", fields: [substitute_user_id], references: [id], onUpdate: NoAction, map: "FK_users_substitute_user")
@@ -1323,6 +1346,13 @@ enum job_costs_cost_type_enum {
   labor
   machine
   overhead
+}
+
+enum payment_method_enum {
+  cash
+  bank_transfer
+  cheque
+  online
 }
 
 enum notification_type_enum {
